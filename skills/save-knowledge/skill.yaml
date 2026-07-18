@@ -1,0 +1,24 @@
+name: save-knowledge
+version: 0.1.0
+family: knowledge
+status: draft
+description: Use when an agent needs to persist mature conversation knowledge into durable project, agent, or team sources; chooses the narrowest destination and drafts the edit for downstream execution rather than internalizing it for personal understanding.
+triggers:
+  - user asks to save an insight, decision, workflow, or rule into durable project knowledge
+  - user selects an assess-knowledge topic marked Externalize or Both
+  - user asks to update AGENTS.md, project context, skill instructions, references, rules, runbooks, or decision records from conversation content
+  - user wants future agents or maintainers to rely on knowledge from the current discussion
+  - user asks where a conversation insight should live
+  - user asks to turn a conversation decision into durable documentation or agent guidance
+entrypoint: SKILL.md
+resources:
+  references: references/
+compatibility:
+  - openai-codex
+  - claude
+  - cursor
+  - generic-llm-agent
+  - antigravity
+  - github-copilot
+  - cline
+  - opencode

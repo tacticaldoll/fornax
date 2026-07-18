@@ -1,0 +1,19 @@
+name: validate
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate skills
+        run: python3 scripts/validate_skills.py
+      - name: Validate template
+        run: python3 scripts/validate_skills.py --skills-path templates --allow-template-placeholders
+      - name: Install deployment engine
+        run: pip install "agent-skill-deployer @ git+https://github.com/tacticaldoll/agent-skill-deployer.git@v0.1.0"
+      - name: Test deployment CLI
+        run: PYTHONPATH=tools/fornax-cli python3 -m unittest discover -s tools/fornax-cli/tests -v

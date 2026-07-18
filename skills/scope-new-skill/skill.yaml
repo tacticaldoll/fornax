@@ -1,0 +1,24 @@
+name: scope-new-skill
+version: 0.1.0
+family: meta
+status: draft
+description: Use when an agent needs to explore whether a vague workflow or knowledge process should become a skill; classifies skill type, outputs, resources, risks, and readiness rather than creating or editing skill files.
+triggers:
+  - user asks whether an idea should become a skill
+  - user asks what type or style of skill fits an intent
+  - user wants to explore a skill concept before creating files
+  - user is unsure whether a workflow needs scripts, references, assets, or orchestration
+  - user wants a skill implementation plan without immediately building the skill
+  - user asks to shape a rough skill idea before drafting SKILL.md or skill.yaml
+entrypoint: SKILL.md
+resources:
+  references: references/
+compatibility:
+  - openai-codex
+  - claude
+  - cursor
+  - generic-llm-agent
+  - antigravity
+  - github-copilot
+  - cline
+  - opencode

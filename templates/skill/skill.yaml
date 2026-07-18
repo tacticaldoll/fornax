@@ -1,0 +1,21 @@
+name: replace-me
+version: 0.1.0
+family: implementation
+status: draft
+description: Use when an agent needs to perform a specific workflow. Replace this with clear trigger contexts and the capability this skill provides.
+triggers:
+  - Replace with a user request pattern that should activate this skill.
+entrypoint: SKILL.md
+resources:
+  scripts: scripts/
+  references: references/
+  assets: assets/
+compatibility:
+  - openai-codex
+  - claude
+  - cursor
+  - generic-llm-agent
+  - antigravity
+  - github-copilot
+  - cline
+  - opencode

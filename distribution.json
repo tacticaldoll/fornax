@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "name": "fornax",
+  "display_name": "Fornax",
+  "description": "Portable, single-purpose skills for coding agents that map, plan, review, and reason over your context.",
+  "version": "0.1.0",
+  "repository": "https://github.com/tacticaldoll/fornax",
+  "skills_directory": "skills"
+}

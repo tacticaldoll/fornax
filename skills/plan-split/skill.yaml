@@ -1,0 +1,23 @@
+name: plan-split
+version: 0.1.0
+family: implementation
+status: draft
+description: Use when an agent needs to plan splitting a large or tangled code unit inside the same codebase; finds natural responsibility boundaries, dependency risks, and reviewable extraction steps rather than editing code or executing the refactor.
+triggers:
+  - user asks how to split or decompose a large file, module, class, or component for single responsibility
+  - user asks for a refactor plan or decomposition strategy without writing the code
+  - user asks where the natural seams are in tangled code
+  - user asks to sequence a behavior-preserving extraction into reviewable steps
+  - user wants an internal module split plan, not a new repository
+entrypoint: SKILL.md
+resources:
+  references: references/
+compatibility:
+  - openai-codex
+  - claude
+  - cursor
+  - generic-llm-agent
+  - antigravity
+  - github-copilot
+  - cline
+  - opencode

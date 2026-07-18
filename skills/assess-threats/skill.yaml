@@ -1,0 +1,19 @@
+name: assess-threats
+version: 0.1.0
+family: decisions
+status: draft
+description: Use when an agent needs to identify trust boundaries and architectural threat vectors in a system design or a change's attack surface; maps the boundaries, applies STRIDE, and rates threats by risk rather than executing exploits or patching code.
+triggers:
+  - User asks to perform a security review, threat modeling, or check for vulnerabilities.
+entrypoint: SKILL.md
+resources:
+  references: references/
+compatibility:
+  - openai-codex
+  - claude
+  - cursor
+  - generic-llm-agent
+  - antigravity
+  - github-copilot
+  - cline
+  - opencode

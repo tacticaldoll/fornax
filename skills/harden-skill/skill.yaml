@@ -1,0 +1,23 @@
+name: harden-skill
+version: 0.1.0
+family: meta
+status: draft
+description: Use when an agent needs to harden a skill's instructions so they reliably change agent behavior; diagnoses each intended behavior's baseline failure, matches it to the right instruction form, hardens discipline rules against rationalization, and specifies a micro-test protocol rather than editing the skill or running the tests itself.
+triggers:
+  - user asks whether a skill's wording will actually change agent behavior
+  - user asks to harden, tighten, or bulletproof a skill's instructions or a rule
+  - user asks why agents ignore, skip, or rationalize around a skill's guidance
+  - user asks which instruction form fits a behavior (prohibition, recipe, structural field, conditional)
+  - user is authoring or revising a SKILL.md and wants the guidance to bind before shipping
+entrypoint: SKILL.md
+resources:
+  references: references/
+compatibility:
+  - openai-codex
+  - claude
+  - cursor
+  - generic-llm-agent
+  - antigravity
+  - github-copilot
+  - cline
+  - opencode

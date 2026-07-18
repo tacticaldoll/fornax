@@ -1,0 +1,22 @@
+name: assess-knowledge
+version: 0.1.0
+family: knowledge
+status: draft
+description: Use when an agent needs to assess a conversation for knowledge worth extracting; identifies topics, maturity, and internalize/externalize tendency without creating artifacts or recommending next steps.
+triggers:
+  - user asks what knowledge or insights are worth extracting from a conversation
+  - user asks what was learned or what should be captured from a session
+  - user asks whether discussion topics have enough depth for a report or durable document
+  - user wants to assess conversation value rather than receive a plain summary
+  - user signals an end of session and asks what is worth taking away
+  - user asks which parts of a discussion are substantial enough to develop later
+entrypoint: SKILL.md
+compatibility:
+  - openai-codex
+  - claude
+  - cursor
+  - generic-llm-agent
+  - antigravity
+  - github-copilot
+  - cline
+  - opencode

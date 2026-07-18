@@ -1,0 +1,24 @@
+name: assess-dependency
+version: 0.1.0
+family: decisions
+status: draft
+description: Use when an agent needs to decide whether to adopt a structural dependency into a project; checks local pain, architectural fit, feasibility, and governance, then returns adopt, adopt narrowly, defer, or decline rather than planning implementation.
+triggers:
+  - user asks whether to adopt or depend on a library, framework, or abstraction layer
+  - user asks if a package is worth adding to this project
+  - user wants to evaluate whether a framework, runtime, abstraction, or capability system fits this codebase
+  - user is weighing a structural dependency against the project's architecture or governance
+  - user wants a portable worksheet to evaluate a dependency in another repo
+entrypoint: SKILL.md
+resources:
+  references: references/
+  assets: assets/
+compatibility:
+  - openai-codex
+  - claude
+  - cursor
+  - generic-llm-agent
+  - antigravity
+  - github-copilot
+  - cline
+  - opencode

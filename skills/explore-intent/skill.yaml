@@ -1,0 +1,21 @@
+name: explore-intent
+version: 0.1.0
+family: implementation
+status: draft
+description: Use when an agent needs to explore intent, requirements, and direction through dialogue before any building; holds a no-stakes, codebase-grounded thinking-partner stance that surfaces options and tradeoffs one question at a time and resists premature convergence, rather than implementing, designing component structure, or planning the work.
+triggers:
+  - user has a vague idea and wants to explore it before building
+  - user asks to brainstorm or think through a feature, change, or approach
+  - user jumps toward implementation before the intent or requirements are clear
+  - user wants to weigh options and tradeoffs for a direction
+  - user asks what they should build or why, not yet how
+entrypoint: SKILL.md
+compatibility:
+  - openai-codex
+  - claude
+  - cursor
+  - generic-llm-agent
+  - antigravity
+  - github-copilot
+  - cline
+  - opencode

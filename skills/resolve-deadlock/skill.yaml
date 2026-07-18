@@ -1,0 +1,17 @@
+name: resolve-deadlock
+version: 0.1.0
+family: decisions
+status: draft
+description: Use when an agent needs to resolve conflicting requirements or a governance deadlock that is already blocking progress; facilitates a structured negotiation to find a pragmatic third path rather than halting execution or unilaterally rewriting project governance.
+triggers:
+  - Work is blocked now by mutually exclusive rules, requirements, or architectural constraints and needs a pragmatic way forward.
+entrypoint: SKILL.md
+compatibility:
+  - openai-codex
+  - claude
+  - cursor
+  - generic-llm-agent
+  - antigravity
+  - github-copilot
+  - cline
+  - opencode

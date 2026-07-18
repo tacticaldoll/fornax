@@ -1,0 +1,20 @@
+{
+  "name": "fornax",
+  "displayName": "Fornax",
+  "description": "Portable, single-purpose skills for coding agents that map, plan, review, and reason over your context, and report rather than edit.",
+  "version": "0.1.0",
+  "author": {
+    "name": "tacticaldoll"
+  },
+  "homepage": "https://github.com/tacticaldoll/fornax",
+  "repository": "https://github.com/tacticaldoll/fornax",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "agent",
+    "code-review",
+    "planning",
+    "portable"
+  ],
+  "skills": "./skills/"
+}

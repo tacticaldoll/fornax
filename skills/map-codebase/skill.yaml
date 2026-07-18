@@ -1,0 +1,23 @@
+name: map-codebase
+version: 0.1.0
+family: implementation
+status: draft
+description: Use when an agent needs to understand how an unfamiliar codebase or subsystem actually works before changing it; maps entry points, control and data flow, key abstractions, and external effects to the depth the task needs, and reports what was not traced rather than reviewing quality or editing code.
+triggers:
+  - user asks how an unfamiliar codebase or subsystem works
+  - user asks to map the architecture, control flow, or data flow of existing code
+  - user asks to understand code before changing or refactoring it
+  - user asks where execution starts or how a feature is wired end to end
+  - user asks which abstractions or invariants a subsystem depends on
+entrypoint: SKILL.md
+resources:
+  references: references/
+compatibility:
+  - openai-codex
+  - claude
+  - cursor
+  - generic-llm-agent
+  - antigravity
+  - github-copilot
+  - cline
+  - opencode

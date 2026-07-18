@@ -1,0 +1,33 @@
+{
+  "name": "fornax",
+  "version": "0.1.0",
+  "description": "Portable, single-purpose skills for coding agents that map, plan, review, and reason over your context, and report rather than edit.",
+  "author": {
+    "name": "tacticaldoll",
+    "url": "https://github.com/tacticaldoll"
+  },
+  "homepage": "https://github.com/tacticaldoll/fornax",
+  "repository": "https://github.com/tacticaldoll/fornax",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "agent",
+    "code-review",
+    "planning",
+    "refactoring",
+    "portable"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Fornax",
+    "shortDescription": "Portable skills that map, plan, review, and reason over your context.",
+    "longDescription": "Fornax is a portable skills registry for coding agents: orient, understand, design, plan, refactor, and review a codebase, plus knowledge and meta skills. Skills read, plan, and report; they hand off execution rather than editing behind your back.",
+    "developerName": "tacticaldoll",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Interactive"
+    ],
+    "websiteURL": "https://github.com/tacticaldoll/fornax"
+  }
+}

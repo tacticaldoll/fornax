@@ -1,0 +1,23 @@
+name: audit-governance
+version: 0.1.0
+family: decisions
+status: draft
+description: Use when an agent needs to test governance prose against what a project actually enforces; classifies claims as structural or judgment and recommends dissolve, convert, keep, or defer rather than editing documents or adding checks.
+triggers:
+  - user asks whether a governance or design claim should become a rule, test, or check
+  - user asks to retire, consolidate, sink, or challenge redundant governance or documentation prose
+  - user asks whether a charter, ADR, or standing decision still holds or contradicts itself
+  - user asks to reconcile documentation claims with what the codebase actually enforces
+  - user asks which parts of governance prose are redundant, enforceable, or still human judgment
+entrypoint: SKILL.md
+resources:
+  references: references/
+compatibility:
+  - openai-codex
+  - claude
+  - cursor
+  - generic-llm-agent
+  - antigravity
+  - github-copilot
+  - cline
+  - opencode

@@ -1,0 +1,21 @@
+name: handle-feedback
+version: 0.1.0
+family: implementation
+status: draft
+description: Use when an agent needs to handle code-review or technical feedback with rigor rather than performance; verifies each point against the codebase before accepting, restates and pushes back with reasoning where warranted, and takes feedback one item at a time rather than performing agreement, implementing blindly, or applying the changes itself.
+triggers:
+  - a reviewer or user gives code-review or technical feedback to act on
+  - an agent receives review comments and is about to implement them
+  - feedback seems unclear, questionable, or technically wrong
+  - an agent notices itself agreeing performatively before verifying
+  - user asks how to respond to review feedback
+entrypoint: SKILL.md
+compatibility:
+  - openai-codex
+  - claude
+  - cursor
+  - generic-llm-agent
+  - antigravity
+  - github-copilot
+  - cline
+  - opencode

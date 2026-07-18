@@ -1,0 +1,15 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "fornax",
+  "description": "Portable, single-purpose skills for coding agents that map, plan, review, and reason over your context.",
+  "owner": {
+    "name": "tacticaldoll"
+  },
+  "plugins": [
+    {
+      "name": "fornax",
+      "description": "Portable, single-purpose skills that orient, understand, design, plan, refactor, and review — read / plan / report, never editing behind your back.",
+      "source": "./"
+    }
+  ]
+}

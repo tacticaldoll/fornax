@@ -1,0 +1,20 @@
+name: plan-testing
+version: 0.1.0
+family: implementation
+status: draft
+description: Use when an agent needs to design a comprehensive test strategy for a feature or refactor; identifies unit boundaries, mocks, and edge cases rather than writing the actual test code or executing test suites.
+triggers:
+  - User asks to plan tests for a specific feature, component, or refactor.
+  - User asks what edge cases or boundary conditions a change should cover.
+  - User asks how to mock or stub dependencies for a test.
+  - User asks for a test matrix or coverage plan before writing tests.
+entrypoint: SKILL.md
+compatibility:
+  - openai-codex
+  - claude
+  - cursor
+  - generic-llm-agent
+  - antigravity
+  - github-copilot
+  - cline
+  - opencode

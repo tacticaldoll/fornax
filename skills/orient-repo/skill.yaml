@@ -1,0 +1,23 @@
+name: orient-repo
+version: 0.1.0
+family: implementation
+status: draft
+description: Use when an agent needs to orient itself in an unfamiliar repository before acting; discovers governance, conventions, enforcement, and non-goals into a compact working brief rather than editing files or relying on one host's auto-loaded context.
+triggers:
+  - user starts work in an unfamiliar or newly-cloned repository
+  - user asks how this project wants changes made, such as commit, branch, review, or test conventions
+  - user asks an agent to warm up, onboard, or get up to speed on a project
+  - an agent needs project conventions its host did not auto-load
+  - user asks for the repository's operating contract before making changes
+entrypoint: SKILL.md
+resources:
+  references: references/
+compatibility:
+  - openai-codex
+  - claude
+  - cursor
+  - generic-llm-agent
+  - antigravity
+  - github-copilot
+  - cline
+  - opencode

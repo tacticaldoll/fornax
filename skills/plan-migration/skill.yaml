@@ -1,0 +1,17 @@
+name: plan-migration
+version: 0.1.0
+family: implementation
+status: draft
+description: Use when an agent needs to plan a safe data migration or database schema change; sequences the change into backward-compatible expand/backfill/contract phases with rollback and verification steps rather than executing SQL scripts or migrating data.
+triggers:
+  - User asks to plan a schema migration, data transfer, or database change.
+entrypoint: SKILL.md
+compatibility:
+  - openai-codex
+  - claude
+  - cursor
+  - generic-llm-agent
+  - antigravity
+  - github-copilot
+  - cline
+  - opencode

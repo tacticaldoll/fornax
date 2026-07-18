@@ -1,0 +1,23 @@
+name: design-boundaries
+version: 0.1.0
+family: implementation
+status: draft
+description: Use when an agent needs to design component boundaries for a feature or system before the code exists; partitions responsibilities into single-purpose components with minimal interfaces and an acyclic dependency direction, then pressure-tests the boundaries rather than editing code, splitting an existing tangled unit, or extracting a separate repository.
+triggers:
+  - user asks to design component or module boundaries for a new feature or system
+  - user asks how to structure something into components before writing code
+  - user asks to carve responsibilities into components with clear interfaces
+  - user asks to plan component structure while adding a capability to an existing system
+  - user asks whether a proposed component split is over- or under-decomposed
+entrypoint: SKILL.md
+resources:
+  references: references/
+compatibility:
+  - openai-codex
+  - claude
+  - cursor
+  - generic-llm-agent
+  - antigravity
+  - github-copilot
+  - cline
+  - opencode

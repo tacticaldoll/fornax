@@ -1,0 +1,24 @@
+name: write-learning-report
+version: 0.1.0
+family: knowledge
+status: draft
+description: Use when an agent needs to turn mature conversation content into a self-contained learning report; selects a fitting report structure and preserves source fidelity for personal understanding rather than durable project knowledge.
+triggers:
+  - user asks to write a report, essay, or technical note from conversation content
+  - user asks to structure discussion insights into a written artifact
+  - user selects an assess-knowledge topic for internalization
+  - user asks to turn a conversation into a self-contained learning report
+  - user asks to rework existing notes or reports with new conversation context
+  - user wants to understand an idea from the conversation rather than save it as project rules
+entrypoint: SKILL.md
+resources:
+  references: references/
+compatibility:
+  - openai-codex
+  - claude
+  - cursor
+  - generic-llm-agent
+  - antigravity
+  - github-copilot
+  - cline
+  - opencode

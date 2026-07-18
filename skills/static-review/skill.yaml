@@ -1,0 +1,26 @@
+name: static-review
+replaces:
+  - progressive-review-local
+version: 0.1.0
+family: implementation
+status: draft
+description: Use when an agent needs to review local or pasted code with sequential quality gates; resolves files, diffs, commits, branches, or snippets into a static review scope and reports findings without modifying code or calling remote services.
+triggers:
+  - user asks to review local code, a local change, or a code snippet
+  - user asks for a gate-based review of pasted code or a local diff
+  - user provides file paths, a git diff, commit hash, branch, or code snippet for static review
+  - user wants code quality inspection without remote PR or MR integration
+  - user asks for review gates, triage, structural extraction, or a local fix plan
+  - user asks for findings on a change but does not ask to implement fixes
+entrypoint: SKILL.md
+resources:
+  references: references/
+compatibility:
+  - openai-codex
+  - claude
+  - cursor
+  - generic-llm-agent
+  - antigravity
+  - github-copilot
+  - cline
+  - opencode

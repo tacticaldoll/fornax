@@ -1,0 +1,17 @@
+name: diagnose-issue
+version: 0.1.0
+family: implementation
+status: draft
+description: Use when an agent needs to find a bug's root cause from a report or stack trace; statically traces control and data flow, identifies the logical fault type, and produces a confidence-rated root-cause hypothesis with a verification step, rather than editing code or attempting a fix.
+triggers:
+  - User provides a stack trace, error message, or describes unexpected behavior.
+entrypoint: SKILL.md
+compatibility:
+  - openai-codex
+  - claude
+  - cursor
+  - generic-llm-agent
+  - antigravity
+  - github-copilot
+  - cline
+  - opencode

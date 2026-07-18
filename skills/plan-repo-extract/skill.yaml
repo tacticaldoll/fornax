@@ -1,0 +1,23 @@
+name: plan-repo-extract
+version: 0.1.0
+family: implementation
+status: draft
+description: Use when an agent needs to assess whether a cohesive part of a repository should become an independent repository; evaluates extractability and plans dependency, API, history, and migration work rather than executing the split.
+triggers:
+  - user asks whether part of a repo should be split out into its own repository
+  - user asks to extract a cohesive component, library, or subsystem out of a monorepo or application repo
+  - user asks to assess whether a component is extractable into a standalone repo
+  - user asks for a carve-out or repo-split plan without performing the git surgery
+  - user asks whether a package, library, or subsystem should live outside the monorepo
+entrypoint: SKILL.md
+resources:
+  references: references/
+compatibility:
+  - openai-codex
+  - claude
+  - cursor
+  - generic-llm-agent
+  - antigravity
+  - github-copilot
+  - cline
+  - opencode
