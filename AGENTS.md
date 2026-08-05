@@ -407,6 +407,10 @@ Prefer lightweight tests that match the risk of the change.
 - Run repository validation for every change.
 - Regenerate the README skill maps with `python3 scripts/skill_graph.py --write` after changing a
   skill's `family` or its handoff targets; `--check` fails when the committed block is stale.
+- Cover a new or changed validation rule in `scripts/tests/`, run with
+  `PYTHONPATH=scripts python3 -m unittest discover -s scripts/tests`. Check the fixture actually
+  fails when the rule is removed; a suite that passes either way proves nothing. The
+  `tools/fornax-cli` suite stays CI-only because it needs the deployment engine installed.
 - Enforcement: CI (`.github/workflows/validate.yml`) runs the validator on every push; enable the
   local pre-commit hook once per clone with `git config core.hooksPath .githooks`.
 - Validate `templates/skill` after template changes.
