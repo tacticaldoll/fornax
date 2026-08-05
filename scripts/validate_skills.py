@@ -223,6 +223,14 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
             fail(name, f"skill.yaml missing {field}")
             skill_failed = True
 
+    if re.search(r"^version\s*:", manifest, re.MULTILINE):
+        fail(
+            name,
+            "skill.yaml must not set version; release versioning is the collection's "
+            "(distribution.json)",
+        )
+        skill_failed = True
+
     manifest_name = get_top_level_yaml_value(manifest, "name")
     manifest_status = get_top_level_yaml_value(manifest, "status")
     entrypoint = get_top_level_yaml_value(manifest, "entrypoint")
