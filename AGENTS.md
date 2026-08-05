@@ -174,7 +174,8 @@ least one representative command or document why it could not be run.
 
 Before release:
 
-- Update `skill.yaml` `version` according to the versioning rules.
+- If the change ships now, bump the collection version and the host manifests together (see
+  Versioning).
 - Use the required commit style and scope.
 - Include validation commands in the PR or final report.
 - Mention compatibility or migration notes when behavior changes.
@@ -345,13 +346,20 @@ The collection's release version lives in `distribution.json`; bump it on releas
 packaging manifest versions aligned. That alignment has teeth outside this repo: Claude Code gates
 `plugin update` on the plugin manifest version, so shipping changed skills without a bump is a no-op
 for installed users and the deployer must uninstall and reinstall to bust the version-pinned cache.
-Each `skill.yaml` `version` is the skill's own release version — do **not** bump it on every edit.
-While skills are `status: draft` (pre-1.0), leave them at `0.1.0` and let git carry the change
-history.
+Skills do not carry a version of their own. Release versioning is the collection's, because a skill
+has no distribution path of its own — hosts read `SKILL.md`, whose frontmatter has no version field,
+and the `fornax` CLI pins one collection tag. Git carries per-skill change history. See
+`PROJECT.md`.
 
-Bump a skill's `version` only for a release-level change to that skill. `docs/skill-yaml-schema.md`
-is the single definition of what counts as patch, minor, and major — do not restate those rules
-here.
+Judge the increment by what changed for the people who install the collection:
+
+- Patch for wording fixes, metadata corrections, and non-behavioral clarifications.
+- Minor for new skills, new supported workflows, scripts, or references.
+- Major for removed or renamed skills, trigger changes, removed behavior, or incompatible script
+  interfaces.
+
+Contributor-facing changes — validation rules, generators, CI — do not drive the increment on their
+own; they ride along with whatever release carries them.
 
 ### Pull Request Notes
 
@@ -371,7 +379,7 @@ messages, PR, or MR descriptions.
 Before considering a skill ready:
 
 - `SKILL.md` has `name` and `description` frontmatter.
-- `skill.yaml` has `name`, `version`, `description`, `triggers`, and `entrypoint`.
+- `skill.yaml` has `name`, `family`, `description`, `triggers`, and `entrypoint`.
 - Trigger descriptions are understandable without reading the body.
 - Core instructions do not require a single agent vendor.
 - Any host-specific requirement is documented at the packaging layer (`docs/host-packaging.md`).

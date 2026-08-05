@@ -28,6 +28,13 @@ Settled; reopen only with a reason, not by default.
 - **`family` is a flat field** (`implementation | knowledge | decisions | meta`), the single source
   for README grouping and the generated skill maps. The object-vs-meta and operation-kind
   distinctions are real but are *not* encoded as fields — nothing consumes them.
+- **Skills carry no version of their own.** Release versioning is the collection's —
+  `distribution.json` plus the host manifest projections — because a skill has no distribution path
+  of its own: hosts read `SKILL.md`, whose frontmatter has no version field; the deployer only
+  rewrites `name`; and the CLI pins one collection tag. The per-skill `skill.yaml` `version` was
+  removed because nothing read it, every skill sat frozen at one value, and the patch/minor/major
+  rules had accumulated on that inert field while the collection version — the one that actually
+  gates whether installed users receive a change — had none.
 - **Enforcement is the structural floor only.** The validator checks structure (manifest fields,
   links, handoff targets, the `**Input**:` line, `family`); judgment (description shape, prose
   clarity) stays human. CI + the pre-commit hook run it.

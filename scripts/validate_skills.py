@@ -26,7 +26,7 @@ NAME_PATTERN = re.compile(r"^[a-z0-9-]+$")
 VERSION_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
 FRONTMATTER_PATTERN = re.compile(r"^---\s*\r?\n(.*?)\r?\n---", re.DOTALL)
 MARKDOWN_LINK_PATTERN = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
-REQUIRED_MANIFEST_FIELDS = ("name", "version", "family", "description", "triggers", "entrypoint")
+REQUIRED_MANIFEST_FIELDS = ("name", "family", "description", "triggers", "entrypoint")
 HOST_VERSION_MANIFESTS = (
     ".claude-plugin/plugin.json",
     ".codex-plugin/plugin.json",
@@ -224,16 +224,11 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
             skill_failed = True
 
     manifest_name = get_top_level_yaml_value(manifest, "name")
-    manifest_version = get_top_level_yaml_value(manifest, "version")
     manifest_status = get_top_level_yaml_value(manifest, "status")
     entrypoint = get_top_level_yaml_value(manifest, "entrypoint")
 
     if manifest_name and manifest_name != name and not allow_template_placeholders:
         fail(name, f"skill.yaml name '{manifest_name}' must match folder name")
-        skill_failed = True
-
-    if manifest_version and not VERSION_PATTERN.fullmatch(manifest_version):
-        fail(name, "skill.yaml version must use semantic version format x.y.z")
         skill_failed = True
 
     if manifest_status and manifest_status not in STATUSES:

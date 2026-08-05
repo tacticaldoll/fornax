@@ -28,22 +28,6 @@ The canonical skill identifier. Use lowercase letters, digits, and hyphens only.
 name: summarize-meeting
 ```
 
-### `version`
-
-Type: string
-
-The skill version in semantic version format.
-
-```yaml
-version: 0.1.0
-```
-
-Versioning rules:
-
-- Patch: wording fixes, metadata corrections, and non-behavioral clarifications.
-- Minor: new supported workflows, scripts, references, or assets.
-- Major: trigger changes, removed behavior, renamed resources, or incompatible script interfaces.
-
 ### `family`
 
 Type: string
@@ -183,7 +167,6 @@ maintainers:
 
 ```yaml
 name: summarize-meeting
-version: 0.1.0
 status: stable
 description: Use when an agent needs to summarize meeting notes into decisions, action items, and risks.
 triggers:
@@ -209,4 +192,5 @@ maintainers:
 - Keep core fields in English.
 - Do not put vendor-specific metadata in top-level fields unless clearly namespaced and documented.
 - Keep host-specific packaging at the packaging layer, not in `skill.yaml`.
-- Keep trigger metadata stable and specific; changing triggers may require a major version bump.
+- Keep trigger metadata stable and specific; changing triggers may require a major bump of the
+  collection version. Skills carry no version of their own — see `AGENTS.md`.
