@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
-"""Validate portable skill folders."""
+"""Validate portable skill folders.
+
+Run from the repository root. `--skills-path` defaults to `skills` relative to
+the working directory, and the distribution and host-manifest checks read the
+working directory as the repository root — unlike skill_graph.py, which
+anchors itself to its own location.
+
+Usage:
+    python3 scripts/validate_skills.py
+    python3 scripts/validate_skills.py --skills-path templates --allow-template-placeholders
+"""
 
 from __future__ import annotations
 
