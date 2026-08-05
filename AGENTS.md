@@ -346,6 +346,7 @@ The collection's release version lives in `distribution.json`; bump it on releas
 packaging manifest versions aligned. That alignment has teeth outside this repo: Claude Code gates
 `plugin update` on the plugin manifest version, so shipping changed skills without a bump is a no-op
 for installed users and the deployer must uninstall and reinstall to bust the version-pinned cache.
+
 Skills do not carry a version of their own. Release versioning is the collection's, because a skill
 has no distribution path of its own — hosts read `SKILL.md`, whose frontmatter has no version field,
 and the `fornax` CLI pins one collection tag. Git carries per-skill change history. See
@@ -354,12 +355,21 @@ and the `fornax` CLI pins one collection tag. Git carries per-skill change histo
 Judge the increment by what changed for the people who install the collection:
 
 - Patch for wording fixes, metadata corrections, and non-behavioral clarifications.
-- Minor for new skills, new supported workflows, scripts, or references.
-- Major for removed or renamed skills, trigger changes, removed behavior, or incompatible script
-  interfaces.
+- Minor for new skills, new supported workflows, scripts, or references, and for a field added to
+  the shipped manifest schema.
+- Major for removed or renamed skills, trigger changes, removed behavior, incompatible script
+  interfaces, and for a field removed or renamed in the shipped manifest schema.
 
-Contributor-facing changes — validation rules, generators, CI — do not drive the increment on their
-own; they ride along with whatever release carries them.
+`skill.yaml` and the `SKILL.md` frontmatter travel to every installed host, and
+`docs/skill-yaml-schema.md` calls the manifest something registries and installers parse — so their
+schema is a published interface. A field added, removed, or renamed there counts even when nothing
+in this repository reads it.
+
+While the collection is pre-1.0, a major-class change takes the minor position instead; `1.0.0` is a
+maturity decision, not an increment this rule can reach.
+
+Contributor-facing changes — validation rules, generators, CI, the script test suite — do not drive
+the increment on their own; they ride along with whatever release carries them.
 
 ### Pull Request Notes
 
