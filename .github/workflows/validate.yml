@@ -21,6 +21,10 @@ jobs:
         run: |
           pip install ruff==0.16.1
           ruff check .
+      - name: Check the non-Python sources parse
+        run: |
+          node --input-type=module --check < .opencode/plugins/fornax.js
+          bash -n .githooks/pre-commit
       - name: Install deployment engine
         run: pip install "agent-skill-deployer @ git+https://github.com/tacticaldoll/agent-skill-deployer.git@v0.1.1"
       - name: Test deployment CLI

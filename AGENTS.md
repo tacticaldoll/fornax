@@ -421,6 +421,12 @@ Prefer lightweight tests that match the risk of the change.
   `PYTHONPATH=scripts python3 -m unittest discover -s scripts/tests`. Check the fixture actually
   fails when the rule is removed; a suite that passes either way proves nothing. The
   `tools/fornax-cli` suite stays CI-only because it needs the deployment engine installed.
+- The two non-Python sources are syntax-checked in CI, install-free on the runner: the OpenCode
+  plugin with `node --input-type=module --check < .opencode/plugins/fornax.js` and the hook with
+  `bash -n .githooks/pre-commit`. Feed the plugin through stdin as a module — plain `node --check`
+  on a `.js` file parses it as CommonJS and silently passes anything containing `import`, so the
+  check would do nothing. The plugin is the one that fails silently in use: nothing else reads it,
+  so a syntax error would only surface for an OpenCode user.
 - Python style is checked in CI by `ruff check .` against `ruff.toml` — width 100, rules `E`/`F`/`W`
   with `preview` on, pinned to one ruff version so a release cannot fail an unrelated push. It is
   CI-only because the pre-commit hook stays standard-library-only and needs no install; run
