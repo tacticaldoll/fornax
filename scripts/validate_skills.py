@@ -26,7 +26,7 @@ NAME_PATTERN = re.compile(r"^[a-z0-9-]+$")
 VERSION_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
 FRONTMATTER_PATTERN = re.compile(r"^---\s*\r?\n(.*?)\r?\n---", re.DOTALL)
 MARKDOWN_LINK_PATTERN = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
-REQUIRED_MANIFEST_FIELDS =("name", "version", "family", "description", "triggers", "entrypoint")
+REQUIRED_MANIFEST_FIELDS = ("name", "version", "family", "description", "triggers", "entrypoint")
 HOST_VERSION_MANIFESTS = (
     ".claude-plugin/plugin.json",
     ".codex-plugin/plugin.json",
