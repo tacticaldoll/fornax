@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import unittest
 from contextlib import redirect_stdout
 from io import StringIO
@@ -135,6 +136,90 @@ class ValidateSkillTests(unittest.TestCase):
 
         self.assertFalse(passed)
         self.assertIn("link not found", output)
+
+
+class ProjectedDescriptionTests(unittest.TestCase):
+    def check_distribution(self, root: Path) -> tuple[bool, str]:
+        output = StringIO()
+
+        with redirect_stdout(output):
+            passed = validate_skills.validate_distribution(root)
+
+        return passed, output.getvalue()
+
+    def edit(self, path: Path, mutate) -> None:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        mutate(data)
+        path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+    def test_matching_projections_pass(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_distribution(root)
+            passed, output = self.check_distribution(root)
+
+        self.assertTrue(passed, output)
+
+    def test_a_rewritten_description_fails(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_distribution(root)
+            self.edit(
+                root / ".cursor-plugin" / "plugin.json",
+                lambda d: d.__setitem__("description", "Something else entirely."),
+            )
+            passed, output = self.check_distribution(root)
+
+        self.assertFalse(passed)
+        self.assertIn(".cursor-plugin/plugin.json - description must open with", output)
+
+    def test_an_appended_suffix_passes(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_distribution(root)
+            self.edit(
+                root / ".cursor-plugin" / "plugin.json",
+                lambda d: d.__setitem__("description", d["description"] + " Extra for this host."),
+            )
+            passed, output = self.check_distribution(root)
+
+        self.assertTrue(passed, output)
+
+    def test_a_rewritten_nested_plugin_description_fails(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_distribution(root)
+            self.edit(
+                root / ".claude-plugin" / "marketplace.json",
+                lambda d: d["plugins"][0].__setitem__("description", "A different sentence."),
+            )
+            passed, output = self.check_distribution(root)
+
+        self.assertFalse(passed)
+        self.assertIn("plugins[0].description must open with", output)
+
+    def test_a_canonical_description_that_moved_fails_every_projection(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_distribution(root)
+            self.edit(
+                root / "distribution.json",
+                lambda d: d.__setitem__("description", "A newly reworded canonical sentence."),
+            )
+            passed, output = self.check_distribution(root)
+
+        self.assertFalse(passed)
+        self.assertEqual(output.count("must open with"), 6)
+
+    def test_a_missing_canonical_description_fails(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_distribution(root)
+            self.edit(root / "distribution.json", lambda d: d.pop("description"))
+            passed, output = self.check_distribution(root)
+
+        self.assertFalse(passed)
+        self.assertIn("description must be a non-empty string", output)
 
 
 class SkillModelTests(unittest.TestCase):

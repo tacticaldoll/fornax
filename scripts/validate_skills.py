@@ -33,6 +33,52 @@ HOST_VERSION_MANIFESTS = (
     ".cursor-plugin/plugin.json",
     "gemini-extension.json",
 )
+HOST_DESCRIPTION_MANIFESTS = HOST_VERSION_MANIFESTS + (".claude-plugin/marketplace.json",)
+
+
+def described_paths(manifest: dict) -> list[tuple[str, str]]:
+    """Every description a host manifest carries, labelled by where it sits."""
+    found = []
+
+    if isinstance(manifest.get("description"), str):
+        found.append(("description", manifest["description"]))
+
+    for index, plugin in enumerate(manifest.get("plugins", [])):
+        if isinstance(plugin, dict) and isinstance(plugin.get("description"), str):
+            found.append((f"plugins[{index}].description", plugin["description"]))
+
+    return found
+
+
+def validate_projected_descriptions(root: Path, canonical: object) -> bool:
+    """Require each host description to open with the canonical one.
+
+    A prefix rather than an equality: a host may append to the canonical sentence
+    — host-packaging.md calls these projections, and per-surface additions are
+    legitimate — but may not replace it with a rewrite of its own.
+    """
+    if not isinstance(canonical, str) or not canonical:
+        print("FAIL distribution.json - description must be a non-empty string")
+        return True
+
+    failed = False
+
+    for relative_path in HOST_DESCRIPTION_MANIFESTS:
+        path = root / relative_path
+        try:
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue  # the version pass already reports an unreadable manifest
+
+        for label, description in described_paths(manifest):
+            if not description.startswith(canonical):
+                print(
+                    f"FAIL {relative_path} - {label} must open with the description in "
+                    "distribution.json"
+                )
+                failed = True
+
+    return failed
 
 
 def validate_distribution(root: Path) -> bool:
@@ -75,6 +121,9 @@ def validate_distribution(root: Path) -> bool:
         if manifest.get("version") != version:
             print(f"FAIL {relative_path} - version must match distribution.json")
             failed = True
+
+    if validate_projected_descriptions(root, distribution.get("description")):
+        failed = True
 
     if not failed:
         print(f"OK   distribution {name} {version}")

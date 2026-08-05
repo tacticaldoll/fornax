@@ -9,7 +9,10 @@ Not named `test_*`, so unittest discovery does not collect it.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
+
+import validate_skills
 
 DESCRIPTION = (
     "Use when an agent needs the thing this fixture stands for; does the thing, "
@@ -43,6 +46,55 @@ def skill_md(name: str, handoff: str | None = None) -> str:
         body += f"\nIf it is structural, hand off to `{handoff}`.\n"
 
     return body
+
+
+def write_distribution(
+    root: Path,
+    description: str = "Portable skills that do the thing, rather than the other thing.",
+    version: str = "1.2.3",
+    name: str = "fixture",
+) -> None:
+    """A canonical distribution plus the host manifests that project it."""
+    (root / "distribution.json").write_text(
+        json.dumps(
+            {
+                "schema": 1,
+                "name": name,
+                "display_name": "Fixture",
+                "description": description,
+                "version": version,
+                "repository": "https://example.invalid/fixture",
+                "skills_directory": "skills",
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    for relative in validate_skills.HOST_VERSION_MANIFESTS:
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps({"name": name, "version": version, "description": description}, indent=2)
+            + "\n",
+            encoding="utf-8",
+        )
+
+    marketplace = root / ".claude-plugin" / "marketplace.json"
+    marketplace.parent.mkdir(parents=True, exist_ok=True)
+    marketplace.write_text(
+        json.dumps(
+            {
+                "name": name,
+                "description": description,
+                "plugins": [{"name": name, "description": description, "source": "./"}],
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
 
 
 def write_skill(
