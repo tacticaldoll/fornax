@@ -9,17 +9,13 @@ import re
 import sys
 from pathlib import Path
 
-from skill_model import FAMILIES, STATUSES, listed
+from skill_model import FAMILIES, HANDOFF, STATUSES, listed
 
 
 NAME_PATTERN = re.compile(r"^[a-z0-9-]+$")
 VERSION_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
 FRONTMATTER_PATTERN = re.compile(r"^---\s*\r?\n(.*?)\r?\n---", re.DOTALL)
 MARKDOWN_LINK_PATTERN = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
-HANDOFF_PATTERN = re.compile(
-    r"\b(?:hand off to|handoff to|point to|route to)\s+`([a-z0-9-]+)`",
-    re.IGNORECASE,
-)
 REQUIRED_MANIFEST_FIELDS =("name", "version", "family", "description", "triggers", "entrypoint")
 HOST_VERSION_MANIFESTS = (
     ".claude-plugin/plugin.json",
@@ -181,7 +177,7 @@ def validate_handoffs(skill_dir: Path, name: str, known_skills: set[str]) -> boo
     for markdown_file in sorted(skill_dir.rglob("*.md")):
         content = markdown_file.read_text(encoding="utf-8")
 
-        for target_skill in HANDOFF_PATTERN.findall(content):
+        for target_skill in HANDOFF.findall(content):
             if target_skill not in known_skills:
                 fail(
                     name,

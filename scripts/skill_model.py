@@ -6,13 +6,23 @@ the README skill maps present them, mapped to their display titles — so a fami
 cannot be added without also giving it a title. `STATUSES` is the single
 definition of the allowed `status` values, in lifecycle order.
 
+`HANDOFF` is the single definition of how a skill writes a handoff, so the
+validator and the map generator agree on what counts as one.
+
 docs/skill-yaml-schema.md carries the prose definition of what each value means;
-this module carries the values the scripts enforce, so adding a family or status
-is one edit rather than one per script. Imported by the sibling scripts in this
-directory. Standard library only.
+this module carries the values the scripts enforce, so adding a family, status,
+or handoff phrasing is one edit rather than one per script. Imported by the
+sibling scripts in this directory. Standard library only.
 """
 
 from __future__ import annotations
+
+import re
+
+HANDOFF = re.compile(
+    r"\b(?:hand off to|handoff to|point to|route to)\s+`([a-z0-9-]+)`",
+    re.IGNORECASE,
+)
 
 FAMILIES: dict[str, str] = {
     "implementation": "Implementation",
