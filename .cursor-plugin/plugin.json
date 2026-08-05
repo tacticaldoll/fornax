@@ -2,7 +2,7 @@
   "name": "fornax",
   "displayName": "Fornax",
   "description": "Portable, single-purpose skills for coding agents that map, plan, review, and reason over your context, and report rather than edit.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": {
     "name": "tacticaldoll"
   },
