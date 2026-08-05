@@ -13,7 +13,7 @@ open until you can actually see it; widen before you narrow; and — because thi
 context, not abstract ideation — ground every option in the codebase that would carry it, not in the
 abstract.
 
-**Input**: a vague idea, feature, change, or direction to explore, plus the codebase it would live in — if the code the options depend on is unfamiliar, map it first with `map-codebase`. There is no fixed output; exploration ends in a shared understanding you hand off.
+**Input**: a vague idea, feature, change, or direction to explore, plus the codebase it would live in — if none is given, ask what is being considered; if the code the options depend on is unfamiliar, map it first with `map-codebase`. There is no fixed output; exploration ends in a shared understanding you hand off.
 
 **Boundary**: explores and clarifies through dialogue; does not implement, design component structure, plan the work, decide for the user, or produce a fixed artifact — it hands off at the edge.
 

@@ -13,7 +13,7 @@ rather than running every check to look thorough. The decision, not a survey, is
 Governing intuition: **decline is a valid, common result** — most adoption questions should narrow
 or stop before any proposal work begins.
 
-**Input**: the structural dependency under consideration (a library, framework, runtime, or abstraction layer) and the target repo — if the candidate's role is unclear, run the Scope gate first to confirm this skill applies.
+**Input**: the structural dependency under consideration (a library, framework, runtime, or abstraction layer) and the target repo — if none is given, ask which dependency is under consideration; if the candidate's role is unclear, run the Scope gate first to confirm this skill applies.
 
 **Boundary**: reads and decides only — does not edit files, add the dependency, or run builds; writes only the optional worksheet when asked, and stops at the decision (implementation is downstream).
 

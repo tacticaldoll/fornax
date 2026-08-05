@@ -7,7 +7,7 @@ description: Use when an agent needs to resolve conflicting requirements or a go
 
 Use this skill to **broker** a resolution when the user is stuck between conflicting requirements, mutually exclusive governance rules, or architectural deadlocks.
 
-**Input**: the conflicting rules, requirements, or the nature of the deadlock — ask the user for the primary business goal if the context is purely technical.
+**Input**: the conflicting rules, requirements, or the nature of the deadlock — if none is given, ask which constraints are in conflict and what they are blocking; ask the user for the primary business goal if the context is purely technical.
 
 **Boundary**: Explores trade-offs, challenges rigid interpretations, and proposes a pragmatic path forward; does not unilaterally change rules, edit documents, or refactor code.
 

@@ -7,7 +7,7 @@ description: Use when an agent needs to identify trust boundaries and architectu
 
 Use this skill to **screen** each trust boundary against the STRIDE panel of threat vectors: take the boundaries one at a time and run every category (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege) across each, so the combinations that expose an attack path become findings while the boundaries that clear the whole panel need no report. In plain terms, stress-test the architecture when the user asks for a security review or threat modeling.
 
-**Input**: the system architecture, code diff, or implementation plan — ask the user for context if trust boundaries are not visible.
+**Input**: the system architecture, code diff, or implementation plan — if none is given, ask which system or change to assess, and ask for more context if trust boundaries are not visible.
 
 **Boundary**: Identifies vulnerabilities and threat vectors based on references; does not execute exploits, run security scanners, or fix the code.
 

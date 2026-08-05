@@ -7,7 +7,7 @@ description: Use when an agent needs to design a comprehensive test strategy for
 
 Use this skill when the user asks for a test strategy or test plan for a feature or refactor. Test design here means **checking measured examples of the system's behavior against a known-correct standard — the expected specification**. First you isolate the System Under Test and its boundaries, then you control every external dependency with a mock (so each check is reproducible and attributable to the SUT alone), then you enumerate the cases worth checking (happy, sad, and edge-case inputs) and the standard each is measured against. Coverage is not "how much code ran" but "which behaviors have been checked against a known-correct expectation."
 
-**Input**: the feature description, code diff, or implementation plan — ask the user to clarify the scope if it is too broad.
+**Input**: the feature description, code diff, or implementation plan — if none is given, ask what is being tested, and ask the user to narrow the scope if it is too broad.
 
 **Boundary**: Designs the test strategy and edge cases; does not write the actual test code or run test suites.
 
