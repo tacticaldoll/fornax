@@ -191,7 +191,8 @@ def validate_handoffs(skill_dir: Path, name: str, known_skills: set[str]) -> boo
             if target_skill not in known_skills:
                 fail(
                     name,
-                    f"{markdown_file.relative_to(skill_dir)} handoff target not found: {target_skill}",
+                    f"{markdown_file.relative_to(skill_dir)} handoff target not found: "
+                    f"{target_skill}",
                 )
                 failed = True
 
@@ -330,7 +331,9 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Validate portable skill folders.")
-    parser.add_argument("--skills-path", default="skills", help="Directory containing skill folders.")
+    parser.add_argument(
+        "--skills-path", default="skills", help="Directory containing skill folders."
+    )
     parser.add_argument(
         "--allow-template-placeholders",
         action="store_true",
