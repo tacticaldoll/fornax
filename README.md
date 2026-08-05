@@ -94,7 +94,9 @@ flowchart LR
     design-boundaries --> plan-implementation
     design-boundaries --> plan-repo-extract
     design-boundaries --> plan-split
+    diagnose-issue --> map-codebase
     map-codebase --> design-boundaries
+    map-codebase --> diagnose-issue
     map-codebase --> orient-repo
     map-codebase --> plan-split
     map-codebase --> static-review
@@ -106,11 +108,14 @@ flowchart LR
     plan-implementation --> map-codebase
     plan-implementation --> plan-split
     plan-implementation --> static-review
-    plan-repo-extract --> audit-governance
     plan-repo-extract --> design-boundaries
     plan-repo-extract --> plan-split
-    plan-split --> audit-governance
+    plan-split --> design-boundaries
+    plan-split --> plan-repo-extract
     plan-split --> static-review
+    static-review --> assess-threats
+    static-review --> diagnose-issue
+    static-review --> plan-testing
 ```
 
 ### Knowledge
@@ -133,6 +138,7 @@ flowchart LR
     resolve-deadlock
     audit-governance --> assess-knowledge
     audit-governance --> plan-split
+    audit-governance --> resolve-deadlock
     audit-governance --> save-knowledge
     resolve-deadlock --> audit-governance
     resolve-deadlock --> plan-split
