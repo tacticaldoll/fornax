@@ -6,12 +6,19 @@ SKILL.md (hand off to / point to / route to `<skill>`), then prints Markdown
 with one Mermaid flowchart per family. Cross-family edges appear as bridges to
 nodes owned by another family. Standard library only.
 
+The maps live in README.md between the SKILL-MAPS markers. `--write` splices
+them in so the block never has to be pasted by hand; `--check` fails when the
+committed block no longer matches the skills.
+
 Usage:
     python3 scripts/skill_graph.py            # print the maps Markdown to stdout
+    python3 scripts/skill_graph.py --write    # splice the maps into README.md
+    python3 scripts/skill_graph.py --check    # fail if README.md is out of date
 """
 
 from __future__ import annotations
 
+import argparse
 import re
 from pathlib import Path
 
@@ -76,10 +83,50 @@ def render(names, family, edges) -> str:
     return "\n".join(lines)
 
 
-def main() -> int:
+def block_span(readme: str) -> tuple[int, int]:
+    """Return the start/end offsets of the generated block, markers included."""
+    start = readme.index(START)
+    end = readme.index(END, start) + len(END)
+    return start, end
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Generate the README skill maps.")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--write", action="store_true", help="splice the maps into README.md")
+    mode.add_argument("--check", action="store_true", help="fail if README.md is out of date")
+    args = parser.parse_args(argv)
+
     root = Path(__file__).resolve().parent.parent
     names, family, edges = load(root / "skills")
-    print(render(names, family, edges))
+    block = render(names, family, edges)
+
+    if not (args.write or args.check):
+        print(block)
+        return 0
+
+    readme_path = root / "README.md"
+    readme = readme_path.read_text(encoding="utf-8")
+
+    try:
+        start, end = block_span(readme)
+    except ValueError:
+        print(f"FAIL {readme_path.name} - SKILL-MAPS markers not found")
+        return 1
+
+    if readme[start:end] == block:
+        print(f"OK   {readme_path.name} skill maps")
+        return 0
+
+    if args.check:
+        print(
+            f"FAIL {readme_path.name} - skill maps are out of date; "
+            "run python3 scripts/skill_graph.py --write"
+        )
+        return 1
+
+    readme_path.write_text(readme[:start] + block + readme[end:], encoding="utf-8")
+    print(f"OK   rewrote the skill maps in {readme_path.name}")
     return 0
 
 
