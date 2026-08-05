@@ -397,6 +397,8 @@ Use this checklist for new skills and meaningful updates:
 Prefer lightweight tests that match the risk of the change.
 
 - Run repository validation for every change.
+- Regenerate the README skill maps with `python3 scripts/skill_graph.py --write` after changing a
+  skill's `family` or its handoff targets; `--check` fails when the committed block is stale.
 - Enforcement: CI (`.github/workflows/validate.yml`) runs the validator on every push; enable the
   local pre-commit hook once per clone with `git config core.hooksPath .githooks`.
 - Validate `templates/skill` after template changes.
