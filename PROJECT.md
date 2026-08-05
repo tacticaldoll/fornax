@@ -6,7 +6,7 @@ by default (see the `audit-governance` skill). For what Fornax *is* — essence,
 
 ## Status
 
-- Early stage. Every skill is `status: draft`, versioned `0.1.x`; nothing claims 1.0 maturity.
+- Early stage. Every skill is `status: draft`; nothing claims 1.0 maturity.
 - Skills span four families: implementation, knowledge, decisions, meta.
 - Public repo, enforced by CI and a pre-commit hook running `scripts/validate_skills.py`.
 
