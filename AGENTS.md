@@ -342,9 +342,12 @@ Examples:
 ### Versioning
 
 The collection's release version lives in `distribution.json`; bump it on release and keep host
-packaging manifest versions aligned. Each `skill.yaml` `version` is the skill's own release version
-— do **not** bump it on every edit. While skills are `status: draft` (pre-1.0), leave them at
-`0.1.0` and let git carry the change history.
+packaging manifest versions aligned. That alignment has teeth outside this repo: Claude Code gates
+`plugin update` on the plugin manifest version, so shipping changed skills without a bump is a no-op
+for installed users and the deployer must uninstall and reinstall to bust the version-pinned cache.
+Each `skill.yaml` `version` is the skill's own release version — do **not** bump it on every edit.
+While skills are `status: draft` (pre-1.0), leave them at `0.1.0` and let git carry the change
+history.
 
 Bump a skill's `version` only for a release-level change to that skill. `docs/skill-yaml-schema.md`
 is the single definition of what counts as patch, minor, and major — do not restate those rules
