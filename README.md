@@ -235,6 +235,9 @@ Skill structure, the same for `templates/skill`, whether the README skill maps s
 skills, and the validation rules themselves. Run them before installing, publishing, or copying
 skills. A stale skill map is fixed with `python3 scripts/skill_graph.py --write`.
 
+CI also runs `ruff check .` for Python style. That one needs an install, so it stays out of the hook
+— `pipx run ruff==0.16.1 check .` gives the same answer locally.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

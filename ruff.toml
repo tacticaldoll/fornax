@@ -1,0 +1,21 @@
+# Style gate for the repository's Python, checked in CI and never auto-applied:
+# see the Testing Strategy section of AGENTS.md.
+#
+# 100 is the width the Python and the markdown already use.
+#
+# `preview` is on because the pycodestyle whitespace rules sit behind it, and a
+# missing space around an assignment operator is the exact defect that reached
+# main with all four other gates passing — the reason this file exists. Preview
+# rules move between ruff releases, which is why CI pins one version; bumping it
+# is a deliberate act that may surface new findings.
+#
+# E, F and W only. Ruff's own default selection here also reports shebang
+# permissions, import sorting and `with` nesting — opinions this repository never
+# adopted, and ones that would have required editing the pinned CLI adapter just
+# to land the gate.
+
+line-length = 100
+
+[lint]
+preview = true
+select = ["E", "F", "W"]

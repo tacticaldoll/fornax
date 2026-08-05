@@ -421,6 +421,12 @@ Prefer lightweight tests that match the risk of the change.
   `PYTHONPATH=scripts python3 -m unittest discover -s scripts/tests`. Check the fixture actually
   fails when the rule is removed; a suite that passes either way proves nothing. The
   `tools/fornax-cli` suite stays CI-only because it needs the deployment engine installed.
+- Python style is checked in CI by `ruff check .` against `ruff.toml` — width 100, rules `E`/`F`/`W`
+  with `preview` on, pinned to one ruff version so a release cannot fail an unrelated push. It is
+  CI-only because the pre-commit hook stays standard-library-only and needs no install; run
+  `pipx run ruff==0.16.1 check .` locally for the same answer before pushing. Never auto-apply a fix
+  as part of another change, and treat a ruff version bump as its own commit — preview rules move
+  between releases.
 - Enforcement: CI (`.github/workflows/validate.yml`) runs the validator on every push; enable the
   local pre-commit hook once per clone with `git config core.hooksPath .githooks`.
 - Validate `templates/skill` after template changes.
