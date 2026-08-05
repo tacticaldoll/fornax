@@ -1,5 +1,4 @@
 name: assess-knowledge
-version: 0.1.0
 family: knowledge
 status: draft
 description: Use when an agent needs to assess a conversation for knowledge worth extracting; identifies topics, maturity, and internalize/externalize tendency without creating artifacts or recommending next steps.

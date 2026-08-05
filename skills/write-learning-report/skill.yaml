@@ -1,5 +1,4 @@
 name: write-learning-report
-version: 0.1.0
 family: knowledge
 status: draft
 description: Use when an agent needs to turn mature conversation content into a self-contained learning report; selects a fitting report structure and preserves source fidelity for personal understanding rather than durable project knowledge.

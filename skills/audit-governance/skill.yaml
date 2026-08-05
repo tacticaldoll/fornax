@@ -1,5 +1,4 @@
 name: audit-governance
-version: 0.1.0
 family: decisions
 status: draft
 description: Use when an agent needs to test governance prose against what a project actually enforces; classifies claims as structural or judgment and recommends dissolve, convert, keep, or defer rather than editing documents or adding checks.

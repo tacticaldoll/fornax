@@ -1,5 +1,4 @@
 name: plan-implementation
-version: 0.1.0
 family: implementation
 status: draft
 description: Use when an agent needs to turn a goal into an ordered, verifiable implementation plan before coding; slices the work into the smallest independently verifiable increments, sequences them by dependency and risk, and names each step's acceptance check rather than writing code, designing component structure, or planning a behavior-preserving split.

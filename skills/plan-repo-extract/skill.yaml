@@ -1,5 +1,4 @@
 name: plan-repo-extract
-version: 0.1.0
 family: implementation
 status: draft
 description: Use when an agent needs to assess whether a cohesive part of a repository should become an independent repository; evaluates extractability and plans dependency, API, history, and migration work rather than executing the split.

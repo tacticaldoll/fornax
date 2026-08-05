@@ -1,5 +1,4 @@
 name: scope-new-skill
-version: 0.1.0
 family: meta
 status: draft
 description: Use when an agent needs to explore whether a vague workflow or knowledge process should become a skill; classifies skill type, outputs, resources, risks, and readiness rather than creating or editing skill files.

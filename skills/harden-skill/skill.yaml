@@ -1,5 +1,4 @@
 name: harden-skill
-version: 0.1.0
 family: meta
 status: draft
 description: Use when an agent needs to harden a skill's instructions so they reliably change agent behavior; diagnoses each intended behavior's baseline failure, matches it to the right instruction form, hardens discipline rules against rationalization, and specifies a micro-test protocol rather than editing the skill or running the tests itself.

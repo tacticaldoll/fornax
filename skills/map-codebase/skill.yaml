@@ -1,5 +1,4 @@
 name: map-codebase
-version: 0.1.0
 family: implementation
 status: draft
 description: Use when an agent needs to understand how an unfamiliar codebase or subsystem actually works before changing it; maps entry points, control and data flow, key abstractions, and external effects to the depth the task needs, and reports what was not traced rather than reviewing quality or editing code.

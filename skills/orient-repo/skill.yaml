@@ -1,5 +1,4 @@
 name: orient-repo
-version: 0.1.0
 family: implementation
 status: draft
 description: Use when an agent needs to orient itself in an unfamiliar repository before acting; discovers governance, conventions, enforcement, and non-goals into a compact working brief rather than editing files or relying on one host's auto-loaded context.

@@ -1,5 +1,4 @@
 name: plan-testing
-version: 0.1.0
 family: implementation
 status: draft
 description: Use when an agent needs to design a comprehensive test strategy for a feature or refactor; identifies unit boundaries, mocks, and edge cases rather than writing the actual test code or executing test suites.

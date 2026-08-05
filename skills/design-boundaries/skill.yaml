@@ -1,5 +1,4 @@
 name: design-boundaries
-version: 0.1.0
 family: implementation
 status: draft
 description: Use when an agent needs to design component boundaries for a feature or system before the code exists; partitions responsibilities into single-purpose components with minimal interfaces and an acyclic dependency direction, then pressure-tests the boundaries rather than editing code, splitting an existing tangled unit, or extracting a separate repository.

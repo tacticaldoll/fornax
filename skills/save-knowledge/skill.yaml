@@ -1,5 +1,4 @@
 name: save-knowledge
-version: 0.1.0
 family: knowledge
 status: draft
 description: Use when an agent needs to persist mature conversation knowledge into durable project, agent, or team sources; chooses the narrowest destination and drafts the edit for downstream execution rather than internalizing it for personal understanding.

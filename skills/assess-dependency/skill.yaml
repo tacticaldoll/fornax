@@ -1,5 +1,4 @@
 name: assess-dependency
-version: 0.1.0
 family: decisions
 status: draft
 description: Use when an agent needs to decide whether to adopt a structural dependency into a project; checks local pain, architectural fit, feasibility, and governance, then returns adopt, adopt narrowly, defer, or decline rather than planning implementation.
