@@ -9,6 +9,8 @@ import re
 import sys
 from pathlib import Path
 
+from skill_model import FAMILIES, STATUSES, listed
+
 
 NAME_PATTERN = re.compile(r"^[a-z0-9-]+$")
 VERSION_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
@@ -18,9 +20,7 @@ HANDOFF_PATTERN = re.compile(
     r"\b(?:hand off to|handoff to|point to|route to)\s+`([a-z0-9-]+)`",
     re.IGNORECASE,
 )
-ALLOWED_STATUS = {"draft", "stable", "deprecated"}
-ALLOWED_FAMILIES = {"implementation", "knowledge", "decisions", "meta"}
-REQUIRED_MANIFEST_FIELDS = ("name", "version", "family", "description", "triggers", "entrypoint")
+REQUIRED_MANIFEST_FIELDS =("name", "version", "family", "description", "triggers", "entrypoint")
 HOST_VERSION_MANIFESTS = (
     ".claude-plugin/plugin.json",
     ".codex-plugin/plugin.json",
@@ -230,14 +230,14 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
         fail(name, "skill.yaml version must use semantic version format x.y.z")
         skill_failed = True
 
-    if manifest_status and manifest_status not in ALLOWED_STATUS:
-        fail(name, "skill.yaml status must be draft, stable, or deprecated")
+    if manifest_status and manifest_status not in STATUSES:
+        fail(name, f"skill.yaml status must be {listed(STATUSES)}")
         skill_failed = True
 
     manifest_family = get_top_level_yaml_value(manifest, "family")
 
-    if manifest_family and manifest_family not in ALLOWED_FAMILIES:
-        fail(name, "skill.yaml family must be implementation, knowledge, decisions, or meta")
+    if manifest_family and manifest_family not in FAMILIES:
+        fail(name, f"skill.yaml family must be {listed(FAMILIES)}")
         skill_failed = True
 
     if entrypoint and not (skill_dir / entrypoint).exists():
