@@ -8,32 +8,11 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
+import fixtures
 import skill_graph
-
-DESCRIPTION = "Use when an agent needs the fixture; does the thing, rather than the other thing."
 
 BEFORE = "# Fixture\n\nProse above the block.\n\n"
 AFTER = "\nProse below the block.\n"
-
-
-def manifest(name: str, family: str) -> str:
-    return (
-        f"name: {name}\n"
-        f"family: {family}\n"
-        "status: draft\n"
-        f"description: {DESCRIPTION}\n"
-        "triggers:\n  - user asks\n"
-        "entrypoint: SKILL.md\n"
-    )
-
-
-def skill_md(name: str, handoff: str | None) -> str:
-    body = f"---\nname: {name}\ndescription: {DESCRIPTION}\n---\n\n**Input**: a thing — ask.\n"
-
-    if handoff:
-        body += f"\nIf it is structural, hand off to `{handoff}`.\n"
-
-    return body
 
 
 def build_repo(root: Path, readme_body: str | None = None) -> None:
@@ -42,10 +21,7 @@ def build_repo(root: Path, readme_body: str | None = None) -> None:
         ("alpha-skill", "implementation", "beta-skill"),
         ("beta-skill", "knowledge", None),
     ):
-        skill_dir = root / "skills" / name
-        skill_dir.mkdir(parents=True)
-        (skill_dir / "skill.yaml").write_text(manifest(name, family), encoding="utf-8")
-        (skill_dir / "SKILL.md").write_text(skill_md(name, handoff), encoding="utf-8")
+        fixtures.write_skill(root / "skills", name, family=family, handoff=handoff)
 
     if readme_body is None:
         readme_body = f"{BEFORE}{skill_graph.START}\nstale\n{skill_graph.END}{AFTER}"

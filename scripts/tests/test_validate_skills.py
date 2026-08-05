@@ -6,41 +6,13 @@ from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import fixtures
 import skill_model
 import validate_skills
 
-DESCRIPTION = (
-    "Use when an agent needs to do the one thing this fixture does; does the thing, "
-    "rather than doing the other thing."
-)
-
-MANIFEST = f"""name: example-skill
-family: implementation
-status: draft
-description: {DESCRIPTION}
-triggers:
-  - user asks for the example
-entrypoint: SKILL.md
-"""
-
-SKILL_MD = f"""---
-name: example-skill
-description: {DESCRIPTION}
----
-
-# Example skill
-
-**Input**: the thing this fixture consumes — if none is given, ask for it.
-"""
-
-
-def build_skill(root: Path, name: str = "example-skill", **overrides: str) -> Path:
-    """Write a skill that passes validation, then apply per-file overrides."""
-    skill_dir = root / name
-    skill_dir.mkdir(parents=True)
-    (skill_dir / "skill.yaml").write_text(overrides.get("manifest", MANIFEST), encoding="utf-8")
-    (skill_dir / "SKILL.md").write_text(overrides.get("skill_md", SKILL_MD), encoding="utf-8")
-    return skill_dir
+NAME = "example-skill"
+MANIFEST = fixtures.manifest(NAME)
+SKILL_MD = fixtures.skill_md(NAME)
 
 
 def check(skill_dir: Path, allow_template_placeholders: bool = False) -> tuple[bool, str]:
@@ -53,18 +25,22 @@ def check(skill_dir: Path, allow_template_placeholders: bool = False) -> tuple[b
     return passed, output.getvalue()
 
 
+def check_skill(root: Path, **overrides: str) -> tuple[bool, str]:
+    return check(fixtures.write_skill(root, NAME, **overrides))
+
+
 class ValidateSkillTests(unittest.TestCase):
     def test_fixture_skill_passes(self) -> None:
         with TemporaryDirectory() as tmp:
-            passed, output = check(build_skill(Path(tmp)))
+            passed, output = check_skill(Path(tmp))
 
         self.assertTrue(passed, output)
-        self.assertIn("OK   example-skill", output)
+        self.assertIn(f"OK   {NAME}", output)
 
     def test_top_level_version_is_rejected(self) -> None:
         with TemporaryDirectory() as tmp:
-            manifest = MANIFEST.replace("family:", "version: 9.9.9\nfamily:", 1)
-            passed, output = check(build_skill(Path(tmp), manifest=manifest))
+            text = MANIFEST.replace("family:", "version: 9.9.9\nfamily:", 1)
+            passed, output = check_skill(Path(tmp), manifest_text=text)
 
         self.assertFalse(passed)
         self.assertIn("must not set version", output)
@@ -72,67 +48,72 @@ class ValidateSkillTests(unittest.TestCase):
 
     def test_namespaced_nested_version_is_allowed(self) -> None:
         with TemporaryDirectory() as tmp:
-            manifest = MANIFEST + "vendor_x:\n  version: 1.2.3\n"
-            passed, output = check(build_skill(Path(tmp), manifest=manifest))
+            passed, output = check_skill(
+                Path(tmp), manifest_text=MANIFEST + "vendor_x:\n  version: 1.2.3\n"
+            )
 
         self.assertTrue(passed, output)
 
     def test_missing_required_field_fails(self) -> None:
         for field in validate_skills.REQUIRED_MANIFEST_FIELDS:
             with self.subTest(field=field), TemporaryDirectory() as tmp:
-                manifest = "\n".join(
+                text = "\n".join(
                     line for line in MANIFEST.splitlines() if not line.startswith(f"{field}:")
                 )
-                passed, output = check(build_skill(Path(tmp), manifest=manifest + "\n"))
+                passed, output = check_skill(Path(tmp), manifest_text=text + "\n")
 
                 self.assertFalse(passed)
                 self.assertIn(f"missing {field}", output)
 
     def test_unknown_family_fails(self) -> None:
         with TemporaryDirectory() as tmp:
-            manifest = MANIFEST.replace("family: implementation", "family: invented")
-            passed, output = check(build_skill(Path(tmp), manifest=manifest))
+            text = MANIFEST.replace("family: implementation", "family: invented")
+            passed, output = check_skill(Path(tmp), manifest_text=text)
 
         self.assertFalse(passed)
         self.assertIn(skill_model.listed(skill_model.FAMILIES), output)
 
     def test_unknown_status_fails(self) -> None:
         with TemporaryDirectory() as tmp:
-            manifest = MANIFEST.replace("status: draft", "status: retired")
-            passed, output = check(build_skill(Path(tmp), manifest=manifest))
+            text = MANIFEST.replace("status: draft", "status: retired")
+            passed, output = check_skill(Path(tmp), manifest_text=text)
 
         self.assertFalse(passed)
         self.assertIn(skill_model.listed(skill_model.STATUSES), output)
 
     def test_missing_input_contract_line_fails(self) -> None:
         with TemporaryDirectory() as tmp:
-            skill_md = SKILL_MD.replace("**Input**:", "Input:")
-            passed, output = check(build_skill(Path(tmp), skill_md=skill_md))
+            passed, output = check_skill(
+                Path(tmp), skill_md_text=SKILL_MD.replace("**Input**:", "Input:")
+            )
 
         self.assertFalse(passed)
         self.assertIn("**Input**: contract line", output)
 
     def test_description_must_match_frontmatter(self) -> None:
         with TemporaryDirectory() as tmp:
-            skill_md = SKILL_MD.replace(DESCRIPTION, "Use when an agent needs something else.")
-            passed, output = check(build_skill(Path(tmp), skill_md=skill_md))
+            text = SKILL_MD.replace(fixtures.DESCRIPTION, "Use when an agent needs something else.")
+            passed, output = check_skill(Path(tmp), skill_md_text=text)
 
         self.assertFalse(passed)
         self.assertIn("description must match", output)
 
     def test_description_must_open_with_use_when(self) -> None:
         with TemporaryDirectory() as tmp:
-            manifest = MANIFEST.replace(DESCRIPTION, "Does a thing.")
-            skill_md = SKILL_MD.replace(DESCRIPTION, "Does a thing.")
-            passed, output = check(build_skill(Path(tmp), manifest=manifest, skill_md=skill_md))
+            passed, output = check_skill(
+                Path(tmp),
+                manifest_text=MANIFEST.replace(fixtures.DESCRIPTION, "Does a thing."),
+                skill_md_text=SKILL_MD.replace(fixtures.DESCRIPTION, "Does a thing."),
+            )
 
         self.assertFalse(passed)
         self.assertIn("must start with 'Use when '", output)
 
     def test_handoff_to_an_unknown_skill_fails(self) -> None:
         with TemporaryDirectory() as tmp:
-            skill_md = SKILL_MD + "\nIf it is structural, hand off to `no-such-skill`.\n"
-            passed, output = check(build_skill(Path(tmp), skill_md=skill_md))
+            passed, output = check_skill(
+                Path(tmp), skill_md_text=fixtures.skill_md(NAME, handoff="no-such-skill")
+            )
 
         self.assertFalse(passed)
         self.assertIn("handoff target not found: no-such-skill", output)
@@ -140,16 +121,17 @@ class ValidateSkillTests(unittest.TestCase):
     def test_handoff_to_a_sibling_skill_passes(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
-            build_skill(root, "other-skill")
-            skill_md = SKILL_MD + "\nIf it is structural, hand off to `other-skill`.\n"
-            passed, output = check(build_skill(root, manifest=MANIFEST, skill_md=skill_md))
+            fixtures.write_skill(root, "other-skill")
+            passed, output = check_skill(
+                root, skill_md_text=fixtures.skill_md(NAME, handoff="other-skill")
+            )
 
         self.assertTrue(passed, output)
 
     def test_broken_relative_link_fails(self) -> None:
         with TemporaryDirectory() as tmp:
-            skill_md = SKILL_MD + "\nSee [the reference](references/missing.md).\n"
-            passed, output = check(build_skill(Path(tmp), skill_md=skill_md))
+            text = SKILL_MD + "\nSee [the reference](references/missing.md).\n"
+            passed, output = check_skill(Path(tmp), skill_md_text=text)
 
         self.assertFalse(passed)
         self.assertIn("link not found", output)
@@ -170,6 +152,11 @@ class SkillModelTests(unittest.TestCase):
                 self.assertEqual(
                     skill_model.HANDOFF.findall(f"{phrasing} `map-codebase`"), ["map-codebase"]
                 )
+
+    def test_the_shared_fixture_satisfies_every_required_field(self) -> None:
+        for field in validate_skills.REQUIRED_MANIFEST_FIELDS:
+            with self.subTest(field=field):
+                self.assertIn(f"{field}:", MANIFEST)
 
 
 if __name__ == "__main__":
