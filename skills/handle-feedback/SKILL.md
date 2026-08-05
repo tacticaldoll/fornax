@@ -13,7 +13,7 @@ Governing intuition: **feedback is a claim to verify, not authority to obey.** T
 what the codebase actually is; incorporate only what survives, push back on what does not, and never
 fabricate agreement to smooth the moment — that is the honesty discipline on the input side.
 
-**Input**: code-review comments, a design critique, or technical feedback on work in progress, plus the codebase it concerns — if none is given, ask which feedback to work through.
+**Input**: code-review comments, a design critique, or technical feedback on work in progress — pasted inline, in a file or notes at a given path, or already in the conversation — plus the codebase it concerns; if none is given, ask which feedback to work through.
 
 **Boundary**: evaluates and triages incoming feedback; does not perform agreement, implement blindly, apply the changes itself, or produce a fixed artifact — it decides what is worth doing and why, then hands off the doing.
 
