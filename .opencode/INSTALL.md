@@ -20,7 +20,7 @@ Pin a version with a git ref:
 
 ```json
 {
-  "plugin": ["fornax@git+https://github.com/tacticaldoll/fornax.git#v0.1.0"]
+  "plugin": ["fornax@git+https://github.com/tacticaldoll/fornax.git#v0.2.0"]
 }
 ```
 
