@@ -235,8 +235,15 @@ Skill structure, the same for `templates/skill`, whether the README skill maps s
 skills, and the validation rules themselves. Run them before installing, publishing, or copying
 skills. A stale skill map is fixed with `python3 scripts/skill_graph.py --write`.
 
-CI also runs `ruff check .` for Python style. That one needs an install, so it stays out of the hook
-— `pipx run ruff==0.16.1 check .` gives the same answer locally.
+Three more run in CI only, because each needs something the hook deliberately does not install:
+
+```sh
+pipx run ruff==0.16.1 check .                                    # Python style, pinned
+node --input-type=module --check < .opencode/plugins/fornax.js   # the OpenCode plugin parses
+bash -n .githooks/pre-commit                                     # the hook itself parses
+```
+
+CI additionally runs the `tools/fornax-cli` suite, which needs the deployment engine installed.
 
 ## License
 
