@@ -371,9 +371,10 @@ maturity decision, not an increment this rule can reach.
 Contributor-facing changes — validation rules, generators, CI, the script test suite — do not drive
 the increment on their own; they ride along with whatever release carries them.
 
-### Pull Request Notes
+### Final Report Notes
 
-When preparing a PR summary, include:
+This repository commits directly to `main` and runs no pull-request workflow (`PROJECT.md`), so
+these notes belong in the final report; a PR or MR, where one exists, carries the same content:
 
 - What changed.
 - Which skills or tooling are affected.
