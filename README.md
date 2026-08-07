@@ -1,7 +1,7 @@
 # Fornax
 
 **Skills that plan before they touch your code** — portable, single-purpose skills that orient,
-plan, map, and review, but never edit behind your back.
+understand, design, plan, restructure, and review, but never edit behind your back.
 
 Fornax is a portable, multi-agent **skills registry**. Each skill is a small
 operation you apply to a codebase or a conversation to get one well-defined result — a plan, a map,

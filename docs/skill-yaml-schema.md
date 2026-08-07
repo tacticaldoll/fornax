@@ -34,7 +34,7 @@ Type: string
 
 The skill's domain, used for README grouping and for generating the skill maps. Exactly one of:
 
-- `implementation` — codebase work: explore, orient, understand, design, plan, refactor, review.
+- `implementation` — codebase work: explore, orient, understand, design, plan, restructure, review.
 - `knowledge` — capturing and shaping conversation knowledge.
 - `decisions` — project-level judgment calls (dependencies, governance prose).
 - `meta` — skills that operate on the skill toolkit itself.
