@@ -24,6 +24,11 @@ to classify and no bucket to mis-assign.
 Normalize the input into one flat list of findings, whatever shape it arrived in — a Review Record's
 gate tables, its non-gated tracks, a pasted list, or a file holding either.
 
+Audit the Review Record before reading the code: reconcile its Verdict with the Gate Index, its
+stated finding count with the finding rows it actually contains, and its Coverage claim with the
+units and gates it enumerates. Preserve each mismatch for Record integrity; do not silently repair
+the input by reinterpreting a count, scope, or status.
+
 Then load the prior round:
 
 - When a prior Disposition Record exists, every finding it declined or deferred **keeps that
@@ -35,28 +40,37 @@ Then load the prior round:
   are in the record (Phase 5); a scope change is not a closure.
 - Membership is decidable only when the input **enumerates** what it covered. When the input states a
   scope without enumerating it, a prior disposition's membership is `undetermined` — record it as
-  that rather than deciding it. Undetermined is neither carried nor closed.
+  that rather than deciding it. Undetermined is neither carried nor closed. Re-evaluate it from the
+  next round's input: a matching re-report enters the ordinary finding flow; newly enumerated scope
+  decides inside versus outside; another unenumerated scope leaves it undetermined.
 - When none exists, record `first round`. Do not infer a prior decision from the code.
 
 ### Phase 1: Give each finding a stable identity
 
-Key each finding by **what it violates plus the unit that carries it** — not by `file:line`. A line
-number drifts with the next edit, so a line-keyed finding cannot be matched across rounds, and a
-finding that cannot be matched cannot be closed.
+Key each finding by **what it violates plus the unit that carries it** — not by `file:line`. The unit
+is the smallest named code or document element that owns the violated contract (function, type,
+module, manifest, section); use the file only when no smaller stable owner exists. Preserve the
+logical unit when code moves or is renamed and the same contract remains. A line number drifts with
+the next edit, so a line-keyed finding cannot be matched across rounds, and a finding that cannot be
+matched cannot be closed.
 
 One defect often arrives more than once: as a gate finding, again as a contract row, again as a
 refuted claim. Findings that key alike are **one** finding — record every source id against it rather
 than triaging the same defect several times.
 
-Match every finding against the prior record before treating it as new. When one reappears, read
-whether the code at its cause's location **changed** since the prior round:
+Match every finding against the prior record before treating it as new. Findings in the same unit
+that violate different contracts remain different identities. When one reappears, compare the
+recorded repair and its Reach with what actually changed:
 
-- **Unchanged** — the accepted repair never landed; a repair nobody attempted is no evidence about
+- **No recorded Reach changed** — the accepted repair never landed; a repair nobody attempted is no evidence about
   anything. Keep the **disposition and its reason**, and re-derive the repairs in Phase 3. A
   disposition is a decision, so freezing it is what stops re-litigation; a repair is a reading of the
   cause, so freezing it would preserve a misreading the code never justified.
-- **Changed** — a repair landed and the finding survived it, so that repair's Reach was wrong. Record
-  it as recurring and carry that into Phase 3.
+- **Only part of the recorded Reach changed** — the repair did not fully land. Keep the disposition
+  and reason, record the changed and untouched locations, and do not call it recurring.
+- **The complete recorded Reach changed** — the repair landed and the finding survived. Record it as
+  recurring, verify whether the original cause still holds, and re-derive the repairs in Phase 3;
+  either the Reach was incomplete or the stated cause was wrong.
 
 For each closure candidate — a prior finding inside an enumerated scope that the input did not
 re-report — verify all of the following before closing it:
@@ -145,7 +159,7 @@ returning next round, so a disposition without one has not actually been made.
 
 | # | Cause (the thing to change) | Findings | Repair | Kind | Reach (every location it touches) | Route |
 |---|---|---|---|---|---|---|
-| 1 | stated as the change, not the symptom | every source id | 1a | one of the six, or a named gap | `file:line`, … | where it goes |
+| 1 | stated as the change, not the symptom | every source id | 1a | listed Kind \| `<action> (gap)` | `file:line`, … | where it goes |
 | 1 | " | " | 1b | the alternative, when the cause admits one | `file:line`, … | " |
 
 ### Pattern
@@ -159,6 +173,11 @@ shape recurs.]
 [Repairs whose reason disappears once another lands, as `1b voided by 3a`. `none` when independent.]
 
 ### Dispositions
+
+[Every finding reported by this round, including a stable id matched to prior history. A prior
+finding not re-reported belongs in exactly one lifecycle section below — Carried forward, Closed, or
+Out of scope this round — and is not duplicated here. A finding re-reported after it was Closed
+returns here as `carried`; reappearance alone does not make it Recurring.]
 
 | Finding | Cause | Carried | Disposition | Reason (REQUIRED for decline and defer) |
 |---|---|---|---|---|
@@ -175,7 +194,8 @@ holds, never because the review stopped reporting it. `first round` when there i
 
 [Prior dispositions whose closure test passed: id, prior disposition, code evidence that the cause
 no longer holds, and the input evidence that the relevant unit was reviewed without re-reporting the
-finding. `none` when no closure is established.]
+finding. Preserve the stable finding id so a later re-report can match the closed history. `none`
+when no closure is established.]
 
 ### Out of scope this round
 
@@ -185,14 +205,21 @@ Neither carried nor closed either way. Their ids and count.]
 
 ### Record integrity
 
-[What the input says about itself that does not hold: parts of the record that contradict each other,
-counts that do not reconcile, a coverage claim narrower than its own header implies, and any prior
-disposition the input silently dropped. Code defects the review missed do not belong here — send
-those back for review. `none` when the record is internally consistent.]
+| Check | Input claim | Reconciled evidence | Result |
+|---|---|---|---|
+| Verdict / Gate Index | what each says | whether they agree | pass \| mismatch |
+| Finding count | stated count | current Review Record finding rows | pass \| mismatch |
+| Coverage | stated scope and coverage | enumerated units and inspected gates | pass \| mismatch |
+| Prior continuity | prior ids | each id's one lifecycle slot | pass \| mismatch |
+
+[Code defects the review missed do not belong here — send those back for review.]
 
 ### Recurring
 
-[findings that came back after a repair landed, with that repair's Reach]
+[Findings that came back after every location in a recorded repair's Reach changed: the stable id,
+the prior repair and Reach, whether its cause still holds, and the newly derived repairs. This is
+additional analysis for a current Dispositions row, not a mutually exclusive lifecycle slot. A
+finding that was previously Closed is not Recurring merely because it appears in a later round.]
 
 ### Ungrouped
 
@@ -213,7 +240,9 @@ those back for review. `none` when the record is internally consistent.]
 - Stay in lane; hand off at the boundary. Route each accepted repair by its Kind: a `restate` has no
   code handoff — name the document and who owns it, and stop there; for every other Kind,
   hand off to `plan-implementation`. Most repairs go there, and saying so is more honest than a
-  routing table that reads richer than the work. When a cause's repair decomposes one unit,
+  routing table that reads richer than the work. Route a named Kind gap by the action it actually
+  performs: a code repair goes to `plan-implementation` unless one of the structural cases below
+  applies. When a cause's repair decomposes one unit,
   hand off to `plan-split`; when it redraws the seam between units, hand off to `design-boundaries`.
   When a cause cannot be named without tracing the fault, hand off to `diagnose-issue`; when settling
   it needs runtime evidence rather than static reading, hand off to `plan-testing`. For a fresh review
