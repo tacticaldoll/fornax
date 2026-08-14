@@ -234,12 +234,13 @@ Produce a report using this format:
 
 ### Structural Causes
 
-[Include when a reported finding's cause lies outside its own location (Phase 4c). Report regardless
-of gate status.]
+[Include when either Phase 4c case produces a row: a reported finding's cause lies outside its own
+location, or Phase 3 already reached a structural observation that a blocked or uninspected gate
+would have carried. Report regardless of gate status.]
 
 | # | Finding | Cause (the thing to change) | Cause location | Gate that would carry it |
 |---|---|---|---|---|
-| 1 | the finding it explains \| — | stated as the change | `file:line` | Gate N (blocked \| not inspected) |
+| 1 | the finding it explains \| — | stated as the change | `file:line` | Gate N (pass \| fail \| blocked \| not inspected) |
 
 ### Gate N: [name]
 
