@@ -148,6 +148,35 @@ the reviewed scope is `REFUTED` — never `partial`, never "cannot verify", neve
 `partial` only when evidence exists but is incomplete; "not in this diff" means `REFUTED`, because
 the item was marked complete.
 
+### Phase 4c: Structural Causes (dual-track)
+
+Run for every finding reported above. This track is **not gated**: a finding's cause is reported even
+when the gate that would have carried it is `blocked`.
+
+The ladder blocks a gate because a *review* at that depth gives no reading while hygiene is broken.
+It does not follow that a cause already in hand goes unsaid. Reporting a symptom while withholding
+its cause is what produces a repair in the wrong place — and the finding then returns next round,
+which is the failure this track exists to stop.
+
+Each row carries: the finding it explains (or `—`), the cause stated as the thing to change rather
+than the symptom that revealed it, where the cause lives (`file:line`), and the gate that would have
+carried it with that gate's status.
+
+Output a row in each of two cases:
+
+1. **A reported finding whose cause lives elsewhere.** Ask what one change would remove the finding;
+   when that change is not the finding's own location, the change is the cause.
+2. **A structural observation the Phase 3 extraction already reached that a `blocked` or
+   `not inspected` gate would have carried.** The extraction is not gated — it runs before any gate
+   opens — so a cause it reached is already in hand, and the ladder withholding the gate does not make
+   the cause unknown. A lower gate can fail on something as small as an inconsistent error message,
+   and that is no reason to lose a structural reading already taken.
+
+Name only what the extraction reached. Anything that would need the gate review this scope did not
+perform is `not established` — say so rather than guessing at a depth the ladder declined. This track
+carries **no verdict flag** and claims no gate coverage: every row names its gate's status, so the
+Gate Index stays the honest statement of what was reviewed.
+
 ### Phase 5: Report
 
 Produce a report using this format:
@@ -195,6 +224,15 @@ Produce a report using this format:
 |---|---|---|---|
 | 1 | [checked-off task or acceptance marked done] | `file:line` | [verified \| partial \| REFUTED] |
 
+### Structural Causes
+
+[Include when a reported finding's cause lies outside its own location (Phase 4c). Report regardless
+of gate status.]
+
+| # | Finding | Cause (the thing to change) | Cause location | Gate that would carry it |
+|---|---|---|---|---|
+| 1 | the finding it explains \| — | stated as the change | `file:line` | Gate N (blocked \| not inspected) |
+
 ### Gate N: [name]
 
 | # | Location | Violation | Correction |
@@ -227,9 +265,11 @@ Fix-plan rules:
 - Review only; do not modify code.
 - Use local or pasted inputs only; do not call remote PR/MR APIs.
 - Open gates sequentially and stop at the first failed gate.
-- Non-gated tracks (Security Triage Alert, Against-Contract) are reported even when a lower gate
-  failed. Phase 4b is the single source for how they compose into the Verdict, the falsify-every-clause
-  rule, and the claimed-complete rule — follow it there; do not restate it here.
+- Non-gated tracks (Security Triage Alert, Against-Contract, Structural Causes) are reported even when
+  a lower gate failed. Phase 4b is the single source for how the Verdict composes, the
+  falsify-every-clause rule, and the claimed-complete rule — follow it there; do not restate it here.
+  Phase 4c adds no verdict flag: a reported finding whose cause sits at a blocked gate still names the
+  cause, because a symptom reported without its cause is repaired in the wrong place.
 - Give concrete corrections; avoid vague suggestions such as "consider improving".
 - If all opened gates pass, the Gate Index is the report; do not invent findings.
 - Stay in lane; hand off at the boundary. This skill is static, local review only. It reports
