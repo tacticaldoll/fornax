@@ -76,7 +76,7 @@ For each closure candidate — a prior finding inside an enumerated scope that t
 re-report — verify all of the following before closing it:
 
 1. The input gate-reviewed the unit and relevant gate, or explicitly verifies the repair. A
-  `triage-only` or uninspected unit cannot close a finding by silence.
+  `triage-only` or `unread` unit cannot close a finding by silence.
 2. The code at the recorded cause shows that the cause no longer holds.
 3. The input does not contradict the closure elsewhere in its record.
 
@@ -119,7 +119,7 @@ off the list itself.
 | `derive` | replace a written-down set with one computed from the source it must cover |
 | `index` | replace a hand-written scan or matcher with lookup through an existing key or ordering capability |
 | `converge` | delete one complete implementation of an operation and call the other implementation that already performs it |
-| `type-errors` | replace an unstructured error boundary with typed error variants callers can distinguish |
+| `distinguish` | replace an undifferentiated error or result boundary with variants a caller can tell apart |
 | `restate` | correct prose, a spec, or a document |
 | `declare` | record a limit or a count as governed policy |
 | `forbid` | refuse an input that was admitted |
@@ -165,17 +165,16 @@ returning next round, so a disposition without one has not actually been made.
 | Coverage | stated scope and coverage | enumerated units and inspected gates | pass \| mismatch |
 | Prior continuity | prior ids | each id's one lifecycle slot | pass \| mismatch |
 
-[Complete this table before Causes and candidate repairs. Code defects the review missed do not
-belong here — send those back for review.]
+[Code defects the review missed do not belong here — send those back for review.]
 
 ### Prior scope resolution
 
 | Prior finding | Scope evidence stated by this round's input | Membership | This round's slot |
 |---|---|---|---|
-| id | enumerated units \| scope stated but units not enumerated | inside \| outside \| undetermined | current finding \| closure candidate \| out of scope \| undetermined |
+| id | enumerated units \| scope stated but units not enumerated | inside \| outside \| undetermined | current finding → Dispositions \| closure candidate → Closed or Carried forward \| out of scope → Out of scope this round \| undetermined → Undetermined |
 
 [Use only scope evidence the input states. Finding locations and code inspected during triage do not
-enumerate the Review Record's coverage. Complete this table before reading causes from the code.]
+enumerate the Review Record's coverage.]
 
 ### Causes and candidate repairs
 
@@ -197,9 +196,11 @@ shape recurs.]
 ### Dispositions
 
 [Every finding reported by this round, including a stable id matched to prior history. A prior
-finding not re-reported belongs in exactly one lifecycle section below — Carried forward, Closed, or
-Out of scope this round — and is not duplicated here. A finding re-reported after it was Closed
-returns here as `carried`; reappearance alone does not make it Recurring.]
+finding not re-reported belongs in exactly one lifecycle section below — Carried forward, Closed,
+Out of scope this round, or Undetermined — and is not duplicated here. Each slot from Prior scope
+resolution has exactly one of those sections as its home; a `closure candidate` resolves into Closed
+or Carried forward by the Phase 1 test. A finding re-reported after it was Closed returns here as
+`carried`; reappearance alone does not make it Recurring.]
 
 | Finding | Cause | Carried | Disposition | Reason (REQUIRED for decline and defer) |
 |---|---|---|---|---|
@@ -221,9 +222,15 @@ when no closure is established.]
 
 ### Out of scope this round
 
-[Prior dispositions this round's input did not cover, each marked `out of scope` when the input
-enumerates what it covered, or `undetermined` when the input states a scope without enumerating it.
-Neither carried nor closed either way. Their ids and count.]
+[Prior dispositions the input's **enumerated** coverage decidably excludes: this round looked
+elsewhere and says nothing about them. Neither carried nor closed. Their ids and count.]
+
+### Undetermined
+
+[Prior dispositions whose membership this round cannot decide, because the input states a scope
+without enumerating what it covered. Not out of scope — out of scope is a decision, and this is the
+absence of one. Neither carried nor closed. Their ids, count, and the enumeration that would settle
+each. Re-evaluated from the next round's input (Phase 0).]
 
 ### Recurring
 

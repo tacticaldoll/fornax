@@ -15,6 +15,4 @@ class Catalog:
         return expensive_registry_query(key).label
 ```
 
-Produce one Causes and candidate repairs row. The repair does not add a missing check, derive a set,
-replace a scan with indexed lookup, converge duplicate implementations, type errors, restate prose,
-declare policy, or forbid input. Its Kind cell is `cache (gap)`.
+Produce one Causes and candidate repairs row for this finding.
