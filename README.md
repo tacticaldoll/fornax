@@ -102,6 +102,13 @@ flowchart LR
     design-boundaries --> plan-repo-extract
     design-boundaries --> plan-split
     diagnose-issue --> map-codebase
+    explore-intent --> design-boundaries
+    explore-intent --> map-codebase
+    explore-intent --> plan-implementation
+    explore-intent --> scope-new-skill
+    handle-feedback --> design-boundaries
+    handle-feedback --> map-codebase
+    handle-feedback --> plan-implementation
     map-codebase --> design-boundaries
     map-codebase --> diagnose-issue
     map-codebase --> orient-repo

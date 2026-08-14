@@ -39,8 +39,8 @@ Hold these together; there are no phases to march through.
 Once the feedback is triaged into accept / needs-clarification / push-back, hand off the accepted
 work — the doing happens outside this stance:
 
-- to sequence the accepted fixes into verifiable steps → `plan-implementation`
-- if a point reveals you do not actually understand the code → `map-codebase`
-- if a point reveals a structural problem, not a local fix → `design-boundaries`
+- To sequence the accepted fixes into verifiable steps, hand off to `plan-implementation`.
+- If a point reveals you do not actually understand the code, hand off to `map-codebase`.
+- If a point reveals a structural problem, not a local fix, hand off to `design-boundaries`.
 
 The stance above is the discipline; the doing happens outside it.

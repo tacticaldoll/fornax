@@ -41,10 +41,10 @@ Exploration ends when the intent, the requirements, and a chosen direction are c
 on. At that point you may summarize the clarified intent in a few lines — a shared understanding, not
 a spec — then hand off; do not carry the work further yourself:
 
-- to design the component structure → `design-boundaries`
-- to plan the implementation work → `plan-implementation`
-- to understand code the direction depends on → `map-codebase`
-- if the question is whether an idea should become a skill → `scope-new-skill`
+- To design the component structure, hand off to `design-boundaries`.
+- To plan the implementation work, hand off to `plan-implementation`.
+- To understand code the direction depends on, hand off to `map-codebase`.
+- If the question is whether an idea should become a skill, hand off to `scope-new-skill`.
 
 Keep any exit summary light. The structured artifacts are the downstream skills' job, not this one's.
 
