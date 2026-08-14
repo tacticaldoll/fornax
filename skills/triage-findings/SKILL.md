@@ -91,12 +91,13 @@ off the list itself.
 |---|---|
 | `guard` | add the missing check where it is missing |
 | `derive` | replace a written-down set with one computed from the source it must cover |
-| `converge` | delete the second mechanism and use the one that already exists |
+| `index` | replace a hand-written scan or matcher with lookup through an existing key or ordering capability |
+| `converge` | delete one complete implementation of an operation and call the other implementation that already performs it |
 | `restate` | correct prose, a spec, or a document |
 | `declare` | record a limit or a count as governed policy |
 | `forbid` | refuse an input that was admitted |
 
-These six are the values this skill's own use has produced, from one repository. The list is **not
+These seven are the values this skill's own use has produced, from one repository. The list is **not
 closed**: a repair none of them fits is named in its own words and reported as a gap, never forced
 into the nearest value. A cause whose repair is a decomposition of a unit, or a re-drawn seam between
 units, is outside this vocabulary — do not invent a Kind for it; hand the cause on (Rules).
