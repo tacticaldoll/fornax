@@ -100,9 +100,10 @@ Record:
   none was found (gates.md Gate 6 lists where to look).
 - Coverage inventory: place every in-scope unit in exactly one set — `gate-reviewed` when the
   calibrated gates were opened for it, `triage-only` when it received only Phase 2's rapid checks,
-  or `not inspected` when it was declared in scope but not read. Coverage is `complete` only when
+  or `unread` when it was declared in scope but never opened. Coverage is `complete` only when
   every in-scope unit is `gate-reviewed`; otherwise it is `partial`. Enumerate all three sets in a
-  partial review. Never call a triage-only or uninspected remainder passed.
+  partial review. Never call a triage-only or unread remainder passed. These three name *units*; the
+  Gate Index's `not inspected` names a *gate* the calibration never opened — different axes.
 - Contract inventory (when the change has a contract — a spec, acceptance scenarios, a task/change
   checklist, or stated project invariants): list each clause as its own review target. One row per
   requirement, per acceptance scenario, and per invariant the change touches, plus one row per
@@ -194,7 +195,7 @@ Produce a report using this format:
 **Source**: [input reference]
 **Calibration**: Gates 1-[N] ([reason])
 **Triage**: [skipped | Red M / Yellow N / Green K]
-**Coverage**: [complete | partial — gate-reviewed: [...]; triage-only: [...]; not inspected: [...]]
+**Coverage**: [complete | partial — gate-reviewed: [...]; triage-only: [...]; unread: [...]]
 **Verdict**: [PASS | FAIL at Gate N] [+ SECURITY-ALERT] [+ CONTRACT-VIOLATED] [+ CLAIM-REFUTED]
 **Not executed**: [static review only — tests / build / runtime not run]
 
@@ -235,7 +236,7 @@ Produce a report using this format:
 ### Structural Causes
 
 [Include when either Phase 4c case produces a row: a reported finding's cause lies outside its own
-location, or Phase 3 already reached a structural observation that a blocked or uninspected gate
+location, or Phase 3 already reached a structural observation that a blocked or `not inspected` gate
 would have carried. Report regardless of gate status.]
 
 | # | Finding | Cause (the thing to change) | Cause location | Gate that would carry it |
@@ -283,7 +284,7 @@ Fix-plan rules:
 - If all opened gates pass, the Gate Index is the report; do not invent findings.
 - Report coverage independently from correctness. `PASS` means the opened gates passed for the
   `gate-reviewed` units; only `Coverage: complete` extends that statement to the full declared scope.
-  A `partial` review enumerates every triage-only and uninspected unit rather than describing a
+  A `partial` review enumerates every triage-only and unread unit rather than describing a
   remainder as passed.
 - Stay in lane; hand off at the boundary. This skill is static, local review only. It reports
   findings and does not decide their disposition; to settle which findings are accepted and what each
