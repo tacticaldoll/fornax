@@ -30,9 +30,9 @@ Then load the prior round:
   disposition and its recorded reason**. Reopen one only on new evidence, and name the evidence.
 - Record **this round's scope** — the files, diff, or component the input covers — and compare each
   prior disposition against it. One that lies **inside** this scope and that the input did not
-  re-report is carried forward. One that lies **outside** it is `out of scope this round`: this round
-  looked elsewhere and says nothing about it. Both slots are in the record (Phase 5); a scope change
-  is not a closure.
+  re-report is a closure candidate, not automatically carried or closed. One that lies **outside** it
+  is `out of scope this round`: this round looked elsewhere and says nothing about it. These slots
+  are in the record (Phase 5); a scope change is not a closure.
 - Membership is decidable only when the input **enumerates** what it covered. When the input states a
   scope without enumerating it, a prior disposition's membership is `undetermined` — record it as
   that rather than deciding it. Undetermined is neither carried nor closed.
@@ -57,6 +57,18 @@ whether the code at its cause's location **changed** since the prior round:
   cause, so freezing it would preserve a misreading the code never justified.
 - **Changed** — a repair landed and the finding survived it, so that repair's Reach was wrong. Record
   it as recurring and carry that into Phase 3.
+
+For each closure candidate — a prior finding inside an enumerated scope that the input did not
+re-report — verify all of the following before closing it:
+
+1. The input gate-reviewed the unit and relevant gate, or explicitly verifies the repair. A
+  `triage-only` or uninspected unit cannot close a finding by silence.
+2. The code at the recorded cause shows that the cause no longer holds.
+3. The input does not contradict the closure elsewhere in its record.
+
+When all three hold, record the finding as `closed` with the code and input evidence. When the cause
+still holds, or any closure evidence is unavailable, carry the prior disposition and original reason
+forward; say which closure condition was not established. Review silence alone is never closure.
 
 ### Phase 2: Group findings into causes
 
@@ -155,9 +167,15 @@ shape recurs.]
 ### Carried forward
 
 [Prior dispositions lying inside this round's scope that the input did not re-report: id,
-disposition, and the original reason, unchanged. A disposition leaves this section only when its
-cause is repaired, never because the review stopped reporting it. `first round` when there is no
-prior record.]
+disposition, the original reason unchanged, and which closure condition was not established. A
+disposition leaves this section only when the closure test in Phase 1 proves its cause no longer
+holds, never because the review stopped reporting it. `first round` when there is no prior record.]
+
+### Closed
+
+[Prior dispositions whose closure test passed: id, prior disposition, code evidence that the cause
+no longer holds, and the input evidence that the relevant unit was reviewed without re-reporting the
+finding. `none` when no closure is established.]
 
 ### Out of scope this round
 
