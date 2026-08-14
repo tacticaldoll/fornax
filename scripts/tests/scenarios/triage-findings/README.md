@@ -97,6 +97,12 @@ The remaining failure is representation, not scope classification: responses ide
 `undetermined` and then duplicate the same prior finding into Carried forward, Out of scope, or
 Recurring. The clean control and one-slot lifecycle behavior remain release blockers.
 
+A follow-up prototype replaced the three lifecycle sections with one mandatory Prior lifecycle
+ledger. In five focused fresh-context runs, 0/5 produced the ledger from the current and prior
+records: three copied the prior record's old tables and two declined because the input lacked tables
+with the new names. The prototype was rejected rather than committed. Section consolidation alone
+does not control the behavior.
+
 Two candidate wording hardenings were then tested and rejected rather than committed. Their best
 five-response result was 4/5 for the Kind gap and complete integrity audit, while prior membership
 remained `undetermined` in 0/5 responses. Adding more prose had stopped changing the controlling
