@@ -9,7 +9,7 @@ triggers:
   - user asks for a gate-based review of pasted code or a local diff
   - user provides file paths, a git diff, commit hash, branch, or code snippet for static review
   - user wants code quality inspection without remote PR or MR integration
-  - user asks for review gates, triage, structural extraction, or a local fix plan
+  - user asks for review gates, structural extraction, or a local fix plan
   - user asks for findings on a change but does not ask to implement fixes
 entrypoint: SKILL.md
 resources:
