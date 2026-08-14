@@ -210,6 +210,10 @@ Produce a report using this format:
 
 Produce a fix plan only when the user asks for one.
 
+The rules below assume each finding's disposition and repair are already settled. When
+findings recur across review rounds, or when several findings look like one cause, settle that first
+— hand off to `triage-findings` rather than planning a fix per finding.
+
 Fix-plan rules:
 
 - One violation per fix.
@@ -228,7 +232,9 @@ Fix-plan rules:
   rule, and the claimed-complete rule — follow it there; do not restate it here.
 - Give concrete corrections; avoid vague suggestions such as "consider improving".
 - If all opened gates pass, the Gate Index is the report; do not invent findings.
-- Stay in lane; hand off at the boundary. This skill is static, local review only. For runtime or
+- Stay in lane; hand off at the boundary. This skill is static, local review only. It reports
+  findings and does not decide their disposition; to settle which findings are accepted and what each
+  cause's repair would touch, hand off to `triage-findings`. For runtime or
   behavioral correctness, hand off to `plan-testing` (design the test strategy) or a runtime
   verification pass that exercises the change end-to-end; for deep security analysis beyond Gate 8's
   surface checks, hand off to `assess-threats`; to trace a reported bug to its root cause, hand off to

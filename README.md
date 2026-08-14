@@ -27,6 +27,10 @@ explore-intent → orient-repo → map-codebase → design-boundaries → plan-i
   (what/why)     (governance)   (how it works)    (boundaries)         (the work)               (split/extract)          (quality)
 ```
 
+`static-review`'s findings return to the arc through [`triage-findings`](skills/triage-findings/),
+which groups them into causes, lists the repairs each cause admits with what each one touches, and
+routes the accepted work back into the arc — the arc's one feedback edge.
+
 The slugs are task-descriptive and say what each skill does.
 
 ## Skills
@@ -46,6 +50,7 @@ Grouped by `family` (see [docs/identity.md](docs/identity.md) and the skill maps
 - [`plan-split`](skills/plan-split/) — plan splitting a large or tangled code unit in place.
 - [`plan-repo-extract`](skills/plan-repo-extract/) — assess extracting a component into its own repository.
 - [`static-review`](skills/static-review/) — local, gate-based static code review.
+- [`triage-findings`](skills/triage-findings/) — decide which review findings to accept, and what each cause's repair would touch.
 - [`handle-feedback`](skills/handle-feedback/) — handle code-review feedback with rigor, not performative agreement (a stance).
 
 **Knowledge** — capture and shape conversation knowledge
@@ -91,6 +96,7 @@ flowchart LR
     plan-split
     plan-testing
     static-review
+    triage-findings
     design-boundaries --> assess-dependency
     design-boundaries --> plan-implementation
     design-boundaries --> plan-repo-extract
@@ -117,6 +123,13 @@ flowchart LR
     static-review --> assess-threats
     static-review --> diagnose-issue
     static-review --> plan-testing
+    static-review --> triage-findings
+    triage-findings --> design-boundaries
+    triage-findings --> diagnose-issue
+    triage-findings --> plan-implementation
+    triage-findings --> plan-split
+    triage-findings --> plan-testing
+    triage-findings --> static-review
 ```
 
 ### Knowledge
