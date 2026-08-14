@@ -119,11 +119,12 @@ off the list itself.
 | `derive` | replace a written-down set with one computed from the source it must cover |
 | `index` | replace a hand-written scan or matcher with lookup through an existing key or ordering capability |
 | `converge` | delete one complete implementation of an operation and call the other implementation that already performs it |
+| `type-errors` | replace an unstructured error boundary with typed error variants callers can distinguish |
 | `restate` | correct prose, a spec, or a document |
 | `declare` | record a limit or a count as governed policy |
 | `forbid` | refuse an input that was admitted |
 
-These seven are the values this skill's own use has produced, from one repository. The list is **not
+These eight are the values this skill's own use has produced, from one repository. The list is **not
 closed**: a repair none of them fits is named in its own words and reported as a gap, never forced
 into the nearest value. A cause whose repair is a decomposition of a unit, or a re-drawn seam between
 units, is outside this vocabulary — do not invent a Kind for it; hand the cause on (Rules).
@@ -154,6 +155,27 @@ returning next round, so a disposition without one has not actually been made.
 **Source**: [the review record or list triaged]
 **Scope**: [the files, diff, or component this round's input covers]
 **Prior round**: [the record carried forward | first round]
+
+### Record integrity
+
+| Check | Input claim | Reconciled evidence | Result |
+|---|---|---|---|
+| Verdict / Gate Index | what each says | whether they agree | pass \| mismatch |
+| Finding count | stated count | current Review Record finding rows | pass \| mismatch |
+| Coverage | stated scope and coverage | enumerated units and inspected gates | pass \| mismatch |
+| Prior continuity | prior ids | each id's one lifecycle slot | pass \| mismatch |
+
+[Complete this table before Causes and candidate repairs. Code defects the review missed do not
+belong here — send those back for review.]
+
+### Prior scope resolution
+
+| Prior finding | Scope evidence stated by this round's input | Membership | This round's slot |
+|---|---|---|---|
+| id | enumerated units \| scope stated but units not enumerated | inside \| outside \| undetermined | current finding \| closure candidate \| out of scope \| undetermined |
+
+[Use only scope evidence the input states. Finding locations and code inspected during triage do not
+enumerate the Review Record's coverage. Complete this table before reading causes from the code.]
 
 ### Causes and candidate repairs
 
@@ -202,17 +224,6 @@ when no closure is established.]
 [Prior dispositions this round's input did not cover, each marked `out of scope` when the input
 enumerates what it covered, or `undetermined` when the input states a scope without enumerating it.
 Neither carried nor closed either way. Their ids and count.]
-
-### Record integrity
-
-| Check | Input claim | Reconciled evidence | Result |
-|---|---|---|---|
-| Verdict / Gate Index | what each says | whether they agree | pass \| mismatch |
-| Finding count | stated count | current Review Record finding rows | pass \| mismatch |
-| Coverage | stated scope and coverage | enumerated units and inspected gates | pass \| mismatch |
-| Prior continuity | prior ids | each id's one lifecycle slot | pass \| mismatch |
-
-[Code defects the review missed do not belong here — send those back for review.]
 
 ### Recurring
 

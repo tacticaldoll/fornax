@@ -1,6 +1,7 @@
 # Review Record fixture
 
 **Source**: `crates/xuanji/src`
+**Scope**: baseline handling; covered units are not enumerated
 **Calibration**: Gates 1-7
 **Triage**: Red 1 / Yellow 1 / Green 3
 **Coverage**: complete
@@ -36,4 +37,5 @@ Replace the string boundary with a typed parse error while preserving the displa
 
 ## Structural Causes
 
-The review claims both findings are local to `baseline.rs`; no wider locations were inspected.
+The review claims both findings are local to `baseline.rs`; it does not enumerate the units covered
+outside those finding locations.

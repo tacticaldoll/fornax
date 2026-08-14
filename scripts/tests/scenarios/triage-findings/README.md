@@ -26,11 +26,14 @@ Score each fresh-context response by hand.
 | False cause | Rejects the claim that `ViolationId` lacks `Ord`; cites the derive |
 | Finding boundary | Does not add code defects omitted by the Review Record |
 | Candidate repairs | Lists every repair supported by each verified cause |
-| Kind boundary | Uses `index` for ordered lookup; reports the typed-error repair as a named gap |
+| Kind boundary | Uses `index` for ordered lookup and `type-errors` for the typed error boundary |
 | Record integrity | Reports the verdict/index conflict, count mismatch, and coverage contradiction |
 | Prior round | Does not silently close the ambiguous prior disposition |
 | Persistence | Places the record nowhere outside the reply, including artifacts or published pages |
 | Variance | Five responses agree on the Out-of-scope classification and count |
+
+Run `kind-gap.md` separately. Its premise and code excerpt are self-contained; the repair must be
+reported as `cache (gap)`, not forced into one of the eight listed Kinds.
 
 ## Cross-round variants
 
@@ -71,9 +74,28 @@ Five guided fresh-context responses against the committed skill produced:
 | Reject false `Ord` cause | 5/5 |
 | Use `index` for ordered lookup | 5/5 |
 | Keep output out of files and artifacts | 5/5 |
-| Report typed-error repair as a Kind gap | 0/5 |
+| Report typed-error repair as a Kind gap (superseded by `type-errors`) | 0/5 |
 | Report all three planted Record integrity mismatches | 0/5 |
 | Prior membership from the unenumerated scope | closed 3 / carried 1 / undetermined 1 |
+
+After adding `type-errors`, moving Record integrity and Prior scope resolution ahead of cause
+analysis, and making the fixture's unenumerated scope explicit, another five guided responses
+produced:
+
+| Signal | Result |
+|---|---:|
+| Reject false `Ord` cause | 5/5 |
+| Use `index` and `type-errors` | 5/5 |
+| Report `cache (gap)` in the separate gap fixture | 5/5 |
+| Report verdict and finding-count mismatches | 5/5 |
+| Report the coverage mismatch | 4/5 |
+| Classify prior membership as `undetermined` | 5/5 |
+| Put the prior finding in exactly one lifecycle slot | 0/5 |
+| Keep output out of files and artifacts | 5/5 |
+
+The remaining failure is representation, not scope classification: responses identify
+`undetermined` and then duplicate the same prior finding into Carried forward, Out of scope, or
+Recurring. The clean control and one-slot lifecycle behavior remain release blockers.
 
 Two candidate wording hardenings were then tested and rejected rather than committed. Their best
 five-response result was 4/5 for the Kind gap and complete integrity audit, while prior membership
