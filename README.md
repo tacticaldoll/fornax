@@ -241,19 +241,22 @@ first (discovery metadata), then `SKILL.md` (the portable workflow). Use
 
 ## Validate
 
-Four checks, run by CI on every push and by the pre-commit hook once you enable it with
+Five checks, run by CI on every push and by the pre-commit hook once you enable it with
 `git config core.hooksPath .githooks`:
 
 ```sh
 python3 scripts/validate_skills.py
 python3 scripts/validate_skills.py --skills-path templates --allow-template-placeholders
 python3 scripts/skill_graph.py --check
+python3 scripts/seam_contract.py --check
 PYTHONPATH=scripts python3 -m unittest discover -s scripts/tests
 ```
 
 Skill structure, the same for `templates/skill`, whether the README skill maps still match the
-skills, and the validation rules themselves. Run them before installing, publishing, or copying
-skills. A stale skill map is fixed with `python3 scripts/skill_graph.py --write`.
+skills, whether the record inventory in [docs/review-record-contract.md](docs/review-record-contract.md)
+still matches the one seam where a skill reads another's output, and the validation rules themselves.
+Run them before installing, publishing, or copying skills. A stale block is fixed with the matching
+`--write`.
 
 Three more run in CI only, because each needs something the hook deliberately does not install:
 

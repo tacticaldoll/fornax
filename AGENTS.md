@@ -447,6 +447,10 @@ Prefer lightweight tests that match the risk of the change.
 - Run repository validation for every change.
 - Regenerate the README skill maps with `python3 scripts/skill_graph.py --write` after changing a
   skill's `family` or its handoff targets; `--check` fails when the committed block is stale.
+- Regenerate the record inventory with `python3 scripts/seam_contract.py --write` after changing the
+  output template of a skill another skill reads, or the `**Input**:` line that names one; `--check`
+  fails when `docs/review-record-contract.md` is stale. The seam list is derived, so a new one needs
+  no edit to be counted and no seams at all is a clean answer.
 - Cover a new or changed validation rule in `scripts/tests/`, run with
   `PYTHONPATH=scripts python3 -m unittest discover -s scripts/tests`. Check the fixture actually
   fails when the rule is removed; a suite that passes either way proves nothing. The

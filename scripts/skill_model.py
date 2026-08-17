@@ -24,6 +24,19 @@ HANDOFF = re.compile(
     re.IGNORECASE,
 )
 
+CONSUMES = re.compile(r"`([a-z0-9-]+)`\s+((?:[A-Z][a-z]+ )+[A-Z][a-z]+)")
+"""How a consumer names the producer whose record it reads, in an `**Input**:` line.
+
+A backticked skill name followed by the record's own name — `a \\`static-review\\` Review
+Record`. Two capitalised words at least, which is what separates a record from the other
+things an Input line backticks: a file (`SKILL.md`), a document (`PROJECT.md`), or a skill
+to go do first (`hand off to \\`plan-split\\`.`), none of which is followed by a name.
+
+A prerequisite is not a seam. The distinction is the whole point: a skill that says "map it
+first with \\`map-codebase\\`" consumes no artifact, and counting it would invent a contract
+with nothing on either side of it.
+"""
+
 FAMILIES: dict[str, str] = {
     "implementation": "Implementation",
     "knowledge": "Knowledge",

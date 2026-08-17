@@ -10,4 +10,5 @@ cd "$repo_root"
 python3 scripts/validate_skills.py
 python3 scripts/validate_skills.py --skills-path templates --allow-template-placeholders
 python3 scripts/skill_graph.py --check
+python3 scripts/seam_contract.py --check
 PYTHONPATH=scripts python3 -m unittest discover -s scripts/tests
