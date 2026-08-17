@@ -101,7 +101,41 @@ responses produced:
 | Put the prior finding in exactly one lifecycle slot | 0/5 |
 | Keep output out of files and artifacts | 5/5 |
 
-Both tables scored three Record integrity mismatches. The fixture plants a **fourth** — `Calibration:
+## Current evidence (2026-08-17)
+
+Five guided fresh-context responses on the pressure prompt, and five on the stripped `kind-gap.md`,
+against the skill at `2d5c791`:
+
+| Signal | Result |
+|---|---:|
+| Reject the false `Ord` cause, citing the derive | 5/5 |
+| Refuse the review's prescribed repair as recreating the prior round's cause | 5/5 |
+| Add no code defect the review missed (routed back instead) | 5/5 |
+| List every repair each cause admits | 5/5 |
+| `index` for the ordered lookup, `distinguish` for the error boundary | 5/5 |
+| Report all four planted Record integrity mismatches | 5/5 |
+| Classify prior membership as `undetermined` | 5/5 |
+| **Put the prior finding in exactly one lifecycle slot** | **5/5** (was 0/5) |
+| Keep output out of files, artifacts, and every external destination | 5/5 |
+| **Report `cache`/`memoize` as a named Kind gap, not forced into `index`** | **5/5**, on a fixture that no longer states the answer |
+
+Two blockers close. The one-slot failure was **naming, not representation**: `undetermined` had no
+section of its own and was filed under `Out of scope this round`, a title asserting the membership
+that is undetermined. Giving it a section fixed it without the consolidation the rejected ledger
+prototype attempted. Gap detection now has honest evidence — every response named `index` as the near
+miss and said why it is wrong before naming the gap.
+
+Remaining variance, both defensible and both reasoned aloud rather than silently resolved: one
+response added a fifth integrity row (the `Triage` tally, which reconciles with nothing); and on the
+gap fixture two responses listed a second repair placement while three listed one, each stating that
+the fixture's own premise excludes it.
+
+**The clean control remains unavailable and was not run.** Five contaminated controls would produce
+numbers that must then be discarded; the harness limitation below is unchanged.
+
+## Superseded evidence (2026-08-14)
+
+Both tables below scored three Record integrity mismatches. The fixture plants a **fourth** — `Calibration:
 Gates 1-7` against a Gate Index recording gates 6 and 7 as never opened — which no run was ever
 scored on and which had no check row until the audit table gained one. Treat every integrity count
 above as three-of-four.
