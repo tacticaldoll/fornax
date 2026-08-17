@@ -160,14 +160,24 @@ own — the boundary rule holding in the case where breaking it would have been 
 
 Two things these runs surfaced that were not scored for:
 
-- **A repeated Kind gap, now at three instances.** Two `Recurring` responses and one
+- **A consistently named Kind gap, deliberately not promoted.** Two `Recurring` responses and one
   `Carried forward` response independently named the same missing value — `normalize`,
-  `normalize at construction` — for giving a type a canonical form at construction so one comparison
-  serves every caller. Each explained why `converge`, `forbid`, and `guard` do not fit: it neither
-  deletes an implementation, nor refuses an input, nor adds a check; it removes the input distinction
-  the definitions disagree about. Three independent instances of one shape **meets the bar that
-  promoted `distinguish`**. Recorded here rather than acted on: a Kind is shipped vocabulary, and the
-  last addition was named wrongly on its first attempt.
+  `normalize at construction` — for coercing a value into a canonical form where it is built, so the
+  comparison that already exists answers every caller. Each explained why the neighbours do not fit:
+  it deletes no implementation (`converge`), refuses no input (`forbid`), and adds no missing check
+  (`guard`); `derive` runs the other way.
+
+  **All three came from one situation** — the same `ViolationId` whitespace scenario — so they are
+  three responses to one case, not three cases. That shows the *name* is stable, not that the *shape
+  recurs*, and the two are what a vocabulary decision turns on.
+
+  **The bar for promoting a gap to a Kind is three independent *situations*, not three responses.**
+  Recorded because the precedent looked stronger than it is: `distinguish` was promoted from a single
+  situation too, so citing it would have turned one thin decision into two. Every promotion also
+  shrinks what the gap mechanism covers, and that mechanism is what keeps the list from growing once
+  per novel repair shape — the unbounded growth this file already watched happen once.
+
+  `normalize` stands at one situation. Promote it when the shape arrives from another.
 - **The `crossround` prior record states its Reach as named units rather than `file:line`.** Four of
   five flagged it: resolvable here because the file is sixteen lines, but not at scale. A defect in
   the fixture, recorded rather than quietly fixed, because it is the same class of defect the
