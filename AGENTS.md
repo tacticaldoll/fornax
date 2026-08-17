@@ -431,6 +431,8 @@ Use this checklist for new skills and meaningful updates:
 - Security-sensitive behavior is explicit and constrained.
 - Scripts have clear inputs, outputs, dependencies, and expected working directory.
 - The skill has at least one realistic prompt or scenario that can be used for smoke testing.
+- A record that audits its own input follows the Output Records rules, and says which of its states
+  is a concession to records this repository did not produce.
 - Version changes match the scope of the behavior change.
 
 ## Testing Strategy

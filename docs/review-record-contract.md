@@ -22,7 +22,7 @@ what remains a release blocker. Read the field list as current, not as settled.
 | `Verdict` | Phase 4b | Record integrity | reconciled against the gate the index shows |
 | Gate Index | Phase 4 | Record integrity, Phase 1 | which gates opened, and at which one a finding sits |
 | Gate finding rows | Phase 4 | Phase 0, Phase 1 | the findings themselves; each row is a `file:line` |
-| Structural Causes | Phase 4c | Phase 2 | a cause the review already reached, so triage does not re-derive it |
+| Structural Causes | Phase 4c | **nothing** | see Open seam defects |
 | Against-Contract, Claims Verified | Phase 4b | Phase 1 | the same defect can arrive here *and* as a gate finding |
 
 ## Rules that hold the two halves together
@@ -49,6 +49,15 @@ what remains a release blocker. Read the field list as current, not as settled.
   as a passing one — see the Output Records section of `AGENTS.md`.
 
 ## Open seam defects
+
+- **Nothing reads Structural Causes.** `static-review`'s Phase 4c exists to name a finding's cause
+  when the gate that would carry it is blocked — the producer's answer to a repair landing in the
+  wrong place. `triage-findings` never mentions the section: Phase 0 normalizes "its non-gated
+  tracks" generically, and Phase 2 derives every cause from the code as though the review had offered
+  none. So the consumer re-derives what the producer already established, and a disagreement between
+  the two is invisible rather than reconciled. Either Phase 2 reads it as a stated cause to verify
+  (the treatment it already gives a gate finding's stated cause), or Phase 4c is output with no
+  reader.
 
 - **`Finding count` has no producer.** `triage-findings`' Record integrity table reconciles a stated
   finding count against the rows the record contains, but `static-review`'s report format emits no
