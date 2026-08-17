@@ -16,7 +16,7 @@ Install the tagged CLI persistently with `pipx`:
 
 ```sh
 pipx install \
-  "git+https://github.com/tacticaldoll/fornax.git@v0.3.0#subdirectory=tools/fornax-cli"
+  "git+https://github.com/tacticaldoll/fornax.git@v0.3.1#subdirectory=tools/fornax-cli"
 
 fornax deploy --dry-run
 fornax deploy --all
@@ -28,7 +28,7 @@ Use the exact same CLI and deployment pipeline without leaving a persistent comm
 
 ```sh
 pipx run \
-  --spec "git+https://github.com/tacticaldoll/fornax.git@v0.3.0#subdirectory=tools/fornax-cli" \
+  --spec "git+https://github.com/tacticaldoll/fornax.git@v0.3.1#subdirectory=tools/fornax-cli" \
   fornax deploy --all
 ```
 
@@ -36,7 +36,7 @@ Or with `uv`:
 
 ```sh
 uvx \
-  --from "git+https://github.com/tacticaldoll/fornax.git@v0.3.0#subdirectory=tools/fornax-cli" \
+  --from "git+https://github.com/tacticaldoll/fornax.git@v0.3.1#subdirectory=tools/fornax-cli" \
   fornax deploy --all
 ```
 
