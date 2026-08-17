@@ -62,16 +62,23 @@ Local checkouts are development inputs and cannot become formal deployment sourc
 Before inventory or deployment, the CLI:
 
 1. Resolves its matching `v<version>` tag from the formal Fornax remote.
-2. Requires the tag and remote default HEAD to identify the same commit, because native
-   plugin hosts install from that remote.
+2. Requires the tag to be reachable from the remote default branch, so a tag on an
+   abandoned or side branch cannot ship as a release.
 3. Materializes a detached snapshot under
    `~/.cache/agent-skill-deployer/releases/fornax/<commit>`.
 4. Requires the snapshot to be clean and its manifest version to equal the CLI version.
 5. Uses that exact snapshot for validation and every directory-discovery host.
 
-If any check fails, deployment stops before mutating a host. Native plugin hosts and
-directory-copy hosts therefore cannot silently deploy different revisions. Installed
-skills are managed copies with `.fornax-install.json`; none link to a workspace.
+If any check fails, deployment stops before mutating a host.
+
+Native plugin hosts and directory-copy hosts cannot silently deploy different revisions,
+because every host installs the tag: Codex and Gemini take `--ref`, Claude's marketplace
+forwards a URL fragment to `git clone --branch`, and the directory channels copy from the
+snapshot. `main` moving ahead of a release therefore does not split the hosts, and does not
+block a deployment — which the earlier tag-equals-HEAD requirement did, on the first commit
+after every release.
+
+Installed skills are managed copies with `.fornax-install.json`; none link to a workspace.
 
 ## Development
 

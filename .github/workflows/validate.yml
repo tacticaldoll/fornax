@@ -28,6 +28,6 @@ jobs:
           node --input-type=module --check < .opencode/plugins/fornax.js
           bash -n .githooks/pre-commit
       - name: Install deployment engine
-        run: pip install "agent-skill-deployer @ git+https://github.com/tacticaldoll/agent-skill-deployer.git@v0.1.1"
+        run: pip install "agent-skill-deployer @ git+https://github.com/tacticaldoll/agent-skill-deployer.git@v0.1.2"
       - name: Test deployment CLI
         run: PYTHONPATH=tools/fornax-cli python3 -m unittest discover -s tools/fornax-cli/tests -v

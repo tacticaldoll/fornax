@@ -62,10 +62,13 @@ Settled; reopen only with a reason, not by default.
   directory. Inspect every discovery surface, report duplicates, and never infer ownership from a
   name prefix alone. "Plugin preferred" is deliberately not "plugin only."
 - **The Fornax CLI performs formal deployment only.** It accepts no local source path. Its workspace
-  version resolves the matching canonical Git tag, requires that tag, remote default HEAD, and
-  manifest version to agree on one commit, then uses a managed detached snapshot for validation and
-  directory hosts while native hosts use the verified remote. Local sources and host-development
-  installs are outside the `fornax` CLI.
+  version resolves the matching canonical Git tag, requires that tag to be reachable from the remote
+  default branch and the release manifest to declare that version, then **deploys that tag to every
+  host** — native plugin, extension, and directory-copy alike — using a managed detached snapshot for
+  validation and the directory channels. `main` may therefore move ahead of a release without putting
+  two hosts on different revisions; the earlier requirement that the tag *equal* remote HEAD held
+  only for the instant after tagging, and made the documented install command fail on the first
+  commit after any release. Local sources and host-development installs are outside the `fornax` CLI.
 - **Host deployment mechanics live independently.** `agent-skill-deployer` owns host discovery,
   inventory, provenance-aware mutation, reconciliation, and verification. Fornax retains only a
   thin `fornax` policy adapter and takes its CLI version from the workspace release; the engine has
