@@ -118,6 +118,11 @@ skill's record is another skill's input — `static-review` produces a Review Re
 `triage-findings` reads it (`docs/review-record-contract.md`). They are judgment, not structure:
 nothing validates them, and they apply only where a record makes claims about itself.
 
+A new skill needs no record contract of its own. Write one only when another skill reads the output —
+name the producer and the record in the consumer's `**Input**:` line, as `triage-findings` does, so
+the seam is discoverable from the skills rather than from a maintained list. A skill whose output
+nobody reads is not missing a contract; see the standing decision in `PROJECT.md`.
+
 - **Give a check three answers, not two.** "The input carries no such claim" is not "the claim does
   not hold". A two-valued cell forces a record predating a field, or one from another producer, into
   a false pass or a false contradiction. Name the third value, and say that a missing claim is not a

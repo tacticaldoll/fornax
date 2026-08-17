@@ -28,6 +28,17 @@ Settled; reopen only with a reason, not by default.
 - **`family` is a flat field** (`implementation | knowledge | decisions | meta`), the single source
   for README grouping and the generated skill maps. The object-vs-meta and operation-kind
   distinctions are real but are *not* encoded as fields — nothing consumes them.
+- **A record contract exists only where one skill's output is another skill's input.** Fourteen
+  skills define an output; one of them is read by another skill (`static-review` → `triage-findings`,
+  `docs/review-record-contract.md`). The other thirteen have no contract because they have no
+  consumer, not because one is missing — **that asymmetry is stated here so it does not read later as
+  a gap.** No repository-wide schema for skill outputs: nothing parses a record, so a schema would be
+  structure for a distinction almost nothing consumes, built corpus-wide from one seam's evidence.
+  The seam list is **derived from the skills** rather than maintained, so "one" is what the corpus
+  says today and a second seam needs no decision to be picked up; zero seams reports clean, since a
+  check that failed on none would become a reason to keep a seam alive. Reconsider the wider version
+  when a second real producer→consumer seam exists — two data points are the first that can show
+  which parts generalize.
 - **Skills carry no version of their own.** Release versioning is the collection's —
   `distribution.json` plus the host manifest projections — because a skill has no distribution path
   of its own: hosts read `SKILL.md`, whose frontmatter has no version field; the deployer only
