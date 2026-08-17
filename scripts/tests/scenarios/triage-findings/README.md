@@ -43,16 +43,26 @@ reported as `cache (gap)`, not forced into one of the eight listed Kinds.
 
 ## Cross-round variants
 
-Run `round-two-review.md` with the same prior record after placing each stated code condition in a
-separate copy of the fixture workspace.
+| Variant | Expected state | Fixture | Run |
+|---|---|---|---|
+| Relevant unit gate-reviewed, cause removed, finding absent | `Closed` | `crossround/closed/` | **5/5 (2026-08-17)** |
+| Finding re-reported after the recorded Reach changed | `Recurring` | `crossround/recurring/` | **5/5 (2026-08-17)** |
+| Scope names only a component and does not enumerate units | `undetermined` | `review-record.md` | 5/5 |
+| Relevant unit gate-reviewed, cause unchanged, finding absent | `Carried forward` | — | never run |
+| Enumerated scope excludes the prior unit | `Out of scope` | — | never run |
 
-| Variant | Expected state |
-|---|---|
-| Relevant unit gate-reviewed, cause removed, finding absent | `Closed` |
-| Relevant unit gate-reviewed, cause unchanged, finding absent | `Carried forward` |
-| Finding re-reported after code at the cause changed | `Recurring` |
-| Enumerated scope excludes the prior unit | `Out of scope` |
-| Scope names only a component and does not enumerate units | `undetermined` |
+Each `crossround/` variant is self-contained: a prior record, a round-two Review Record, and the code
+the records name. The two variants share a byte-identical prior record, so the only difference is the
+code state and whether the round-two review re-reports the finding.
+
+**Why three of these were unreachable before.** They were declared here and never ran, but running
+them with `review-record.md` and `prior-disposition.md` could not have produced them: that prior
+disposition is `defer`, so no repair was ever accepted and `Recurring` — which requires a repair to
+have landed — is unreachable by construction; its Reach is line-keyed (`baseline.rs:65`, `:214`),
+which Phase 1 says cannot be matched across rounds; and its Coverage never enumerates, so closure
+condition 1 can never be established. That fixture can produce `undetermined` and nothing else. The
+`crossround/` records fix all three: an accepted repair, a Reach keyed to named units, and an
+enumerated Coverage.
 
 ## Guided and control protocol
 
@@ -100,6 +110,40 @@ responses produced:
 | Classify prior membership as `undetermined` | 5/5 |
 | Put the prior finding in exactly one lifecycle slot | 0/5 |
 | Keep output out of files and artifacts | 5/5 |
+
+## Cross-round evidence (2026-08-17)
+
+Five guided fresh contexts per variant, against the skill at `ebc2010`.
+
+| Signal | `Closed` | `Recurring` |
+|---|---:|---:|
+| The prior finding reaches its expected lifecycle section | 5/5 | 5/5 |
+| Closure rests on code evidence, never on the review's silence | 5/5 | n/a |
+| The recorded Reach is compared against what actually changed | 5/5 | 5/5 |
+| Recurrence is diagnosed as an incomplete Reach rather than a wrong cause | n/a | 5/5 |
+| The prior id sits in exactly one lifecycle section | 5/5 | 5/5 |
+| Repairs re-derived with the missed location now inside the Reach | n/a | 5/5 |
+
+Both states had never been produced by any run. `Closed` is the risky direction — the clean control
+closed the prior finding 5/5 on code evidence alone, with nothing enumerating the unit as reviewed —
+and the guided arm closes it only when all three Phase 1 conditions hold. Three responses said so
+unprompted: had the second definition still been present, the same input would have produced
+`Carried forward`, because a review reporting nothing is never itself closure.
+
+All five `Recurring` responses chose correctly between the rule's two explanations: the Reach was
+incomplete, not the cause wrong. The prior repair converged a wrapper with the thing it wrapped —
+two locations that never disagreed — while the one divergent definition was never in the Reach.
+
+Two things this run surfaced that were not scored for:
+
+- **A repeated Kind gap.** Two of five named essentially the same missing value — `normalize`,
+  `normalize at construction` — for giving a type a canonical form so one comparison serves every
+  caller. Two independent instances of one shape; a third earns it a value under the rule that
+  promoted `distinguish`.
+- **The `crossround` prior record states its Reach as named units rather than `file:line`.** Four of
+  five flagged it: resolvable here because the file is sixteen lines, but not at scale. A defect in
+  the fixture, recorded rather than quietly fixed, because it is the same class of defect the
+  original fixture's line-keyed Reach had in the other direction.
 
 ## Controlled evidence (2026-08-17)
 
