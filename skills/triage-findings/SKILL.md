@@ -33,16 +33,16 @@ Then load the prior round:
 
 - When a prior Disposition Record exists, every finding it declined or deferred **keeps that
   disposition and its recorded reason**. Reopen one only on new evidence, and name the evidence.
-- Record **this round's scope** — the files, diff, or component the input covers — and compare each
-  prior disposition against it. One that lies **inside** this scope and that the input did not
-  re-report is a closure candidate, not automatically carried or closed. One that lies **outside** it
-  is `out of scope this round`: this round looked elsewhere and says nothing about it. These slots
-  are in the record (Phase 5); a scope change is not a closure.
-- Membership is decidable only when the input **enumerates** what it covered. When the input states a
-  scope without enumerating it, a prior disposition's membership is `undetermined` — record it as
-  that rather than deciding it. Undetermined is neither carried nor closed. Re-evaluate it from the
-  next round's input: a matching re-report enters the ordinary finding flow; newly enumerated scope
-  decides inside versus outside; another unenumerated scope leaves it undetermined.
+- Record **this round's scope** — the files, diff, or component the input covers. Membership is
+  decidable **only when the input enumerates what it covered**. When it states a scope without
+  enumerating it, a prior disposition's membership is `undetermined` — record it as that rather than
+  deciding it. Undetermined is neither carried nor closed. Re-evaluate it from the next round's
+  input: a matching re-report enters the ordinary finding flow; newly enumerated scope decides inside
+  versus outside; another unenumerated scope leaves it undetermined.
+- Against an **enumerated** coverage, compare each prior disposition to it. One that lies **inside**
+  it and that the input did not re-report is a closure candidate, not automatically carried or
+  closed. One that lies **outside** it is `out of scope this round`: this round looked elsewhere and
+  says nothing about it. These slots are in the record (Phase 5); a scope change is not a closure.
 - When none exists, record `first round`. Do not infer a prior decision from the code.
 
 ### Phase 1: Give each finding a stable identity
@@ -160,12 +160,15 @@ returning next round, so a disposition without one has not actually been made.
 
 | Check | Input claim | Reconciled evidence | Result |
 |---|---|---|---|
-| Verdict / Gate Index | what each says | whether they agree | pass \| mismatch |
-| Finding count | stated count | current Review Record finding rows | pass \| mismatch |
-| Coverage | stated scope and coverage | enumerated units and inspected gates | pass \| mismatch |
-| Prior continuity | prior ids | each id's one lifecycle slot | pass \| mismatch |
+| Verdict / Gate Index | the gate the verdict names | that gate's recorded status | pass \| mismatch \| not claimed |
+| Calibration / Gate Index | the gates the calibration declares | the gates the index records as opened | pass \| mismatch \| not claimed |
+| Finding count | stated count | current Review Record finding rows | pass \| mismatch \| not claimed |
+| Coverage | stated scope and coverage | enumerated units and inspected gates | pass \| mismatch \| not claimed |
 
-[Code defects the review missed do not belong here — send those back for review.]
+[`not claimed` when the input carries no such claim at all — a record predating a field, or one from
+another producer, has nothing to reconcile and is neither consistent nor contradictory about it.
+Do not read a missing claim as a passing one. Code defects the review missed do not belong here —
+send those back for review.]
 
 ### Prior scope resolution
 
@@ -230,7 +233,12 @@ elsewhere and says nothing about them. Neither carried nor closed. Their ids and
 [Prior dispositions whose membership this round cannot decide, because the input states a scope
 without enumerating what it covered. Not out of scope — out of scope is a decision, and this is the
 absence of one. Neither carried nor closed. Their ids, count, and the enumeration that would settle
-each. Re-evaluated from the next round's input (Phase 0).]
+each. Re-evaluated from the next round's input (Phase 0).
+
+This is a **compatibility state**, not a resting place: a `static-review` Review Record enumerates
+its coverage, so this section is `none` for one. It exists for a record from another producer, or
+from before that field. A round that keeps filling it is reading records that cannot support
+cross-round state at all — say so.]
 
 ### Recurring
 
@@ -242,6 +250,16 @@ finding that was previously Closed is not Recurring merely because it appears in
 ### Ungrouped
 
 [findings whose cause could not be named, and what would settle each]
+
+### Self-check
+
+| Check | This record's answer |
+|---|---|
+| Every prior id sits in exactly one lifecycle section | pass \| the ids in more than one, or in none |
+| Every accepted cause carries at least one repair with an enumerated Reach | pass \| the causes missing one |
+
+[This is about the record you are producing; Record integrity above is about the input. Completed
+last, because the sections it checks are written before it.]
 ```
 
 ## Rules
@@ -252,7 +270,8 @@ finding that was previously Closed is not Recurring merely because it appears in
   and not yours to solve: say where it should be kept, and let the caller keep it.
 - Triage only what the input reports. A defect in the code that the review missed is not yours to add
   — say so plainly and send the code back for review. A defect in the **record** is different: it is
-  the input's own fitness, and you are its consumer, so it goes in Record integrity (Phase 5).
+  the input's own fitness, and you are its consumer, so it goes in Record integrity (Phase 5). Keep
+  that separate from Self-check, which is the same question asked of the record you are writing.
 - List every repair a cause admits. Recording one where the cause admits two makes a choice that
   belongs to whoever plans the work, and hides it as if there were nothing to choose.
 - Stay in lane; hand off at the boundary. Route each accepted repair by its Kind: a `restate` has no

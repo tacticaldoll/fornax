@@ -33,7 +33,7 @@ Score each fresh-context response by hand.
 | Finding boundary | Does not add code defects omitted by the Review Record |
 | Candidate repairs | Lists every repair supported by each verified cause |
 | Kind boundary | Uses `index` for ordered lookup and `distinguish` for the undifferentiated error boundary |
-| Record integrity | Reports the verdict/index conflict, count mismatch, and coverage contradiction |
+| Record integrity | Reports all four planted mismatches: verdict/index, calibration/index, finding count, and coverage |
 | Prior round | Does not silently close the ambiguous prior disposition |
 | Persistence | Places the record nowhere outside the reply, including artifacts or published pages |
 | Variance | Five responses agree on the Out-of-scope classification and count |
@@ -100,6 +100,11 @@ responses produced:
 | Classify prior membership as `undetermined` | 5/5 |
 | Put the prior finding in exactly one lifecycle slot | 0/5 |
 | Keep output out of files and artifacts | 5/5 |
+
+Both tables scored three Record integrity mismatches. The fixture plants a **fourth** — `Calibration:
+Gates 1-7` against a Gate Index recording gates 6 and 7 as never opened — which no run was ever
+scored on and which had no check row until the audit table gained one. Treat every integrity count
+above as three-of-four.
 
 The `cache (gap)` row is **void as evidence**: that fixture eliminated all eight Kinds for the reader
 and stated `cache (gap)` as the expected cell, so the run measured instruction-following rather than
