@@ -45,15 +45,18 @@ reported as `cache (gap)`, not forced into one of the eight listed Kinds.
 
 | Variant | Expected state | Fixture | Run |
 |---|---|---|---|
-| Relevant unit gate-reviewed, cause removed, finding absent | `Closed` | `crossround/closed/` | **5/5 (2026-08-17)** |
-| Finding re-reported after the recorded Reach changed | `Recurring` | `crossround/recurring/` | **5/5 (2026-08-17)** |
-| Scope names only a component and does not enumerate units | `undetermined` | `review-record.md` | 5/5 |
-| Relevant unit gate-reviewed, cause unchanged, finding absent | `Carried forward` | — | never run |
-| Enumerated scope excludes the prior unit | `Out of scope` | — | never run |
+| Relevant unit gate-reviewed, cause removed, finding absent | `Closed` | `crossround/closed/` | **5/5** |
+| Finding re-reported after the recorded Reach changed | `Recurring` | `crossround/recurring/` | **5/5** |
+| Relevant unit gate-reviewed, cause unchanged, finding absent | `Carried forward` | `crossround/carried/` | **3/3** |
+| Enumerated scope excludes the prior unit | `Out of scope` | `crossround/outofscope/` | **3/3** |
+| Scope names only a component and does not enumerate units | `undetermined` | `review-record.md` | **5/5** |
+
+All five reached, 2026-08-17. Every declared state now has a fixture that can produce it and a run
+that did.
 
 Each `crossround/` variant is self-contained: a prior record, a round-two Review Record, and the code
-the records name. The two variants share a byte-identical prior record, so the only difference is the
-code state and whether the round-two review re-reports the finding.
+the records name. All four share a byte-identical prior record, so the only difference between them is
+the code state and what the round-two review covers and reports.
 
 **Why three of these were unreachable before.** They were declared here and never ran, but running
 them with `review-record.md` and `prior-disposition.md` could not have produced them: that prior
@@ -134,12 +137,37 @@ All five `Recurring` responses chose correctly between the rule's two explanatio
 incomplete, not the cause wrong. The prior repair converged a wrapper with the thing it wrapped —
 two locations that never disagreed — while the one divergent definition was never in the Reach.
 
-Two things this run surfaced that were not scored for:
+`Carried forward` and `Out of scope` then reached 3/3 each. They are branch coverage rather than
+variance questions, so three responses apiece.
 
-- **A repeated Kind gap.** Two of five named essentially the same missing value — `normalize`,
-  `normalize at construction` — for giving a type a canonical form so one comparison serves every
-  caller. Two independent instances of one shape; a third earns it a value under the rule that
-  promoted `distinguish`.
+| Signal | `Carried forward` | `Out of scope` |
+|---|---:|---:|
+| The prior finding reaches its expected lifecycle section | 3/3 | 3/3 |
+| The unestablished closure condition is named | 3/3 (condition 2) | 3/3 (condition 1) |
+| The prior disposition and its reason survive unchanged | 3/3 | 3/3 |
+| Decidably outside is distinguished from `undetermined` | n/a | 3/3 |
+
+**The `Out of scope` variant is the sharpest test in the set.** Its code is byte-identical to the
+`Closed` variant's — the cause genuinely is repaired — and the only difference is that the round-two
+review covers a different unit. All three read the code, saw the repair, said so explicitly, and
+**refused to close it**: closure condition 1 wants the input's own evidence, and code read during
+triage is not the input's coverage. The same code produced `Closed` 5/5 when the review covered it and
+`Out of scope` 3/3 when it did not, which is exactly the variable the design says should decide it.
+
+Two of the three `Carried forward` responses noted that the review's `PASS` over unrepaired code is a
+review miss, and routed the file back to `static-review` rather than entering it as a finding of their
+own — the boundary rule holding in the case where breaking it would have been most tempting.
+
+Two things these runs surfaced that were not scored for:
+
+- **A repeated Kind gap, now at three instances.** Two `Recurring` responses and one
+  `Carried forward` response independently named the same missing value — `normalize`,
+  `normalize at construction` — for giving a type a canonical form at construction so one comparison
+  serves every caller. Each explained why `converge`, `forbid`, and `guard` do not fit: it neither
+  deletes an implementation, nor refuses an input, nor adds a check; it removes the input distinction
+  the definitions disagree about. Three independent instances of one shape **meets the bar that
+  promoted `distinguish`**. Recorded here rather than acted on: a Kind is shipped vocabulary, and the
+  last addition was named wrongly on its first attempt.
 - **The `crossround` prior record states its Reach as named units rather than `file:line`.** Four of
   five flagged it: resolvable here because the file is sixteen lines, but not at scale. A defect in
   the fixture, recorded rather than quietly fixed, because it is the same class of defect the
