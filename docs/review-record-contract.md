@@ -22,7 +22,8 @@ what remains a release blocker. Read the field list as current, not as settled.
 | `Verdict` | Phase 4b | Record integrity | reconciled against the gate the index shows |
 | Gate Index | Phase 4 | Record integrity, Phase 1 | which gates opened, and at which one a finding sits |
 | Gate finding rows | Phase 4 | Phase 0, Phase 1 | the findings themselves; each row is a `file:line` |
-| Structural Causes | Phase 4c | **nothing** | see Open seam defects |
+| `Findings` | Phase 5 header | Record integrity | reconciled against the rows the record contains; counts every finding row, not the `Triage` file counts |
+| Structural Causes | Phase 4c | Phase 0, Phase 1, Phase 2 | a row naming a finding is that finding's stated cause and is verified like any other; a row naming none is itself a finding, keyed by what it states and the unit that carries it |
 | Against-Contract, Claims Verified | Phase 4b | Phase 1 | the same defect can arrive here *and* as a gate finding |
 
 ## Rules that hold the two halves together
@@ -50,21 +51,18 @@ what remains a release blocker. Read the field list as current, not as settled.
 
 ## Open seam defects
 
-- **Nothing reads Structural Causes.** `static-review`'s Phase 4c exists to name a finding's cause
-  when the gate that would carry it is blocked — the producer's answer to a repair landing in the
-  wrong place. `triage-findings` never mentions the section: Phase 0 normalizes "its non-gated
-  tracks" generically, and Phase 2 derives every cause from the code as though the review had offered
-  none. So the consumer re-derives what the producer already established, and a disagreement between
-  the two is invisible rather than reconciled. Either Phase 2 reads it as a stated cause to verify
-  (the treatment it already gives a gate finding's stated cause), or Phase 4c is output with no
-  reader.
+`none`. Both defects this file surfaced on the day it was written are settled:
 
-- **`Finding count` has no producer.** `triage-findings`' Record integrity table reconciles a stated
-  finding count against the rows the record contains, but `static-review`'s report format emits no
-  such field — its `Triage` line counts *files* (Red/Yellow/Green), not findings. Against a real
-  Review Record this check is `not claimed` every time, which makes it decoration rather than an
-  integrity anchor. The scenario fixture supplies a `Finding count` line that the producer never
-  writes. Either `static-review` states the count, or the check row goes.
+- **Structural Causes had no reader.** Settled by naming what each row kind is. A row that names a
+  finding is that finding's stated cause, which Phase 2 already knows how to verify. A row that names
+  none is itself a finding: it states what is wrong and the unit that carries it, so Phase 1 can key
+  it, and it was filed as a cause only because the gate that would have carried it never opened.
+  Restricting Phase 4c to linked rows was the alternative and was declined — case 2 exists for a
+  cause that belongs to no reported finding, which is the case that motivated the phase.
+- **`Finding count` had no producer.** Settled by `static-review` emitting `Findings`, defined as
+  every finding row rather than the `Triage` file counts. Dropping the check was the alternative and
+  was declined: a declared count is what detects a record truncated in transit, and these records are
+  transcribed between sessions by hand.
 
 ## When this file is wrong
 

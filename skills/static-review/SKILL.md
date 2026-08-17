@@ -196,6 +196,7 @@ Produce a report using this format:
 **Calibration**: Gates 1-[N] ([reason])
 **Triage**: [skipped | Red M / Yellow N / Green K]
 **Coverage**: [complete | partial — gate-reviewed: [...]; triage-only: [...]; unread: [...]]
+**Findings**: [one number: every finding row below, gate sections and non-gated tracks alike — not the file counts in Triage]
 **Verdict**: [PASS | FAIL at Gate N] [+ SECURITY-ALERT] [+ CONTRACT-VIOLATED] [+ CLAIM-REFUTED]
 **Not executed**: [static review only — tests / build / runtime not run]
 

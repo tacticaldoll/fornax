@@ -6,7 +6,7 @@
 **Triage**: Red 1 / Yellow 1 / Green 3
 **Coverage**: complete
 **Verdict**: FAIL at Gate 5
-**Finding count**: 3
+**Findings**: 3
 **Not executed**: static review only
 
 ## Gate Index

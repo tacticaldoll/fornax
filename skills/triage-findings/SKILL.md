@@ -24,6 +24,11 @@ to classify and no bucket to mis-assign.
 Normalize the input into one flat list of findings, whatever shape it arrived in — a Review Record's
 gate tables, its non-gated tracks, a pasted list, or a file holding either.
 
+A Structural Causes row naming no finding is itself one. It states what is wrong and the unit that
+carries it, which is all Phase 1 needs to key it; the review reported it as a cause because the gate
+that would have carried it never opened, not because it is a lesser kind of thing. A row that does
+name a finding is that finding's stated cause, and Phase 2 verifies it like any other.
+
 Audit the Review Record before reading the code: reconcile its Verdict with the Gate Index, its
 stated finding count with the finding rows it actually contains, and its Coverage claim with the
 units and gates it enumerates. Preserve each mismatch for Record integrity; do not silently repair
