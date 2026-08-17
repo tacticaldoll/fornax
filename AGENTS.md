@@ -110,6 +110,28 @@ single bold `**Input**:` line after the intent paragraph and before the first wo
 
 `scripts/validate_skills.py` enforces that this line is present; it does not check the line's content.
 
+## Output Records
+
+A skill whose type owes a defined output (`docs/skill-types.md`) states that output's shape in
+`SKILL.md`. Three rules about that shape, each earned on the one seam in this repository where a
+skill's record is another skill's input — `static-review` produces a Review Record and
+`triage-findings` reads it (`docs/review-record-contract.md`). They are judgment, not structure:
+nothing validates them, and they apply only where a record makes claims about itself.
+
+- **Give a check three answers, not two.** "The input carries no such claim" is not "the claim does
+  not hold". A two-valued cell forces a record predating a field, or one from another producer, into
+  a false pass or a false contradiction. Name the third value, and say that a missing claim is not a
+  passing one.
+- **Keep facts about the input apart from facts about the record being written.** They read alike and
+  answer to different owners: one is the input's fitness for the work, the other is your own. A
+  self-check folded into an audit of the input hides which of the two failed.
+- **Require an enumeration rather than inventing a value for what cannot be decided without one.** A
+  record stating a scope without listing what it covered cannot support a decision about membership,
+  and a state meaning "undecidable" spreads into every later round that reads it. Require the
+  enumeration from producers in this repository; keep the undecidable state only as a concession to
+  records this repository did not produce, and say in the skill which state is that concession — a
+  reader cannot otherwise tell a compatibility path from a design choice.
+
 ## Authoring Workflow
 
 When asked to create or update a skill:
