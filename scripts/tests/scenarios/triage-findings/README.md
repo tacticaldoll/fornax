@@ -84,7 +84,29 @@ Use one fresh context per response and at least five responses per variant.
 The VS Code subagent harness rooted in the Fornax repository is not a valid control: repository
 discovery exposes the candidate skill even when the prompt does not name it — and, since the
 fixtures landed, this scoring table as well. A run whose prompt carries `scripts/tests/scenarios/…`
-paths executed inside the repository and could read both.
+paths executed inside the repository and could read both. Subagents inherit their parent session's
+working directory and the Agent tool takes no cwd parameter, so the only fix is a session started
+outside the checkout.
+
+### Running it
+
+1. Copy `crossround/<variant>/` — or `review-record.md`, `prior-disposition.md`, `single-finding.md`
+   and the code they name — into a path that does not contain the string `fornax`. A path is a hint an
+   agent can follow.
+2. Start the session with cwd set to **that workspace**, never its parent: this file must not be
+   inside the working directory of a run it scores.
+3. For the guided arm, place the candidate `SKILL.md` inside the workspace and have the prompt read it
+   by workspace-relative path. For the control arm, name no skill.
+4. Have the parent session spawn the subagents and save each reply verbatim — the parent is not under
+   test, and the subagent writing its own transcript would score itself on the persistence signal.
+5. Check `find <workspace> -type f` afterwards. The fixture files and nothing else.
+
+**The local control window is closed.** It held only while `triage-findings` was unreleased: the
+plugin cache carried 0.2.0 without it, so a subagent anywhere on the machine could not discover it
+through the plugin system. Since the 0.3.0 deployment the cache carries the skill, and a control on
+this machine is no longer reachable by any arrangement of working directories. The controlled numbers
+below were taken inside that window. Repeating them needs a machine, container, or account without
+Fornax installed.
 
 ## Current evidence (2026-08-14)
 
