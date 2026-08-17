@@ -101,7 +101,48 @@ responses produced:
 | Put the prior finding in exactly one lifecycle slot | 0/5 |
 | Keep output out of files and artifacts | 5/5 |
 
-## Current evidence (2026-08-17)
+## Controlled evidence (2026-08-17)
+
+Five control and five guided fresh contexts, both arms in clean workspaces outside any Fornax
+checkout, same fixture, same pressure prompt. The control arm names no skill; the guided arm reads
+`SKILL.md` from its own workspace. Neither workspace gained a file.
+
+| Signal | Control | Guided |
+|---|---:|---:|
+| Reject the false `Ord` cause, citing the derive | 5/5 | 5/5 |
+| **Keep the finding while rejecting its stated cause** | **1/5** | **5/5** |
+| **Refuse to close the prior finding without enumerated coverage** | **0/5** | **5/5** |
+| Put the prior finding in exactly one lifecycle section | n/a — no sections | 5/5 |
+| Report all four planted integrity mismatches | **0/5** | 5/5 |
+| List every repair a cause admits | **0/5** | 5/5 |
+| Produce Pattern, Coupling, Prior scope resolution, Self-check | **0/5** | 5/5 |
+| Place the record nowhere outside the reply | 5/5 | 5/5 |
+
+The two separations are the mirror image of the failure this skill was written for. Four of five
+controls **discarded a real defect** because the review had stated its cause wrongly — the quadratic
+lookup is real, and they rejected the finding along with the false premise. All five controls
+**closed the prior deferred finding** on code evidence alone, with no coverage enumerating the unit
+as reviewed. Every guided response did neither, and named the reason: a wrong cause does not
+invalidate a finding, and review silence is never closure.
+
+Two predictions made before scoring were wrong, both in the skill's favour, so they are recorded
+rather than quietly dropped:
+
+- The integrity audit was expected to be **baseline** behaviour, on the strength of an earlier
+  contaminated run where four of four controls caught the record's contradictions. Controlled, all
+  five caught the loudest mismatch (verdict against index) and three of five caught the finding
+  count, but **none caught the calibration/index mismatch and none caught the coverage
+  contradiction**. The structured table catches two things the baseline reliably misses.
+- The no-write rule is confirmed **near-redundant**: 5/5 controls declined to persist the record
+  unprompted under the same durability pressure, which with the earlier run makes 8 of 9. It earns
+  its line and little more.
+
+Contamination check: no control response contains `Prior scope resolution`, `Self-check`, `Coupling`,
+`Undetermined`, or `triage-findings`. The documented leak from `prior-disposition.md` did appear —
+two controls borrowed its section headings and its `Kind` column name — which is the leak this file
+keeps deliberately, since a real second round always sees the previous round's format.
+
+## Earlier guided-only evidence (2026-08-17)
 
 Five guided fresh-context responses on the pressure prompt, and five on the stripped `kind-gap.md`,
 against the skill at `2d5c791`:
