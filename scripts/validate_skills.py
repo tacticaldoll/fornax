@@ -355,8 +355,7 @@ def validate_record_inputs(skill_dir: Path, name: str, content: str) -> bool:
             )
             failed = True
             continue
-        matching = sorted(set(records) & set(consumer.consumes))
-        if not matching:
+        if not set(records) & set(consumer.consumes):
             fail(
                 name,
                 f"Input names `{producer_name}` {match.group('label')} but {INTERFACE_FILE} "
