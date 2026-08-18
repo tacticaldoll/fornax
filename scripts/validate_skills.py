@@ -367,6 +367,117 @@ def validate_record_inputs(skill_dir: Path, name: str, content: str) -> bool:
     return failed
 
 
+def validate_skill_manifest(
+    skill_dir: Path,
+    name: str,
+    manifest: str,
+    allow_template_placeholders: bool,
+) -> tuple[bool, str | None, str | None]:
+    """Validate one skill manifest and return values shared with SKILL.md checks."""
+    failed = False
+
+    for field in REQUIRED_MANIFEST_FIELDS:
+        if not re.search(rf"^{re.escape(field)}\s*:", manifest, re.MULTILINE):
+            fail(name, f"skill.yaml missing {field}")
+            failed = True
+
+    if re.search(r"^version\s*:", manifest, re.MULTILINE):
+        fail(
+            name,
+            "skill.yaml must not set version; release versioning is the collection's "
+            "(distribution.json)",
+        )
+        failed = True
+
+    manifest_name = get_top_level_yaml_value(manifest, "name")
+    manifest_status = get_top_level_yaml_value(manifest, "status")
+    entrypoint = get_top_level_yaml_value(manifest, "entrypoint")
+
+    if manifest_name and manifest_name != name and not allow_template_placeholders:
+        fail(name, f"skill.yaml name '{manifest_name}' must match folder name")
+        failed = True
+
+    if manifest_status and manifest_status not in STATUSES:
+        fail(name, f"skill.yaml status must be {listed(STATUSES)}")
+        failed = True
+
+    manifest_family = get_top_level_yaml_value(manifest, "family")
+
+    if manifest_family and manifest_family not in FAMILIES:
+        fail(name, f"skill.yaml family must be {listed(FAMILIES)}")
+        failed = True
+
+    if entrypoint and not (skill_dir / entrypoint).exists():
+        fail(name, f"skill.yaml entrypoint not found: {entrypoint}")
+        failed = True
+
+    for resource_key in ("scripts", "references", "assets"):
+        resource_path = get_yaml_mapping_value(manifest, "resources", resource_key)
+
+        if not resource_path:
+            continue
+
+        if Path(resource_path).is_absolute():
+            fail(name, f"resources.{resource_key} must use a relative path")
+            failed = True
+            continue
+
+        if not (skill_dir / resource_path).exists():
+            fail(name, f"resources.{resource_key} path not found: {resource_path}")
+            failed = True
+
+    return failed, manifest_name, get_top_level_yaml_value(manifest, "description")
+
+
+def validate_skill_document(
+    name: str,
+    content: str,
+    frontmatter: str,
+    manifest_name: str | None,
+    manifest_description: str | None,
+    allow_template_placeholders: bool,
+) -> bool:
+    """Validate SKILL.md metadata and its required Input contract."""
+    failed = False
+    frontmatter_name = get_top_level_yaml_value(frontmatter, "name")
+
+    if not re.search(r"^name\s*:\s*\S+", frontmatter, re.MULTILINE):
+        fail(name, "frontmatter missing name")
+        failed = True
+
+    if frontmatter_name and frontmatter_name != name and not allow_template_placeholders:
+        fail(name, f"SKILL.md frontmatter name '{frontmatter_name}' must match folder name")
+        failed = True
+
+    if manifest_name and frontmatter_name and manifest_name != frontmatter_name:
+        fail(name, "skill.yaml name and SKILL.md frontmatter name must match")
+        failed = True
+
+    if not re.search(r"^description\s*:\s*\S+", frontmatter, re.MULTILINE):
+        fail(name, "frontmatter missing description")
+        failed = True
+
+    frontmatter_description = get_top_level_yaml_value(frontmatter, "description")
+
+    if (
+        manifest_description
+        and frontmatter_description
+        and manifest_description != frontmatter_description
+    ):
+        fail(name, "skill.yaml and SKILL.md frontmatter description must match")
+        failed = True
+
+    if manifest_description and not manifest_description.startswith("Use when "):
+        fail(name, "skill.yaml description must start with 'Use when '")
+        failed = True
+
+    if not re.search(r"^\*\*Input\*\*\s*:", content, re.MULTILINE):
+        fail(name, "SKILL.md must state an **Input**: contract line")
+        failed = True
+
+    return failed
+
+
 def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
     name = skill_dir.name
     manifest_file = skill_dir / "skill.yaml"
@@ -387,55 +498,11 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
 
     manifest = manifest_file.read_text(encoding="utf-8")
 
-    for field in REQUIRED_MANIFEST_FIELDS:
-        if not re.search(rf"^{re.escape(field)}\s*:", manifest, re.MULTILINE):
-            fail(name, f"skill.yaml missing {field}")
-            skill_failed = True
-
-    if re.search(r"^version\s*:", manifest, re.MULTILINE):
-        fail(
-            name,
-            "skill.yaml must not set version; release versioning is the collection's "
-            "(distribution.json)",
-        )
+    manifest_failed, manifest_name, manifest_description = validate_skill_manifest(
+        skill_dir, name, manifest, allow_template_placeholders
+    )
+    if manifest_failed:
         skill_failed = True
-
-    manifest_name = get_top_level_yaml_value(manifest, "name")
-    manifest_status = get_top_level_yaml_value(manifest, "status")
-    entrypoint = get_top_level_yaml_value(manifest, "entrypoint")
-
-    if manifest_name and manifest_name != name and not allow_template_placeholders:
-        fail(name, f"skill.yaml name '{manifest_name}' must match folder name")
-        skill_failed = True
-
-    if manifest_status and manifest_status not in STATUSES:
-        fail(name, f"skill.yaml status must be {listed(STATUSES)}")
-        skill_failed = True
-
-    manifest_family = get_top_level_yaml_value(manifest, "family")
-
-    if manifest_family and manifest_family not in FAMILIES:
-        fail(name, f"skill.yaml family must be {listed(FAMILIES)}")
-        skill_failed = True
-
-    if entrypoint and not (skill_dir / entrypoint).exists():
-        fail(name, f"skill.yaml entrypoint not found: {entrypoint}")
-        skill_failed = True
-
-    for resource_key in ("scripts", "references", "assets"):
-        resource_path = get_yaml_mapping_value(manifest, "resources", resource_key)
-
-        if not resource_path:
-            continue
-
-        if Path(resource_path).is_absolute():
-            fail(name, f"resources.{resource_key} must use a relative path")
-            skill_failed = True
-            continue
-
-        if not (skill_dir / resource_path).exists():
-            fail(name, f"resources.{resource_key} path not found: {resource_path}")
-            skill_failed = True
 
     content = skill_file.read_text(encoding="utf-8")
     frontmatter_match = FRONTMATTER_PATTERN.search(content)
@@ -445,41 +512,14 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
         return False
 
     frontmatter = frontmatter_match.group(1)
-    frontmatter_name = get_top_level_yaml_value(frontmatter, "name")
-
-    if not re.search(r"^name\s*:\s*\S+", frontmatter, re.MULTILINE):
-        fail(name, "frontmatter missing name")
-        skill_failed = True
-
-    if frontmatter_name and frontmatter_name != name and not allow_template_placeholders:
-        fail(name, f"SKILL.md frontmatter name '{frontmatter_name}' must match folder name")
-        skill_failed = True
-
-    if manifest_name and frontmatter_name and manifest_name != frontmatter_name:
-        fail(name, "skill.yaml name and SKILL.md frontmatter name must match")
-        skill_failed = True
-
-    if not re.search(r"^description\s*:\s*\S+", frontmatter, re.MULTILINE):
-        fail(name, "frontmatter missing description")
-        skill_failed = True
-
-    manifest_description = get_top_level_yaml_value(manifest, "description")
-    frontmatter_description = get_top_level_yaml_value(frontmatter, "description")
-
-    if (
-        manifest_description
-        and frontmatter_description
-        and manifest_description != frontmatter_description
+    if validate_skill_document(
+        name,
+        content,
+        frontmatter,
+        manifest_name,
+        manifest_description,
+        allow_template_placeholders,
     ):
-        fail(name, "skill.yaml and SKILL.md frontmatter description must match")
-        skill_failed = True
-
-    if manifest_description and not manifest_description.startswith("Use when "):
-        fail(name, "skill.yaml description must start with 'Use when '")
-        skill_failed = True
-
-    if not re.search(r"^\*\*Input\*\*\s*:", content, re.MULTILINE):
-        fail(name, "SKILL.md must state an **Input**: contract line")
         skill_failed = True
 
     if validate_record_inputs(skill_dir, name, content):
