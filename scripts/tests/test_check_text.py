@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -13,14 +14,48 @@ class TextHygiene(unittest.TestCase):
             path = Path(tmp) / "fixture.md"
             path.write_text("no newline", encoding="utf-8")
             errors = check_text.check([path])
-        self.assertIn("must end with a newline", errors[0])
+        self.assertIn("must end with a newline", errors[0].message)
 
     def test_missing_local_markdown_link_fails(self) -> None:
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / "fixture.md"
             path.write_text("See [missing](missing.md).\n", encoding="utf-8")
             errors = check_text.check([path])
-        self.assertIn("link not found", errors[0])
+        self.assertIn("link not found", errors[0].message)
+
+    def test_absolute_markdown_link_fails(self) -> None:
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "fixture.md"
+            path.write_text("See [absolute](/docs/example.md).\n", encoding="utf-8")
+            errors = check_text.check([path])
+
+        self.assertEqual(errors[0].path, path)
+        self.assertIn("absolute Markdown link is not allowed", errors[0].message)
+
+    def test_a_colon_in_the_source_path_remains_structured(self) -> None:
+        with TemporaryDirectory() as tmp:
+            parent = Path(tmp) / "with:colon"
+            parent.mkdir()
+            path = parent / "fixture.md"
+            path.write_text("no newline", encoding="utf-8")
+            errors = check_text.check([path])
+
+        self.assertEqual(errors[0].path, path)
+        self.assertEqual(errors[0].message, "text file must end with a newline")
+
+    def test_workspace_files_include_cached_and_untracked_files(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            tracked = root / "tracked.md"
+            tracked.write_text("tracked\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(root), "add", tracked.name], check=True)
+            untracked = root / "untracked.md"
+            untracked.write_text("untracked\n", encoding="utf-8")
+
+            files = check_text.workspace_files(root)
+
+        self.assertEqual(set(files), {tracked, untracked})
 
     def test_valid_text_and_binary_files_pass(self) -> None:
         with TemporaryDirectory() as tmp:

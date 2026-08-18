@@ -10,7 +10,7 @@ import check_workspace
 
 class WorkspaceChecks(unittest.TestCase):
     @patch("check_workspace.subprocess.run")
-    def test_every_step_runs_and_success_is_reported(self, run: Mock) -> None:
+    def test_all_steps_are_dispatched_and_success_is_reported(self, run: Mock) -> None:
         run.return_value.returncode = 0
 
         with redirect_stdout(StringIO()), redirect_stderr(StringIO()):
@@ -18,6 +18,18 @@ class WorkspaceChecks(unittest.TestCase):
 
         self.assertEqual(code, 0)
         self.assertEqual(run.call_count, len(check_workspace.STEPS))
+
+    def test_every_script_step_names_an_existing_file(self) -> None:
+        scripts = [
+            arguments[0]
+            for _, *arguments in check_workspace.STEPS
+            if arguments[0].endswith(".py")
+        ]
+
+        self.assertTrue(scripts)
+        for script in scripts:
+            with self.subTest(script=script):
+                self.assertTrue((check_workspace.ROOT / script).is_file())
 
     @patch("check_workspace.subprocess.run")
     def test_any_failed_step_fails_the_workspace(self, run: Mock) -> None:

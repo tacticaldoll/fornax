@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Check tracked text-file hygiene and repository-local Markdown links."""
+"""Check workspace text-file hygiene and repository-local Markdown links."""
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
-import os
+from dataclasses import dataclass
 from pathlib import Path
 
 
@@ -13,7 +14,14 @@ ROOT = Path(__file__).resolve().parent.parent
 MARKDOWN_LINK = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 
 
-def tracked_files(root: Path) -> list[Path]:
+@dataclass(frozen=True)
+class Diagnostic:
+    path: Path
+    message: str
+
+
+def workspace_files(root: Path) -> list[Path]:
+    """Return cached and non-ignored untracked files in the workspace."""
     result = subprocess.run(
         ["git", "-C", str(root), "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
         check=True,
@@ -32,20 +40,20 @@ def local_target(raw: str) -> str | None:
     return target
 
 
-def check(files: list[Path]) -> list[str]:
-    errors: list[str] = []
+def check(files: list[Path]) -> list[Diagnostic]:
+    errors: list[Diagnostic] = []
     for path in files:
         if not path.is_file():
             continue
         try:
             data = path.read_bytes()
         except OSError as error:
-            errors.append(f"{path}: {error}")
+            errors.append(Diagnostic(path, str(error)))
             continue
         if not data or b"\0" in data:
             continue
         if not data.endswith(b"\n"):
-            errors.append(f"{path}: text file must end with a newline")
+            errors.append(Diagnostic(path, "text file must end with a newline"))
         if path.suffix.lower() != ".md":
             continue
         try:
@@ -54,30 +62,31 @@ def check(files: list[Path]) -> list[str]:
             continue
         for raw in MARKDOWN_LINK.findall(content):
             target = local_target(raw)
-            if target is None or Path(target).is_absolute():
+            if target is None:
+                continue
+            if Path(target).is_absolute():
+                errors.append(Diagnostic(path, f"absolute Markdown link is not allowed: {raw}"))
                 continue
             if not (path.parent / target).exists():
-                errors.append(f"{path}: link not found: {raw}")
+                errors.append(Diagnostic(path, f"link not found: {raw}"))
     return errors
 
 
 def main() -> int:
     try:
-        errors = check(tracked_files(ROOT))
+        errors = check(workspace_files(ROOT))
     except (OSError, subprocess.CalledProcessError) as error:
         print(f"FAIL text hygiene - {error}")
         return 1
     for error in errors:
-        absolute = error.split(":", 1)[0]
         try:
-            shown = Path(absolute).relative_to(ROOT)
-            error = str(shown) + error[len(absolute) :]
+            shown = error.path.relative_to(ROOT)
         except ValueError:
-            pass
-        print(f"FAIL {error}")
+            shown = error.path
+        print(f"FAIL {shown}: {error.message}")
     if errors:
         return 1
-    print("OK   tracked text hygiene and local Markdown links")
+    print("OK   workspace text hygiene and local Markdown links")
     return 0
 
 
