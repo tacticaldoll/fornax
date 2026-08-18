@@ -29,6 +29,11 @@ NAME_PATTERN = re.compile(r"^[a-z0-9-]+$")
 VERSION_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
 FRONTMATTER_PATTERN = re.compile(r"^---\s*\r?\n(.*?)\r?\n---", re.DOTALL)
 MARKDOWN_LINK_PATTERN = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
+INPUT_LINE_PATTERN = re.compile(r"^\*\*Input\*\*\s*:\s*(.+)$", re.MULTILINE)
+RECORD_INPUT_PATTERN = re.compile(
+    r"`(?P<producer>[a-z0-9]+(?:-[a-z0-9]+)*)`\s+"
+    r"(?P<label>[A-Z][A-Za-z0-9]*(?:\s+[A-Z][A-Za-z0-9]*)*\s+Record)\b"
+)
 REQUIRED_MANIFEST_FIELDS = ("name", "family", "description", "triggers", "entrypoint")
 HOST_VERSION_MANIFESTS = (
     ".claude-plugin/plugin.json",
@@ -38,13 +43,13 @@ HOST_VERSION_MANIFESTS = (
 )
 
 
+HOST_DESCRIPTION_MANIFESTS = HOST_VERSION_MANIFESTS + (".claude-plugin/marketplace.json",)
+
+
 @dataclass(frozen=True)
 class DistributionValidation:
     passed: bool
     publisher_id: str | None
-
-
-HOST_DESCRIPTION_MANIFESTS = HOST_VERSION_MANIFESTS + (".claude-plugin/marketplace.json",)
 
 
 def described_paths(manifest: dict) -> list[tuple[str, str]]:
@@ -278,6 +283,68 @@ def validate_handoffs(skill_dir: Path, name: str, known_skills: set[str]) -> boo
     return failed
 
 
+def record_type(label: str) -> str:
+    """Turn a standardized title-cased Input label into its sidecar record type."""
+    return "-".join(part.lower() for part in label.split())
+
+
+def validate_record_inputs(skill_dir: Path, name: str, content: str) -> bool:
+    """Require explicit producer-record Input claims to have matching sidecars.
+
+    This is deliberately a narrow consistency check, not seam discovery. Only a
+    standardized ``a `producer` Record Name``-style claim on the Input line opts in;
+    matching sidecars remain the authoritative seam inventory.
+    """
+    input_match = INPUT_LINE_PATTERN.search(content)
+    if not input_match:
+        return False
+
+    consumer_path = skill_dir / INTERFACE_FILE
+    consumer = None
+    if consumer_path.exists():
+        try:
+            consumer = load_interface(consumer_path, name)
+        except InterfaceError:
+            return False  # ordinary sidecar validation reports the malformed file
+
+    failed = False
+    for match in RECORD_INPUT_PATTERN.finditer(input_match.group(1)):
+        producer_name = match.group("producer")
+        expected_type = record_type(match.group("label"))
+        producer_path = skill_dir.parent / producer_name / INTERFACE_FILE
+        if not producer_path.exists():
+            fail(
+                name,
+                f"Input names `{producer_name}` {match.group('label')} but the producer has "
+                f"no {INTERFACE_FILE}",
+            )
+            failed = True
+            continue
+        try:
+            producer = load_interface(producer_path, producer_name)
+        except InterfaceError:
+            continue  # the producer's ordinary sidecar validation reports the malformed file
+
+        records = [record for record in producer.produces if record.record_type == expected_type]
+        if len(records) != 1:
+            fail(
+                name,
+                f"Input names `{producer_name}` {match.group('label')} but its sidecar must "
+                f"produce exactly one {expected_type} record",
+            )
+            failed = True
+            continue
+        if consumer is None or records[0] not in consumer.consumes:
+            fail(
+                name,
+                f"Input names `{producer_name}` {match.group('label')} but {INTERFACE_FILE} "
+                f"does not consume {records[0]}",
+            )
+            failed = True
+
+    return failed
+
+
 def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
     name = skill_dir.name
     manifest_file = skill_dir / "skill.yaml"
@@ -391,6 +458,9 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
 
     if not re.search(r"^\*\*Input\*\*\s*:", content, re.MULTILINE):
         fail(name, "SKILL.md must state an **Input**: contract line")
+        skill_failed = True
+
+    if validate_record_inputs(skill_dir, name, content):
         skill_failed = True
 
     interface_file = skill_dir / INTERFACE_FILE

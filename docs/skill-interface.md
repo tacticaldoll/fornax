@@ -34,6 +34,12 @@ Each record is the tuple `(publisher UUID, record type, major version, media typ
 - Major starts at 1 and changes only when an old consumer cannot read the new record.
 - Media type describes representation. It is not a payload schema.
 
+A consumer that names a producer's record in its `**Input**:` line uses the standardized form
+``a `<producer>` <Title Case Record Name>`` (for example, ``a `static-review` Review Record``).
+Workspace validation checks that the producer declares exactly one matching record type and that the
+consumer sidecar consumes that identity. This narrow prose check catches a missing declaration; the
+sidecars, not prose, remain authoritative for seam discovery.
+
 When a producer's record is consumed by another skill, mark the Markdown fence that defines the
 record's visible output shape:
 

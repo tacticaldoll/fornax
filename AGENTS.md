@@ -114,16 +114,18 @@ single bold `**Input**:` line after the intent paragraph and before the first wo
 ## Output Records
 
 A skill whose type owes a defined output (`docs/skill-types.md`) states that output's shape in
-`SKILL.md`. Three rules about that shape, each earned on the one seam in this repository where a
-skill's record is another skill's input — `static-review` produces a Review Record and
-`triage-findings` reads it (`docs/review-record-contract.md`). They are judgment, not structure:
-nothing validates them, and they apply only where a record makes claims about itself.
+`SKILL.md`. Three rules about that shape, each earned where a record receives field-level audit:
+`static-review` produces a Review Record and `triage-findings` audits it
+(`docs/review-record-contract.md`). They are judgment, not structure: nothing validates them, and
+they apply only where a record makes claims about itself.
 
 A new skill needs no record contract of its own. When another skill reads its output, give both
 skills matching optional `skill-interface.yaml` declarations and keep the human-readable record name
-in their `**Input**:` and output prose. The sidecars make the seam discoverable without parsing prose;
-a skill whose output nobody reads is not missing a contract. See `docs/skill-interface.md` and the
-standing decision in `PROJECT.md`.
+in their `**Input**:` and output prose. Use the standardized form
+``a `<producer>` <Title Case Record Name>`` for that Input claim; validation checks it against both
+sidecars. The sidecars make the seam discoverable without using prose as the inventory; a skill
+whose output nobody reads is not missing a contract. See `docs/skill-interface.md` and the standing
+decision in `PROJECT.md`.
 
 - **Give a check three answers, not two.** "The input carries no such claim" is not "the claim does
   not hold". A two-valued cell forces a record predating a field, or one from another producer, into

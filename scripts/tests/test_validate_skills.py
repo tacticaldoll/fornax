@@ -12,6 +12,7 @@ import skill_model
 import validate_skills
 
 PUBLISHER = "9d0f3c1a-7b2e-4e61-8d45-2a6f90c3b817"
+REVIEW_RECORD = f"{PUBLISHER}/review-record@1 text/markdown"
 
 NAME = "example-skill"
 MANIFEST = fixtures.manifest(NAME)
@@ -183,6 +184,51 @@ class ValidateSkillTests(unittest.TestCase):
 
         self.assertFalse(passed)
         self.assertIn("skill-interface.yaml", output)
+
+    def test_explicit_record_input_requires_a_matching_consumer_sidecar(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_skill(
+                root,
+                "static-review",
+                interface_text=f"publisher: {PUBLISHER}\nproduces:\n  - {REVIEW_RECORD}\n",
+            )
+            text = SKILL_MD.replace(
+                "the thing this fixture consumes", "a `static-review` Review Record"
+            )
+            passed, output = check_skill(root, skill_md_text=text)
+
+        self.assertFalse(passed)
+        self.assertIn("does not consume", output)
+
+    def test_explicit_record_input_accepts_a_matching_consumer_sidecar(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_skill(
+                root,
+                "static-review",
+                interface_text=f"publisher: {PUBLISHER}\nproduces:\n  - {REVIEW_RECORD}\n",
+            )
+            text = SKILL_MD.replace(
+                "the thing this fixture consumes", "a `static-review` Review Record"
+            )
+            passed, output = check_skill(
+                root,
+                skill_md_text=text,
+                interface_text=f"publisher: {PUBLISHER}\nconsumes:\n  - {REVIEW_RECORD}\n",
+            )
+
+        self.assertTrue(passed, output)
+
+    def test_generic_feedback_input_does_not_require_a_sidecar(self) -> None:
+        with TemporaryDirectory() as tmp:
+            text = SKILL_MD.replace(
+                "the thing this fixture consumes",
+                "review feedback from another skill or a pasted findings list",
+            )
+            passed, output = check_skill(Path(tmp), skill_md_text=text)
+
+        self.assertTrue(passed, output)
 
 
 class ProjectedDescriptionTests(unittest.TestCase):
