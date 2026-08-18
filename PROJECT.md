@@ -54,6 +54,11 @@ Settled; reopen only with a reason, not by default.
 - **Release bumps are separate.** Feature and fix commits keep the current collection version while
   they are implemented and reviewed. After the release contents are confirmed, one separate
   `build(deploy)` commit bumps `distribution.json` and every host projection together.
+- **Development knowns are project state, not review authority.** Non-obvious defects, risks,
+  constraints, and debt that affect future judgment live in `development-knowns.yaml`; reviews,
+  tests, spikes, and experiments may supply evidence but do not dictate the statement or authorize
+  work. Treatment and work authorization remain separate, while Git history records transitions.
+  See `docs/development-knowns.md`.
 - **Enforcement is the structural floor only.** The validator checks structure (manifest fields,
   links, handoff targets, the `**Input**:` line, `family`); judgment (description shape, prose
   clarity) stays human. CI + the pre-commit hook run it.

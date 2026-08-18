@@ -1,0 +1,38 @@
+schema: 1
+knowns:
+  - id: python38-runtime-generic-aliases
+    statement: Maintenance scripts that assign generic aliases must remain executable on Python 3.8.
+    kind: constraint
+    treatment: accept
+    rationale: Future annotations postpone annotations but do not make built-in generic alias assignment valid on Python 3.8.
+    evidence:
+      - scripts/seam_contract.py assigns RecordShape and Seam aliases at module load time.
+      - The workspace supports the system Python 3.8 runtime used by contributors.
+    declined-changes:
+      - Replace typing.List and typing.Tuple in runtime alias assignments with list and tuple.
+    reconsider-when: The minimum supported Python version becomes 3.9 or later.
+    updated: 2026-08-18
+  - id: independently-runnable-link-checks
+    statement: Component checks retain overlapping absolute Markdown link validation.
+    kind: constraint
+    treatment: accept
+    rationale: validate_skills.py and check_text.py are independently runnable checks with different scopes and diagnostics.
+    evidence:
+      - scripts/validate_skills.py validates links inside each production skill.
+      - scripts/check_text.py validates Markdown links across the workspace.
+    declined-changes:
+      - Remove either component's absolute-link check solely to eliminate overlap in check_workspace.py.
+    reconsider-when: The component checks stop being public independently runnable entry points.
+    updated: 2026-08-18
+  - id: partial-review-requires-relevant-gate
+    statement: Silence closes a carried review item only when the current review opened the gate relevant to that item.
+    kind: constraint
+    treatment: accept
+    rationale: Enumerating coverage labels alone cannot distinguish a relevant partial review from an unrelated one.
+    evidence:
+      - skills/triage-findings/SKILL.md requires the relevant gate for partially-gate-reviewed units.
+      - scripts/tests/test_review_contract.py asserts the relevant-gate relationship directly.
+    declined-changes:
+      - Replace the semantic relationship assertion with a check that only enumerates coverage labels.
+    reconsider-when: Review coverage gains a structural representation that encodes item-to-gate relevance.
+    updated: 2026-08-18
