@@ -2,10 +2,9 @@
 """Generate the record inventory for every producer→consumer seam between skills.
 
 A seam is a consumer and producer whose optional ``skill-interface.yaml`` files name the
-same record identity. The list is **derived** rather than maintained, so "one seam" is what
-the corpus says today and
-a second one is counted without editing anything here — the same reason the README skill
-maps come from each skill's handoffs rather than from a list somebody keeps.
+same record identity. The list is **derived** rather than maintained, so every matching pair
+the corpus declares is counted without editing anything here — the same reason the README
+skill maps come from each skill's handoffs rather than from a list somebody keeps.
 
 Zero seams is a clean answer, not a failure. A check that failed on none would become a
 reason to keep a seam alive, which is the opposite of what this is for.

@@ -1,0 +1,3 @@
+publisher: 9d0f3c1a-7b2e-4e61-8d45-2a6f90c3b817
+consumes:
+  - 9d0f3c1a-7b2e-4e61-8d45-2a6f90c3b817/review-record@1 text/markdown
