@@ -167,11 +167,6 @@ def render(seams: list[Seam]) -> str:
         lines.append(f"### `{producer}` → `{consumer}` — {record}")
         lines.append("")
 
-        if not items:
-            lines.append(f"`{producer}` states no output template, so it declares no record shape.")
-            lines.append("")
-            continue
-
         lines.append("| Element | Kind |")
         lines.append("|---|---|")
 
