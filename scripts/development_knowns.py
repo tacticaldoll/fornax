@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import re
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 
 
@@ -82,7 +83,7 @@ def load(path: Path) -> tuple[Known, ...]:
     """Load a registry using only the documented constrained YAML shape."""
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
-    except OSError as error:
+    except (OSError, UnicodeError) as error:
         raise KnownError(str(error)) from error
 
     schema: str | None = None
@@ -188,8 +189,13 @@ def validate(knowns: tuple[Known, ...]) -> None:
             raise KnownError(
                 f"{known_id}: treatment must be one of {', '.join(sorted(TREATMENTS))}"
             )
-        if not DATE.fullmatch(known.scalar("updated")):
+        updated = known.scalar("updated")
+        if not DATE.fullmatch(updated):
             raise KnownError(f"{known_id}: updated must use YYYY-MM-DD")
+        try:
+            date.fromisoformat(updated)
+        except ValueError as error:
+            raise KnownError(f"{known_id}: updated must be a calendar date") from error
         evidence = known.values["evidence"]
         assert isinstance(evidence, tuple)
         if not evidence:

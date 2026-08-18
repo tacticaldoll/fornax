@@ -57,6 +57,14 @@ class ParserTests(unittest.TestCase):
         with self.assertRaisesRegex(development_knowns.KnownError, "knowns must follow schema"):
             load_text(ENTRY.replace("schema: 1\n", ""))
 
+    def test_non_utf8_registry_fails_with_a_known_error(self) -> None:
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "development-knowns.yaml"
+            path.write_bytes(b"schema: 1\nknowns:\n\xff")
+
+            with self.assertRaises(development_knowns.KnownError):
+                development_knowns.load(path)
+
     def test_yaml_features_outside_the_subset_fail(self) -> None:
         variants = {
             "anchor": "&shared Runtime compatibility requires the older spelling.",
@@ -76,6 +84,12 @@ class ParserTests(unittest.TestCase):
 
 
 class InvariantTests(unittest.TestCase):
+    def test_updated_must_be_a_real_calendar_date(self) -> None:
+        text = ENTRY.replace("updated: 2026-08-18", "updated: 2026-99-99")
+
+        with self.assertRaisesRegex(development_knowns.KnownError, "calendar date"):
+            load_text(text)
+
     def test_remediate_requires_repair(self) -> None:
         text = ENTRY.replace("treatment: accept", "treatment: remediate")
 
