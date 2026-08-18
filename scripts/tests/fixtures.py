@@ -60,6 +60,7 @@ def write_distribution(
             {
                 "schema": 1,
                 "name": name,
+                "publisher_id": "9d0f3c1a-7b2e-4e61-8d45-2a6f90c3b817",
                 "display_name": "Fixture",
                 "description": description,
                 "version": version,
@@ -104,6 +105,7 @@ def write_skill(
     handoff: str | None = None,
     manifest_text: str | None = None,
     skill_md_text: str | None = None,
+    interface_text: str | None = None,
 ) -> Path:
     """Write a skill that passes validation, or the overriding text given instead."""
     skill_dir = parent / name
@@ -114,4 +116,6 @@ def write_skill(
     (skill_dir / "SKILL.md").write_text(
         skill_md_text if skill_md_text is not None else skill_md(name, handoff), encoding="utf-8"
     )
+    if interface_text is not None:
+        (skill_dir / "skill-interface.yaml").write_text(interface_text, encoding="utf-8")
     return skill_dir

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Generate the record inventory for every producer→consumer seam between skills.
 
-A seam is a skill whose `**Input**:` line names another skill and the record that skill
-produces, in the phrasing `AGENTS.md` mandates and `skill_model.CONSUMES` recognises. The
-list is **derived** rather than maintained, so "one seam" is what the corpus says today and
+A seam is a consumer and producer whose optional ``skill-interface.yaml`` files name the
+same record identity. The list is **derived** rather than maintained, so "one seam" is what
+the corpus says today and
 a second one is counted without editing anything here — the same reason the README skill
 maps come from each skill's handoffs rather than from a list somebody keeps.
 
@@ -32,7 +32,7 @@ import argparse
 import re
 from pathlib import Path
 
-from skill_model import CONSUMES
+from skill_interface import InterfaceError, SkillInterface, load as load_interface
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -43,8 +43,12 @@ START = (
 )
 END = "<!-- SEAM-INVENTORY:END -->"
 
-INPUT_LINE = re.compile(r"^\*\*Input\*\*\s*:(.+)$", re.MULTILINE)
-FENCE = re.compile(r"^```markdown\n(.*?)^```", re.MULTILINE | re.DOTALL)
+OUTPUT_TEMPLATE = re.compile(
+    r"^<!-- OUTPUT-TEMPLATE: ([a-z0-9]+(?:-[a-z0-9]+)*)@([1-9][0-9]*) "
+    r"([a-z0-9][a-z0-9!#$&^_.+-]*/[a-z0-9][a-z0-9!#$&^_.+-]*) -->\n"
+    r"```markdown\n(.*?)^```",
+    re.MULTILINE | re.DOTALL,
+)
 HEADER_FIELD = re.compile(r"^\*\*([^*]+)\*\*\s*:", re.MULTILINE)
 SECTION = re.compile(r"^#{2,3} (.+)$", re.MULTILINE)
 
@@ -75,18 +79,24 @@ def write(path: Path, text: str) -> None:
         raise SeamError(f"{where(path)} - {error}") from error
 
 
-def elements(skill_md: str) -> list[tuple[str, str]]:
+def elements(skill_md: str, record) -> list[tuple[str, str]]:
     """The record shape a producer states: its header fields, then its sections.
 
-    Read from the fenced ```markdown block the skill uses for its output template, so a
-    producer that states no template contributes nothing rather than a guess.
+    Read only the explicitly marked output template for this record. Other Markdown
+    examples cannot silently become the contract merely by appearing first.
     """
-    fence = FENCE.search(skill_md)
-
-    if not fence:
+    key = (record.record_type, str(record.major), record.media_type)
+    templates: dict[tuple[str, str, str], list[str]] = {}
+    for found_type, major, media_type, template in OUTPUT_TEMPLATE.findall(skill_md):
+        templates.setdefault((found_type, major, media_type), []).append(template)
+    if len(templates.get(key, [])) > 1:
+        raise SeamError(
+            f"duplicate marked output template for {record.record_type}@{record.major} "
+            f"{record.media_type}"
+        )
+    if key not in templates:
         return []
-
-    template = fence.group(1)
+    template = templates[key][0]
 
     return [(name.strip(), "field") for name in HEADER_FIELD.findall(template)] + [
         (name.strip(), "section") for name in SECTION.findall(template)
@@ -101,17 +111,34 @@ def load(skills_dir: Path):
         raise SeamError(f"{where(skills_dir)} - {error}") from error
 
     body = {name: read(skills_dir / name / "SKILL.md") for name in names}
+    interfaces: list[SkillInterface] = []
+    for name in names:
+        sidecar = skills_dir / name / "skill-interface.yaml"
+        if not sidecar.exists():
+            continue
+        try:
+            interfaces.append(load_interface(sidecar, name))
+        except InterfaceError as error:
+            raise SeamError(f"{where(sidecar)} - {error}") from error
     seams = []
 
-    for consumer in names:
-        declared = INPUT_LINE.search(body[consumer])
-
-        if not declared:
-            continue
-
-        for producer, record in CONSUMES.findall(declared.group(1)):
-            if producer in body and producer != consumer:
-                seams.append((consumer, producer, record, elements(body[producer])))
+    for consumer in interfaces:
+        for consumed in consumer.consumes:
+            for producer in interfaces:
+                if producer.skill == consumer.skill or consumed not in producer.produces:
+                    continue
+                record = (
+                    f"{consumed.record_type.replace('-', ' ').title()} "
+                    f"v{consumed.major} ({consumed.media_type})"
+                )
+                shape = elements(body[producer.skill], consumed)
+                if not shape:
+                    raise SeamError(
+                        f"skills/{producer.skill}/SKILL.md - produced record "
+                        f"{consumed.record_type}@{consumed.major} {consumed.media_type} "
+                        "needs a marked output template"
+                    )
+                seams.append((consumer.skill, producer.skill, record, shape))
 
     return seams
 
@@ -121,7 +148,7 @@ def render(seams) -> str:
 
     if not seams:
         lines.append(
-            "\nNo skill's `**Input**:` line names another skill's record. Nothing to hold.\n"
+            "\nNo matching producer and consumer sidecars declare a record seam. Nothing to hold.\n"
         )
         lines.append(END)
         return "\n".join(lines)

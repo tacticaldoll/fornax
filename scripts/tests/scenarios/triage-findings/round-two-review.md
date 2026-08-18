@@ -5,7 +5,7 @@ record between variants.
 
 **Source**: second review round
 **Scope**: `crates/xuanji/src/baseline.rs`
-**Coverage**: complete — gate-reviewed: [`crates/xuanji/src/baseline.rs`]; triage-only: []; unread: []
+**Coverage**: complete — gate-reviewed: [`crates/xuanji/src/baseline.rs`]; partially-gate-reviewed: []; triage-only: []; unread: []
 **Verdict**: PASS
 **Not executed**: static review only
 

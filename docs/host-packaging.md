@@ -1,12 +1,14 @@
 # Host Packaging
 
-Skills are host-neutral: a skill is `skill.yaml` (portable manifest) + `SKILL.md` (portable workflow)
-plus optional `references/`. The `SKILL.md` format — YAML frontmatter with `name` and `description`,
-then a Markdown body — is the open **[Agent Skills](https://agentskills.io) standard**, so the same
-skill runs across Claude Code, GitHub Copilot, Cline, Cursor, Codex, OpenCode, and Antigravity. There
-are **no per-skill, per-host adapter files**; host-specifics live once at the packaging layer.
-The vendor-neutral `distribution.json` owns distribution identity and release version, while host
-manifests are projections of that canonical metadata.
+Skills are host-neutral: a skill has `skill.yaml` (portable manifest), `SKILL.md` (portable workflow),
+and only the resources it needs. A real record handoff may add the vendor-neutral optional
+`skill-interface.yaml`; hosts that do not understand it can ignore it. The `SKILL.md` format — YAML
+frontmatter with `name` and `description`, then a Markdown body — is the open
+**[Agent Skills](https://agentskills.io) standard**, so the same skill runs across Claude Code,
+GitHub Copilot, Cline, Cursor, Codex, OpenCode, and Antigravity. There are **no per-skill, per-host
+adapter files**; host-specifics live once at the packaging layer.
+The vendor-neutral `distribution.json` owns distribution name, publisher UUID, and release version,
+while host manifests are projections of the canonical host-facing metadata.
 
 ## Marketplace / plugin hosts
 

@@ -11,6 +11,8 @@ import fixtures
 import skill_model
 import validate_skills
 
+PUBLISHER = "9d0f3c1a-7b2e-4e61-8d45-2a6f90c3b817"
+
 NAME = "example-skill"
 MANIFEST = fixtures.manifest(NAME)
 SKILL_MD = fixtures.skill_md(NAME)
@@ -137,6 +139,51 @@ class ValidateSkillTests(unittest.TestCase):
         self.assertFalse(passed)
         self.assertIn("link not found", output)
 
+    def test_valid_optional_interface_passes(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            skill_dir = fixtures.write_skill(
+                root,
+                NAME,
+                interface_text=(
+                    f"publisher: {PUBLISHER}\n"
+                    "produces:\n"
+                    f"  - {PUBLISHER}/example-record@1 text/markdown\n"
+                ),
+            )
+
+            passed, output = check(skill_dir)
+
+        self.assertTrue(passed, output)
+
+    def test_invalid_optional_interface_fails(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            skill_dir = fixtures.write_skill(
+                root,
+                NAME,
+                interface_text="publisher: not-a-uuid\nproduces:\n  - nonsense\n",
+            )
+
+            passed, output = check(skill_dir)
+
+        self.assertFalse(passed)
+        self.assertIn("skill-interface.yaml", output)
+
+    def test_template_placeholder_mode_still_validates_an_interface(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            skill_dir = fixtures.write_skill(
+                root,
+                NAME,
+                interface_text="publisher: invalid\nproduces:\n  - invalid\n",
+            )
+
+            passed, output = check(skill_dir, allow_template_placeholders=True)
+
+        self.assertFalse(passed)
+        self.assertIn("skill-interface.yaml", output)
+
 
 class ProjectedDescriptionTests(unittest.TestCase):
     def check_distribution(self, root: Path) -> tuple[bool, str]:
@@ -221,6 +268,21 @@ class ProjectedDescriptionTests(unittest.TestCase):
         self.assertFalse(passed)
         self.assertIn("description must be a non-empty string", output)
 
+    def test_an_invalid_publisher_id_fails(self) -> None:
+        for invalid in ("bad", 123, []):
+            with self.subTest(invalid=invalid), TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                fixtures.write_distribution(root)
+                self.edit(
+                    root / "distribution.json",
+                    lambda data: data.__setitem__("publisher_id", invalid),
+                )
+
+                passed, output = self.check_distribution(root)
+
+            self.assertFalse(passed)
+            self.assertIn("publisher_id must be a UUID", output)
+
 
 class SkillModelTests(unittest.TestCase):
     def test_listed_reads_as_a_sentence(self) -> None:
@@ -242,6 +304,28 @@ class SkillModelTests(unittest.TestCase):
         for field in validate_skills.REQUIRED_MANIFEST_FIELDS:
             with self.subTest(field=field):
                 self.assertIn(f"{field}:", MANIFEST)
+
+
+class InterfacePublisherTests(unittest.TestCase):
+    def test_a_sidecar_from_another_publisher_fails_collection_validation(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            foreign = "c52ebc66-c01e-49af-9ed6-818ee4bc49f1"
+            fixtures.write_skill(
+                root,
+                NAME,
+                interface_text=(
+                    f"publisher: {foreign}\n"
+                    "produces:\n"
+                    f"  - {foreign}/example-record@1 text/markdown\n"
+                ),
+            )
+            output = StringIO()
+            with redirect_stdout(output):
+                passed = validate_skills.validate_interface_publishers(root, PUBLISHER)
+
+        self.assertFalse(passed)
+        self.assertIn("publisher must match distribution.json", output.getvalue())
 
 
 if __name__ == "__main__":

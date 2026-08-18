@@ -80,8 +80,9 @@ recorded repair and its Reach with what actually changed:
 For each closure candidate — a prior finding inside an enumerated scope that the input did not
 re-report — verify all of the following before closing it:
 
-1. The input gate-reviewed the unit and relevant gate, or explicitly verifies the repair. A
-  `triage-only` or `unread` unit cannot close a finding by silence.
+1. The input `gate-reviewed` the unit, or lists it as `partially-gate-reviewed` with the relevant
+   gate among those opened, or explicitly verifies the repair. A `triage-only`, `unread`, or
+   partial unit whose opened gates omit the relevant gate cannot close a finding by silence.
 2. The code at the recorded cause shows that the cause no longer holds.
 3. The input does not contradict the closure elsewhere in its record.
 
@@ -168,7 +169,7 @@ returning next round, so a disposition without one has not actually been made.
 | Verdict / Gate Index | the gate the verdict names | that gate's recorded status | pass \| mismatch \| not claimed |
 | Calibration / Gate Index | the gates the calibration declares | the gates the index records as opened | pass \| mismatch \| not claimed |
 | Finding count | stated count | current Review Record finding rows | pass \| mismatch \| not claimed |
-| Coverage | stated scope and coverage | enumerated units and inspected gates | pass \| mismatch \| not claimed |
+| Coverage | stated scope and coverage | four enumerated unit sets and the gates opened for each partial unit | pass \| mismatch \| not claimed |
 
 [`not claimed` when the input carries no such claim at all — a record predating a field, or one from
 another producer, has nothing to reconcile and is neither consistent nor contradictory about it.
@@ -179,7 +180,7 @@ send those back for review.]
 
 | Prior finding | Scope evidence stated by this round's input | Membership | This round's slot |
 |---|---|---|---|
-| id | enumerated units \| scope stated but units not enumerated | inside \| outside \| undetermined | current finding → Dispositions \| closure candidate → Closed or Carried forward \| out of scope → Out of scope this round \| undetermined → Undetermined |
+| id | four enumerated unit sets \| scope stated but units not enumerated | inside \| outside \| undetermined | current finding → Dispositions \| closure candidate → Closed or Carried forward \| out of scope → Out of scope this round \| undetermined → Undetermined |
 
 [Use only scope evidence the input states. Finding locations and code inspected during triage do not
 enumerate the Review Record's coverage.]
@@ -204,7 +205,7 @@ shape recurs.]
 ### Dispositions
 
 [Every finding reported by this round, including a stable id matched to prior history. A prior
-finding not re-reported belongs in exactly one lifecycle section below — Carried forward, Closed,
+finding not re-reported belongs in exactly one exclusive lifecycle home below — Carried forward, Closed,
 Out of scope this round, or Undetermined — and is not duplicated here. Each slot from Prior scope
 resolution has exactly one of those sections as its home; a `closure candidate` resolves into Closed
 or Carried forward by the Phase 1 test. A finding re-reported after it was Closed returns here as
@@ -260,7 +261,7 @@ finding that was previously Closed is not Recurring merely because it appears in
 
 | Check | This record's answer |
 |---|---|
-| Every prior id sits in exactly one lifecycle section | pass \| the ids in more than one, or in none |
+| Every prior id sits in exactly one exclusive lifecycle home | pass \| the ids in more than one, or in none |
 | Every accepted cause carries at least one repair with an enumerated Reach | pass \| the causes missing one |
 
 [This is about the record you are producing; Record integrity above is about the input. Completed

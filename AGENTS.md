@@ -24,6 +24,7 @@ Recommended structure:
 skills/<skill-name>/
   skill.yaml
   SKILL.md
+  skill-interface.yaml  # optional; only for a real record handoff
   scripts/
   references/
   assets/
@@ -118,10 +119,11 @@ skill's record is another skill's input — `static-review` produces a Review Re
 `triage-findings` reads it (`docs/review-record-contract.md`). They are judgment, not structure:
 nothing validates them, and they apply only where a record makes claims about itself.
 
-A new skill needs no record contract of its own. Write one only when another skill reads the output —
-name the producer and the record in the consumer's `**Input**:` line, as `triage-findings` does, so
-the seam is discoverable from the skills rather than from a maintained list. A skill whose output
-nobody reads is not missing a contract; see the standing decision in `PROJECT.md`.
+A new skill needs no record contract of its own. When another skill reads its output, give both
+skills matching optional `skill-interface.yaml` declarations and keep the human-readable record name
+in their `**Input**:` and output prose. The sidecars make the seam discoverable without parsing prose;
+a skill whose output nobody reads is not missing a contract. See `docs/skill-interface.md` and the
+standing decision in `PROJECT.md`.
 
 - **Give a check three answers, not two.** "The input carries no such claim" is not "the claim does
   not hold". A two-valued cell forces a record predating a field, or one from another producer, into
@@ -151,10 +153,11 @@ When asked to create or update a skill:
 Validation command:
 
 ```sh
-python scripts/validate_skills.py
+python3 scripts/check_workspace.py
 ```
 
-Also validate the template after changing `templates/skill`:
+The workspace command includes template validation. Its direct form remains available when debugging
+template-only failures:
 
 ```sh
 python scripts/validate_skills.py --skills-path templates --allow-template-placeholders
@@ -379,6 +382,10 @@ has no distribution path of its own — hosts read `SKILL.md`, whose frontmatter
 and the `fornax` CLI pins one collection tag. Git carries per-skill change history. See
 `PROJECT.md`.
 
+Do not bump the version while developing or reviewing a feature or fix. First land and validate the
+behavioral commits at the current version; after the release contents are confirmed, bump the
+collection and every host projection together in a separate `build(deploy)` release commit.
+
 Judge the increment by what changed for the people who install the collection:
 
 - Patch for wording fixes, metadata corrections, and non-behavioral clarifications.
@@ -445,10 +452,12 @@ Use this checklist for new skills and meaningful updates:
 Prefer lightweight tests that match the risk of the change.
 
 - Run repository validation for every change.
+- Use `python3 scripts/check_workspace.py` as the public local and CI entry point. Keep its component
+  checks independently runnable for focused diagnostics.
 - Regenerate the README skill maps with `python3 scripts/skill_graph.py --write` after changing a
   skill's `family` or its handoff targets; `--check` fails when the committed block is stale.
 - Regenerate the record inventory with `python3 scripts/seam_contract.py --write` after changing the
-  output template of a skill another skill reads, or the `**Input**:` line that names one; `--check`
+  marked output template of a skill another skill reads, or either skill's interface sidecar; `--check`
   fails when `docs/review-record-contract.md` is stale. The seam list is derived, so a new one needs
   no edit to be counted and no seams at all is a clean answer.
 - Cover a new or changed validation rule in `scripts/tests/`, run with

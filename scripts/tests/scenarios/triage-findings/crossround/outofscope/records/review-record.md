@@ -3,7 +3,7 @@
 **Source**: `code/render.rs`
 **Calibration**: Gates 1-5
 **Triage**: skipped (1 file)
-**Coverage**: complete — gate-reviewed: [`code/render.rs`]; triage-only: []; unread: []
+**Coverage**: complete — gate-reviewed: [`code/render.rs`]; partially-gate-reviewed: []; triage-only: []; unread: []
 **Findings**: 0
 **Verdict**: PASS
 **Not executed**: static review only

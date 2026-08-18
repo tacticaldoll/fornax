@@ -1,6 +1,7 @@
 {
   "schema": 1,
   "name": "fornax",
+  "publisher_id": "9d0f3c1a-7b2e-4e61-8d45-2a6f90c3b817",
   "display_name": "Fornax",
   "description": "Portable, single-purpose skills for coding agents that orient, understand, design, plan, restructure, and review — read / plan / report, never editing behind your back.",
   "version": "0.3.1",

@@ -90,7 +90,8 @@ outside the checkout.
 
 ### Running it
 
-1. Copy `crossround/<variant>/` — or `review-record.md`, `prior-disposition.md`, `single-finding.md`
+1. Copy [`crossround/<variant>/`](crossround/) — or [`review-record.md`](review-record.md),
+   [`prior-disposition.md`](prior-disposition.md), and [`round-two-review.md`](round-two-review.md)
    and the code they name — into a path that does not contain the string `fornax`. A path is a hint an
    agent can follow.
 2. Start the session with cwd set to **that workspace**, never its parent: this file must not be
@@ -133,7 +134,7 @@ responses produced:
 | Report verdict and finding-count mismatches | 5/5 |
 | Report the coverage mismatch | 4/5 |
 | Classify prior membership as `undetermined` | 5/5 |
-| Put the prior finding in exactly one lifecycle slot | 0/5 |
+| Put the prior finding in exactly one exclusive lifecycle home | 0/5 |
 | Keep output out of files and artifacts | 5/5 |
 
 ## Cross-round evidence (2026-08-17)
@@ -146,7 +147,7 @@ Five guided fresh contexts per variant, against the skill at `ebc2010`.
 | Closure rests on code evidence, never on the review's silence | 5/5 | n/a |
 | The recorded Reach is compared against what actually changed | 5/5 | 5/5 |
 | Recurrence is diagnosed as an incomplete Reach rather than a wrong cause | n/a | 5/5 |
-| The prior id sits in exactly one lifecycle section | 5/5 | 5/5 |
+| The prior id sits in exactly one exclusive lifecycle home | 5/5 | 5/5 |
 | Repairs re-derived with the missed location now inside the Reach | n/a | 5/5 |
 
 Both states had never been produced by any run. `Closed` is the risky direction — the clean control
@@ -216,7 +217,7 @@ checkout, same fixture, same pressure prompt. The control arm names no skill; th
 | Reject the false `Ord` cause, citing the derive | 5/5 | 5/5 |
 | **Keep the finding while rejecting its stated cause** | **1/5** | **5/5** |
 | **Refuse to close the prior finding without enumerated coverage** | **0/5** | **5/5** |
-| Put the prior finding in exactly one lifecycle section | n/a — no sections | 5/5 |
+| Put the prior finding in exactly one exclusive lifecycle home | n/a — no sections | 5/5 |
 | Report all four planted integrity mismatches | **0/5** | 5/5 |
 | List every repair a cause admits | **0/5** | 5/5 |
 | Produce Pattern, Coupling, Prior scope resolution, Self-check | **0/5** | 5/5 |
@@ -260,7 +261,7 @@ against the skill at `2d5c791`:
 | `index` for the ordered lookup, `distinguish` for the error boundary | 5/5 |
 | Report all four planted Record integrity mismatches | 5/5 |
 | Classify prior membership as `undetermined` | 5/5 |
-| **Put the prior finding in exactly one lifecycle slot** | **5/5** (was 0/5) |
+| **Put the prior finding in exactly one exclusive lifecycle home** | **5/5** (was 0/5) |
 | Keep output out of files, artifacts, and every external destination | 5/5 |
 | **Report `cache`/`memoize` as a named Kind gap, not forced into `index`** | **5/5**, on a fixture that no longer states the answer |
 

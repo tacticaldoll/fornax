@@ -7,7 +7,9 @@ cannot be added without also giving it a title. `STATUSES` is the single
 definition of the allowed `status` values, in lifecycle order.
 
 `HANDOFF` is the single definition of how a skill writes a handoff, so the
-validator and the map generator agree on what counts as one.
+validator and the map generator agree on what counts as one. Cross-skill record
+interfaces are structural declarations read by ``skill_interface.py``, not prose
+patterns kept here.
 
 docs/skill-yaml-schema.md carries the prose definition of what each value means;
 this module carries the values the scripts enforce, so adding a family, status,
@@ -23,19 +25,6 @@ HANDOFF = re.compile(
     r"\b(?:hand off to|handoff to|point to|route to)\s+`([a-z0-9-]+)`",
     re.IGNORECASE,
 )
-
-CONSUMES = re.compile(r"`([a-z0-9-]+)`\s+((?:[A-Z][a-z]+ )+[A-Z][a-z]+)")
-"""How a consumer names the producer whose record it reads, in an `**Input**:` line.
-
-A backticked skill name followed by the record's own name — `a \\`static-review\\` Review
-Record`. Two capitalised words at least, which is what separates a record from the other
-things an Input line backticks: a file (`SKILL.md`), a document (`PROJECT.md`), or a skill
-to go do first (`hand off to \\`plan-split\\`.`), none of which is followed by a name.
-
-A prerequisite is not a seam. The distinction is the whole point: a skill that says "map it
-first with \\`map-codebase\\`" consumes no artifact, and counting it would invent a contract
-with nothing on either side of it.
-"""
 
 FAMILIES: dict[str, str] = {
     "implementation": "Implementation",

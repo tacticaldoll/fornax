@@ -196,10 +196,11 @@ distribution.json       # canonical distribution identity and release version
 skills/<skill-name>/
   skill.yaml            # portable discovery manifest
   SKILL.md              # portable workflow (entrypoint)
+  skill-interface.yaml  # optional record handoff declaration
   references/           # detail loaded on demand
 .claude-plugin/         # Claude Code plugin manifest (drives the /fornax: prefix)
 templates/skill/        # starting point for a new skill
-scripts/validate_skills.py
+scripts/check_workspace.py
 ```
 
 ## Install
@@ -238,25 +239,23 @@ first (discovery metadata), then `SKILL.md` (the portable workflow). Use
 [docs/skill-types.md](docs/skill-types.md) to pick the dominant type,
 [docs/skill-yaml-schema.md](docs/skill-yaml-schema.md) for the manifest, and
 [docs/host-packaging.md](docs/host-packaging.md) for how host-specifics are packaged.
+Add the optional [portable interface sidecar](docs/skill-interface.md) only when another skill
+actually consumes or produces the declared record.
 
 ## Validate
 
-Five checks, run by CI on every push and by the pre-commit hook once you enable it with
+One public command runs all fast deterministic checks in CI and in the pre-commit hook once enabled
+with
 `git config core.hooksPath .githooks`:
 
 ```sh
-python3 scripts/validate_skills.py
-python3 scripts/validate_skills.py --skills-path templates --allow-template-placeholders
-python3 scripts/skill_graph.py --check
-python3 scripts/seam_contract.py --check
-PYTHONPATH=scripts python3 -m unittest discover -s scripts/tests
+python3 scripts/check_workspace.py
 ```
 
-Skill structure, the same for `templates/skill`, whether the README skill maps still match the
-skills, whether the record inventory in [docs/review-record-contract.md](docs/review-record-contract.md)
-still matches the one seam where a skill reads another's output, and the validation rules themselves.
-Run them before installing, publishing, or copying skills. A stale block is fixed with the matching
-`--write`.
+It checks production and template skill structure, optional interface sidecars, tracked text and
+local links, generated skill maps and record inventory, and the validation test suite. Run it before
+installing, publishing, or copying skills. A stale generated block is fixed with its matching
+`--write` command.
 
 Three more run in CI only, because each needs something the hook deliberately does not install:
 

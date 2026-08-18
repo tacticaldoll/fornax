@@ -98,12 +98,14 @@ Record:
 - Obvious anomalies discovered during extraction.
 - Source of truth for Gate 6: locate the spec/governance doc to judge logic against, or note that
   none was found (gates.md Gate 6 lists where to look).
-- Coverage inventory: place every in-scope unit in exactly one set — `gate-reviewed` when the
-  calibrated gates were opened for it, `triage-only` when it received only Phase 2's rapid checks,
-  or `unread` when it was declared in scope but never opened. Coverage is `complete` only when
-  every in-scope unit is `gate-reviewed`; otherwise it is `partial`. Enumerate all three sets in a
-  partial review. Never call a triage-only or unread remainder passed. These three name *units*; the
-  Gate Index's `not inspected` names a *gate* the calibration never opened — different axes.
+- Coverage inventory: place every in-scope unit in exactly one set — `gate-reviewed` when every
+  calibrated gate was opened for it, `partially-gate-reviewed` when only a stated prefix of those
+  gates was opened, `triage-only` when it received only Phase 2's rapid checks, or `unread` when it
+  was declared in scope but never opened. For every partially-gate-reviewed unit, state the gates
+  actually opened. Coverage is `complete` only when every in-scope unit is `gate-reviewed`;
+  otherwise it is `partial`. Always enumerate all four sets, including for complete coverage. Never
+  call a partial, triage-only, or unread remainder passed. These four name *units*; the Gate Index's
+  `not inspected` names a *gate* the calibration never opened — different axes.
 - Contract inventory (when the change has a contract — a spec, acceptance scenarios, a task/change
   checklist, or stated project invariants): list each clause as its own review target. One row per
   requirement, per acceptance scenario, and per invariant the change touches, plus one row per
@@ -120,10 +122,11 @@ Open gates in order. If a gate fails, stop opening higher gates for that file or
 not manufacture findings. Silence means compliance for detail sections; the gate index still records
 which gates opened, passed, failed, or were blocked.
 
-For a multi-file scope, the Gate Index and Verdict aggregate **worst-case** across `gate-reviewed`
-files: a gate is `fail` if any reviewed file fails it and `blocked` if a lower gate failed for the
-reviewed file that would have carried it; per-file detail lives in the finding rows (each row is a
-`file:line`). The Coverage field, not the Gate Index, says whether the whole declared scope was
+For a multi-file scope, the Gate Index and Verdict aggregate **worst-case** across fully and
+partially gate-reviewed files for each gate they actually opened: a gate is `fail` if any reviewed
+file fails it and `blocked` if a lower gate failed for the reviewed file that would have carried it;
+per-file detail lives in the finding rows (each row is a `file:line`). The Coverage field, not the
+Gate Index, says which gates each unit actually received and whether the whole declared scope was
 inspected deeply enough to support a complete-review claim.
 
 ### Phase 4b: Against-Contract Review (dual-track)
@@ -189,13 +192,14 @@ Gate Index stays the honest statement of what was reviewed.
 
 Produce a report using this format:
 
+<!-- OUTPUT-TEMPLATE: review-record@1 text/markdown -->
 ```markdown
 ## Review Record
 
 **Source**: [input reference]
 **Calibration**: Gates 1-[N] ([reason])
 **Triage**: [skipped | Red M / Yellow N / Green K]
-**Coverage**: [complete | partial — gate-reviewed: [...]; triage-only: [...]; unread: [...]]
+**Coverage**: [complete | partial] — gate-reviewed: [...]; partially-gate-reviewed: [unit (Gates 1-N), ...]; triage-only: [...]; unread: [...]
 **Findings**: [one number: every finding row below, gate sections and non-gated tracks alike — not the file counts in Triage]
 **Verdict**: [PASS | FAIL at Gate N] [+ SECURITY-ALERT] [+ CONTRACT-VIOLATED] [+ CLAIM-REFUTED]
 **Not executed**: [static review only — tests / build / runtime not run]
@@ -284,9 +288,9 @@ Fix-plan rules:
 - Give concrete corrections; avoid vague suggestions such as "consider improving".
 - If all opened gates pass, the Gate Index is the report; do not invent findings.
 - Report coverage independently from correctness. `PASS` means the opened gates passed for the
-  `gate-reviewed` units; only `Coverage: complete` extends that statement to the full declared scope.
-  A `partial` review enumerates every triage-only and unread unit rather than describing a
-  remainder as passed.
+  fully and partially gate-reviewed units; only `Coverage: complete` extends every calibrated gate
+  to the full declared scope. Every review enumerates all four coverage sets, and each
+  partially-gate-reviewed unit names its opened gates rather than describing a remainder as passed.
 - Stay in lane; hand off at the boundary. This skill is static, local review only. It reports
   findings and does not decide their disposition; to settle which findings are accepted and what each
   cause's repair would touch, hand off to `triage-findings`. For runtime or

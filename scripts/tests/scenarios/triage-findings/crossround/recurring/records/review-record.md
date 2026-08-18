@@ -3,7 +3,7 @@
 **Source**: `code/baseline.rs`
 **Calibration**: Gates 1-5
 **Triage**: skipped (1 file)
-**Coverage**: complete — gate-reviewed: [`code/baseline.rs`]; triage-only: []; unread: []
+**Coverage**: complete — gate-reviewed: [`code/baseline.rs`]; partially-gate-reviewed: []; triage-only: []; unread: []
 **Findings**: 1
 **Verdict**: FAIL at Gate 5
 

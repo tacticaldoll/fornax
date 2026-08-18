@@ -10,6 +10,9 @@ from unittest.mock import patch
 import fixtures
 import seam_contract
 
+PUBLISHER = "9d0f3c1a-7b2e-4e61-8d45-2a6f90c3b817"
+RECORD = f"{PUBLISHER}/review-record@1 text/markdown"
+
 BEFORE = "# Fixture\n\nProse above the block.\n\n"
 AFTER = "\nProse below the block.\n"
 
@@ -24,6 +27,7 @@ description: {description}
 
 ## Report
 
+<!-- OUTPUT-TEMPLATE: review-record@1 text/markdown -->
 ```markdown
 ## Review Record
 
@@ -47,19 +51,25 @@ description: {description}
 """
 
 
-def write_pair(root: Path, input_line: str) -> None:
-    """A producer with an output template, and a consumer whose Input line is under test."""
+def write_pair(root: Path, input_line: str, declare_seam: bool = True) -> None:
+    """A producer with an output template and optional matching interface declarations."""
     skills = root / "skills"
     fixtures.write_skill(
         skills,
         "alpha-skill",
         skill_md_text=PRODUCER.format(name="alpha-skill", description=fixtures.DESCRIPTION),
+        interface_text=(
+            f"publisher: {PUBLISHER}\nproduces:\n  - {RECORD}\n" if declare_seam else None
+        ),
     )
     fixtures.write_skill(
         skills,
         "beta-skill",
         skill_md_text=CONSUMER.format(
             name="beta-skill", description=fixtures.DESCRIPTION, input_line=input_line
+        ),
+        interface_text=(
+            f"publisher: {PUBLISHER}\nconsumes:\n  - {RECORD}\n" if declare_seam else None
         ),
     )
 
@@ -85,7 +95,7 @@ def run(root: Path, *argv: str) -> tuple[int, str]:
 
 
 class SeamDiscovery(unittest.TestCase):
-    def test_a_named_record_in_an_input_line_is_a_seam(self):
+    def test_matching_interface_records_are_a_seam(self):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             write_pair(root, "a `alpha-skill` Review Record, or the findings pasted inline.")
@@ -100,12 +110,7 @@ class SeamDiscovery(unittest.TestCase):
             self.assertIn("| `Gate Index` | section |", body)
             self.assertIn("rewrote", out)
 
-    def test_a_prerequisite_is_not_a_seam(self):
-        """`hand off to` and `map it first with` name a skill without consuming its record.
-
-        This is the discriminating case: counting a prerequisite would invent a contract
-        with nothing on either side of it.
-        """
+    def test_prose_does_not_invent_a_seam(self):
         for line in (
             "the thing to do — if the code is unfamiliar, map it first with `alpha-skill`.",
             "the thing to do; if the target is an existing unit, hand off to `alpha-skill`.",
@@ -113,7 +118,7 @@ class SeamDiscovery(unittest.TestCase):
         ):
             with self.subTest(line=line), TemporaryDirectory() as tmp:
                 root = Path(tmp)
-                write_pair(root, line)
+                write_pair(root, line, declare_seam=False)
                 write_contract(root)
 
                 code, _ = run(root, "--write")
@@ -127,7 +132,11 @@ class SeamDiscovery(unittest.TestCase):
         reason to keep a seam alive."""
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
-            write_pair(root, "the thing this fixture consumes — if none is given, ask for it.")
+            write_pair(
+                root,
+                "the thing this fixture consumes — if none is given, ask for it.",
+                declare_seam=False,
+            )
             write_contract(root)
 
             self.assertEqual(run(root, "--write")[0], 0)
@@ -179,6 +188,39 @@ class Staleness(unittest.TestCase):
 
             self.assertEqual(code, 1)
             self.assertIn("markers not found", out)
+
+    def test_an_unmarked_markdown_fence_is_not_the_output_template(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_pair(root, "a record")
+            write_contract(root)
+            producer = root / "skills" / "alpha-skill" / "SKILL.md"
+            producer.write_text(
+                producer.read_text(encoding="utf-8").replace(
+                    "<!-- OUTPUT-TEMPLATE: review-record@1 text/markdown -->\n", ""
+                ),
+                encoding="utf-8",
+            )
+
+            code, out = run(root, "--write")
+
+            self.assertEqual(code, 1)
+            self.assertIn("needs a marked output template", out)
+
+    def test_duplicate_output_template_markers_fail(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_pair(root, "a record")
+            write_contract(root)
+            producer = root / "skills" / "alpha-skill" / "SKILL.md"
+            text = producer.read_text(encoding="utf-8")
+            marked = text[text.index("<!-- OUTPUT-TEMPLATE:") :]
+            producer.write_text(text + "\n" + marked, encoding="utf-8")
+
+            code, out = run(root, "--write")
+
+            self.assertEqual(code, 1)
+            self.assertIn("duplicate marked output template", out)
 
 
 if __name__ == "__main__":

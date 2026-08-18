@@ -8,7 +8,7 @@ by default (see the `audit-governance` skill). For what Fornax *is* — essence,
 
 - Early stage. Every skill is `status: draft`; nothing claims 1.0 maturity.
 - Skills span four families: implementation, knowledge, decisions, meta.
-- Public repo, enforced by CI and a pre-commit hook running `scripts/validate_skills.py`.
+- Public repo, enforced by CI and a pre-commit hook running `scripts/check_workspace.py`.
 
 ## Standing decisions
 
@@ -31,14 +31,12 @@ Settled; reopen only with a reason, not by default.
 - **A record contract exists only where one skill's output is another skill's input.** Fourteen
   skills define an output; one of them is read by another skill (`static-review` → `triage-findings`,
   `docs/review-record-contract.md`). The other thirteen have no contract because they have no
-  consumer, not because one is missing — **that asymmetry is stated here so it does not read later as
-  a gap.** No repository-wide schema for skill outputs: nothing parses a record, so a schema would be
-  structure for a distinction almost nothing consumes, built corpus-wide from one seam's evidence.
-  The seam list is **derived from the skills** rather than maintained, so "one" is what the corpus
-  says today and a second seam needs no decision to be picked up; zero seams reports clean, since a
-  check that failed on none would become a reason to keep a seam alive. Reconsider the wider version
-  when a second real producer→consumer seam exists — two data points are the first that can show
-  which parts generalize.
+  consumer, not because one is missing. A real seam opts into matching `skill-interface.yaml`
+  declarations, whose stable identity is publisher UUID, record type, major version, and media type.
+  The sidecar supports local discovery and recommendation only; it carries no payload schema,
+  eligibility rule, execution instruction, or authorization. The seam list is **derived from these
+  declarations** rather than prose or a maintained list, so a second seam appears automatically and
+  zero seams reports clean. Invocation always remains a separate, explicitly authorized host action.
 - **Skills carry no version of their own.** Release versioning is the collection's —
   `distribution.json` plus the host manifest projections — because a skill has no distribution path
   of its own: hosts read `SKILL.md`, whose frontmatter has no version field; the deployer only
@@ -46,6 +44,9 @@ Settled; reopen only with a reason, not by default.
   removed because nothing read it, every skill sat frozen at one value, and the patch/minor/major
   rules had accumulated on that inert field while the collection version — the one that actually
   gates whether installed users receive a change — had none.
+- **Release bumps are separate.** Feature and fix commits keep the current collection version while
+  they are implemented and reviewed. After the release contents are confirmed, one separate
+  `build(deploy)` commit bumps `distribution.json` and every host projection together.
 - **Enforcement is the structural floor only.** The validator checks structure (manifest fields,
   links, handoff targets, the `**Input**:` line, `family`); judgment (description shape, prose
   clarity) stays human. CI + the pre-commit hook run it.
@@ -74,7 +75,8 @@ Settled; reopen only with a reason, not by default.
   thin `fornax` policy adapter and takes its CLI version from the workspace release; the engine has
   its own release cadence.
 - **Distribution structure is vendor-neutral.** `distribution.json` is the canonical collection
-  identity and release version; host manifests are projections. New domain collections start from
+  name, publisher UUID, and release version; host manifests are projections. New domain collections
+  start from
   `agent-skills-distribution-template`, while the deployer keeps network-free neutral fixtures and
   no Fornax-specific test identity.
 

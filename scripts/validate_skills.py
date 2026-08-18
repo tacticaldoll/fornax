@@ -18,7 +18,9 @@ import json
 import re
 import sys
 from pathlib import Path
+from uuid import UUID
 
+from skill_interface import INTERFACE_FILE, InterfaceError, load as load_interface
 from skill_model import FAMILIES, HANDOFF, STATUSES, listed
 
 
@@ -93,6 +95,7 @@ def validate_distribution(root: Path) -> bool:
     failed = False
     name = distribution.get("name")
     version = distribution.get("version")
+    publisher_id = distribution.get("publisher_id")
     skills_directory = distribution.get("skills_directory")
     if distribution.get("schema") != 1:
         print("FAIL distribution.json - schema must be 1")
@@ -103,6 +106,21 @@ def validate_distribution(root: Path) -> bool:
     if not isinstance(version, str) or not VERSION_PATTERN.fullmatch(version):
         print("FAIL distribution.json - version must use semantic version format x.y.z")
         failed = True
+    if not isinstance(publisher_id, str):
+        print("FAIL distribution.json - publisher_id must be a UUID")
+        failed = True
+    else:
+        try:
+            canonical_publisher = str(UUID(publisher_id))
+        except ValueError:
+            print("FAIL distribution.json - publisher_id must be a UUID")
+            failed = True
+        else:
+            if publisher_id != canonical_publisher:
+                print(
+                    "FAIL distribution.json - publisher_id must use canonical lowercase UUID form"
+                )
+                failed = True
     if skills_directory != "skills":
         print("FAIL distribution.json - skills_directory must be skills")
         failed = True
@@ -363,6 +381,14 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
         fail(name, "SKILL.md must state an **Input**: contract line")
         skill_failed = True
 
+    interface_file = skill_dir / INTERFACE_FILE
+    if interface_file.exists():
+        try:
+            load_interface(interface_file, name)
+        except InterfaceError as error:
+            fail(name, f"{INTERFACE_FILE} - {error}")
+            skill_failed = True
+
     if not allow_template_placeholders:
         known_skills = {path.name for path in skill_dir.parent.iterdir() if path.is_dir()}
 
@@ -376,6 +402,20 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
         print(f"OK   {name}")
 
     return not skill_failed
+
+
+def validate_interface_publishers(skills_path: Path, publisher_id: object) -> bool:
+    """Require this collection's sidecars to share its canonical publisher identity."""
+    failed = False
+    for sidecar in sorted(skills_path.glob(f"*/{INTERFACE_FILE}")):
+        try:
+            interface = load_interface(sidecar)
+        except InterfaceError:
+            continue  # validate_skill reports invalid declarations with the skill context
+        if publisher_id and interface.publisher != publisher_id:
+            fail(sidecar.parent.name, f"{INTERFACE_FILE} publisher must match distribution.json")
+            failed = True
+    return not failed
 
 
 def parse_args() -> argparse.Namespace:
@@ -404,6 +444,14 @@ def main() -> int:
     for skill_dir in sorted(path for path in skills_path.iterdir() if path.is_dir()):
         if not validate_skill(skill_dir, args.allow_template_placeholders):
             failed = True
+
+    try:
+        distribution = json.loads(Path("distribution.json").read_text(encoding="utf-8"))
+        publisher_id = distribution.get("publisher_id")
+    except (OSError, json.JSONDecodeError):
+        publisher_id = None
+    if not validate_interface_publishers(skills_path, publisher_id):
+        failed = True
 
     if failed:
         return 1
