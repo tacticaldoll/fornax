@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from typing import Iterator, Optional, Tuple
 
 
-LINK_OPEN = re.compile(r"\[[^\]\n]+\]\(")
 EXTERNAL_SCHEME = re.compile(r"^[a-z][a-z0-9+.-]*:", re.IGNORECASE)
 
 
@@ -32,6 +31,78 @@ def _unescape_destination(value: str) -> str:
         result.append(value[index])
         index += 1
     return "".join(result)
+
+
+def _backtick_run(text: str, index: int) -> int:
+    end = index
+    while end < len(text) and text[end] == "`":
+        end += 1
+    return end - index
+
+
+def _is_escaped(text: str, index: int) -> bool:
+    backslashes = 0
+    index -= 1
+    while index >= 0 and text[index] == "\\":
+        backslashes += 1
+        index -= 1
+    return backslashes % 2 == 1
+
+
+def _mask_code_spans(text: str) -> str:
+    masked = list(text)
+    position = 0
+    while position < len(text):
+        if text[position] != "`" or _is_escaped(text, position):
+            position += 1
+            continue
+        width = _backtick_run(text, position)
+        search = position + width
+        closing = None
+        while search < len(text):
+            candidate = text.find("`", search)
+            if candidate < 0:
+                break
+            candidate_width = _backtick_run(text, candidate)
+            if candidate_width == width:
+                closing = candidate + width
+                break
+            search = candidate + candidate_width
+        if closing is None:
+            position += width
+            continue
+        masked[position:closing] = " " * (closing - position)
+        position = closing
+    return "".join(masked)
+
+
+def _next_payload_start(masked: str, position: int) -> Optional[int]:
+    while position < len(masked):
+        if masked[position] == "\\" and position + 1 < len(masked):
+            position += 2
+            continue
+        if masked[position] != "[":
+            position += 1
+            continue
+        depth = 1
+        index = position + 1
+        while index < len(masked):
+            if masked[index] == "\\" and index + 1 < len(masked):
+                index += 2
+                continue
+            if masked[index] == "[":
+                depth += 1
+            elif masked[index] == "]":
+                depth -= 1
+                if depth == 0:
+                    if index + 1 < len(masked) and masked[index + 1] == "(":
+                        return index + 2
+                    position += 1
+                    break
+            index += 1
+        else:
+            position += 1
+    return None
 
 
 def _after_title(text: str, index: int) -> Optional[int]:
@@ -137,17 +208,18 @@ def _payload(text: str, start: int) -> Optional[Tuple[int, str]]:
 
 def iter_markdown_links(text: str) -> Iterator[MarkdownLink]:
     """Yield inline links whose destination and optional title parse completely."""
+    masked = _mask_code_spans(text)
     position = 0
     while True:
-        match = LINK_OPEN.search(text, position)
-        if match is None:
+        start = _next_payload_start(masked, position)
+        if start is None:
             return
-        parsed = _payload(text, match.end())
+        parsed = _payload(text, start)
         if parsed is None:
-            position = match.end()
+            position = start
             continue
         end, destination = parsed
-        yield MarkdownLink(text[match.end() : end], destination)
+        yield MarkdownLink(text[start:end], destination)
         position = end + 1
 
 

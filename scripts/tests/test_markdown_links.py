@@ -60,3 +60,47 @@ class MarkdownLinksTests(unittest.TestCase):
         for text in cases:
             with self.subTest(text=text):
                 self.assertEqual(list(markdown_links.iter_markdown_links(text)), [])
+
+    def test_escaped_and_nested_labels_are_links(self) -> None:
+        cases = (
+            r"[doc \] page](missing.md)",
+            "[doc [local] page](missing.md)",
+            "[doc `local` page](missing.md)",
+        )
+        for text in cases:
+            with self.subTest(text=text):
+                self.assertEqual(
+                    list(markdown_links.iter_markdown_links(text)),
+                    [markdown_links.MarkdownLink("missing.md", "missing.md")],
+                )
+
+    def test_escaped_label_openers_and_code_spans_are_not_links(self) -> None:
+        cases = (
+            r"\[example](missing.md)",
+            "`[example](missing.md)`",
+            "`` `[example](missing.md)` ``",
+            "before `code\n[example](missing.md)` after",
+        )
+        for text in cases:
+            with self.subTest(text=text):
+                self.assertEqual(list(markdown_links.iter_markdown_links(text)), [])
+
+    def test_unmatched_backticks_do_not_hide_a_later_link(self) -> None:
+        self.assertEqual(
+            list(markdown_links.iter_markdown_links("` unmatched [example](missing.md)")),
+            [markdown_links.MarkdownLink("missing.md", "missing.md")],
+        )
+
+    def test_link_syntax_inside_a_title_is_not_a_second_link(self) -> None:
+        self.assertEqual(
+            list(
+                markdown_links.iter_markdown_links(
+                    '[guide](README.md "see [example](missing.md)")'
+                )
+            ),
+            [
+                markdown_links.MarkdownLink(
+                    'README.md "see [example](missing.md)"', "README.md"
+                )
+            ],
+        )

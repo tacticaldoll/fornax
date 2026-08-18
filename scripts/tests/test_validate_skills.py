@@ -154,6 +154,20 @@ class ValidateSkillTests(unittest.TestCase):
 
         self.assertTrue(passed, output)
 
+    def test_code_spans_are_ignored_but_escaped_labels_are_checked(self) -> None:
+        with TemporaryDirectory() as tmp:
+            text = (
+                SKILL_MD
+                + "\n`[example](inside-code.md)` and "
+                + r"[doc \] page](missing.md)"
+                + "\n"
+            )
+            passed, output = check_skill(Path(tmp), skill_md_text=text)
+
+        self.assertFalse(passed)
+        self.assertIn("link not found: missing.md", output)
+        self.assertNotIn("inside-code.md", output)
+
     def test_valid_optional_interface_passes(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)

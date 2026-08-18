@@ -67,6 +67,20 @@ class TextHygiene(unittest.TestCase):
         self.assertIn("link not found: missing.md \"overview\"", errors[0].message)
         self.assertIn("absolute Markdown link is not allowed", errors[1].message)
 
+    def test_code_spans_are_ignored_but_escaped_labels_are_checked(self) -> None:
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "fixture.md"
+            path.write_text(
+                "`[example](inside-code.md)` and "
+                r"[doc \] page](missing.md)" + "\n",
+                encoding="utf-8",
+            )
+
+            errors = check_text.check([path])
+
+        self.assertEqual(len(errors), 1)
+        self.assertIn("link not found: missing.md", errors[0].message)
+
     def test_a_colon_in_the_source_path_remains_structured(self) -> None:
         with TemporaryDirectory() as tmp:
             parent = Path(tmp) / "with:colon"
