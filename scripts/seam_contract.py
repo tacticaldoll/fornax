@@ -153,22 +153,23 @@ def load(skills_dir: Path) -> list[Seam]:
 
 
 def render(seams: list[Seam]) -> str:
-    lines = [START]
+    lines = [START, ""]
 
     if not seams:
         lines.append(
-            "\nNo matching producer and consumer sidecars declare a record seam. Nothing to hold.\n"
+            "No matching producer and consumer sidecars declare a record seam. Nothing to hold."
         )
+        lines.append("")
         lines.append(END)
         return "\n".join(lines)
 
     for consumer, producer, record, items in sorted(seams):
-        lines.append(f"\n### `{producer}` → `{consumer}` — {record}\n")
+        lines.append(f"### `{producer}` → `{consumer}` — {record}")
+        lines.append("")
 
         if not items:
-            lines.append(
-                f"`{producer}` states no output template, so it declares no record shape.\n"
-            )
+            lines.append(f"`{producer}` states no output template, so it declares no record shape.")
+            lines.append("")
             continue
 
         lines.append("| Element | Kind |")

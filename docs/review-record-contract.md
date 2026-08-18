@@ -68,7 +68,6 @@ table does.
 | `Gate N: [name]` | section |
 | `Structural Appendix` | section |
 
-
 ### `static-review` → `triage-findings` — Review Record v1 (text/markdown)
 
 | Element | Kind |

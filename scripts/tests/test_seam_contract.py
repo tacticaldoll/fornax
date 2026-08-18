@@ -95,6 +95,18 @@ def run(root: Path, *argv: str) -> tuple[int, str]:
 
 
 class SeamDiscovery(unittest.TestCase):
+    def test_render_uses_one_blank_line_between_seams(self):
+        shape = [("Source", "field")]
+        block = seam_contract.render(
+            [
+                ("beta-skill", "alpha-skill", "Review Record v1 (text/markdown)", shape),
+                ("gamma-skill", "alpha-skill", "Review Record v1 (text/markdown)", shape),
+            ]
+        )
+
+        self.assertNotIn("\n\n\n", block)
+        self.assertIn("| `Source` | field |\n\n### `alpha-skill` → `gamma-skill`", block)
+
     def test_matching_interface_records_are_a_seam(self):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
