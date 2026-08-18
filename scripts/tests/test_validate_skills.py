@@ -12,6 +12,7 @@ import skill_model
 import validate_skills
 
 PUBLISHER = "9d0f3c1a-7b2e-4e61-8d45-2a6f90c3b817"
+FOREIGN_PUBLISHER = "c52ebc66-c01e-49af-9ed6-818ee4bc49f1"
 REVIEW_RECORD = f"{PUBLISHER}/review-record@1 text/markdown"
 
 NAME = "example-skill"
@@ -199,7 +200,30 @@ class ValidateSkillTests(unittest.TestCase):
             passed, output = check_skill(root, skill_md_text=text)
 
         self.assertFalse(passed)
-        self.assertIn("does not consume", output)
+        self.assertIn("consumer has no skill-interface.yaml", output)
+
+    def test_explicit_record_input_distinguishes_an_incomplete_consumer_sidecar(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_skill(
+                root,
+                "static-review",
+                interface_text=f"publisher: {PUBLISHER}\nproduces:\n  - {REVIEW_RECORD}\n",
+            )
+            text = SKILL_MD.replace(
+                "the thing this fixture consumes", "a `static-review` Review Record"
+            )
+            passed, output = check_skill(
+                root,
+                skill_md_text=text,
+                interface_text=(
+                    f"publisher: {PUBLISHER}\nconsumes:\n"
+                    f"  - {PUBLISHER}/other-record@1 text/markdown\n"
+                ),
+            )
+
+        self.assertFalse(passed)
+        self.assertIn("does not consume any exact identity", output)
 
     def test_explicit_record_input_accepts_a_matching_consumer_sidecar(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -219,6 +243,94 @@ class ValidateSkillTests(unittest.TestCase):
             )
 
         self.assertTrue(passed, output)
+
+    def test_explicit_record_input_accepts_one_of_multiple_producer_majors(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_skill(
+                root,
+                "static-review",
+                interface_text=(
+                    f"publisher: {PUBLISHER}\nproduces:\n"
+                    f"  - {PUBLISHER}/review-record@1 text/markdown\n"
+                    f"  - {PUBLISHER}/review-record@2 text/markdown\n"
+                ),
+            )
+            text = SKILL_MD.replace(
+                "the thing this fixture consumes", "a `static-review` Review Record"
+            )
+            passed, output = check_skill(
+                root,
+                skill_md_text=text,
+                interface_text=(
+                    f"publisher: {PUBLISHER}\nconsumes:\n"
+                    f"  - {PUBLISHER}/review-record@1 text/markdown\n"
+                ),
+            )
+
+        self.assertTrue(passed, output)
+
+    def test_explicit_record_input_rejects_multiple_majors_without_overlap(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_skill(
+                root,
+                "static-review",
+                interface_text=(
+                    f"publisher: {PUBLISHER}\nproduces:\n"
+                    f"  - {PUBLISHER}/review-record@1 text/markdown\n"
+                    f"  - {PUBLISHER}/review-record@2 text/markdown\n"
+                ),
+            )
+            text = SKILL_MD.replace(
+                "the thing this fixture consumes", "a `static-review` Review Record"
+            )
+            passed, output = check_skill(
+                root,
+                skill_md_text=text,
+                interface_text=(
+                    f"publisher: {PUBLISHER}\nconsumes:\n"
+                    f"  - {PUBLISHER}/review-record@3 text/markdown\n"
+                ),
+            )
+
+        self.assertFalse(passed)
+        self.assertIn("does not consume any exact identity", output)
+
+    def test_explicit_record_input_accepts_a_declared_foreign_producer(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            text = SKILL_MD.replace(
+                "the thing this fixture consumes", "a `foreign-review` Review Record"
+            )
+            passed, output = check_skill(
+                root,
+                skill_md_text=text,
+                interface_text=(
+                    f"publisher: {PUBLISHER}\nconsumes:\n"
+                    f"  - {FOREIGN_PUBLISHER}/review-record@1 text/markdown\n"
+                ),
+            )
+
+        self.assertTrue(passed, output)
+
+    def test_absent_local_producer_rejects_a_local_identity(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            text = SKILL_MD.replace(
+                "the thing this fixture consumes", "a `missing-review` Review Record"
+            )
+            passed, output = check_skill(
+                root,
+                skill_md_text=text,
+                interface_text=(
+                    f"publisher: {PUBLISHER}\nconsumes:\n"
+                    f"  - {PUBLISHER}/review-record@1 text/markdown\n"
+                ),
+            )
+
+        self.assertFalse(passed)
+        self.assertIn("declares no matching foreign identity", output)
 
     def test_generic_feedback_input_does_not_require_a_sidecar(self) -> None:
         with TemporaryDirectory() as tmp:

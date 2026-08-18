@@ -298,27 +298,39 @@ def validate_record_inputs(skill_dir: Path, name: str, content: str) -> bool:
     input_match = INPUT_LINE_PATTERN.search(content)
     if not input_match:
         return False
+    claims = list(RECORD_INPUT_PATTERN.finditer(input_match.group(1)))
+    if not claims:
+        return False
 
     consumer_path = skill_dir / INTERFACE_FILE
-    consumer = None
-    if consumer_path.exists():
-        try:
-            consumer = load_interface(consumer_path, name)
-        except InterfaceError:
-            return False  # ordinary sidecar validation reports the malformed file
+    if not consumer_path.exists():
+        fail(name, f"Input names a produced record but the consumer has no {INTERFACE_FILE}")
+        return True
+    try:
+        consumer = load_interface(consumer_path, name)
+    except InterfaceError:
+        return False  # ordinary sidecar validation reports the malformed file
 
     failed = False
-    for match in RECORD_INPUT_PATTERN.finditer(input_match.group(1)):
+    for match in claims:
         producer_name = match.group("producer")
         expected_type = record_type(match.group("label"))
         producer_path = skill_dir.parent / producer_name / INTERFACE_FILE
         if not producer_path.exists():
-            fail(
-                name,
-                f"Input names `{producer_name}` {match.group('label')} but the producer has "
-                f"no {INTERFACE_FILE}",
-            )
-            failed = True
+            foreign = [
+                record
+                for record in consumer.consumes
+                if record.record_type == expected_type
+                and record.publisher != consumer.publisher
+            ]
+            if not foreign:
+                fail(
+                    name,
+                    f"Input names `{producer_name}` {match.group('label')} but no local producer "
+                    f"{INTERFACE_FILE} exists and the consumer declares no matching foreign "
+                    "identity",
+                )
+                failed = True
             continue
         try:
             producer = load_interface(producer_path, producer_name)
@@ -326,19 +338,20 @@ def validate_record_inputs(skill_dir: Path, name: str, content: str) -> bool:
             continue  # the producer's ordinary sidecar validation reports the malformed file
 
         records = [record for record in producer.produces if record.record_type == expected_type]
-        if len(records) != 1:
+        if not records:
             fail(
                 name,
-                f"Input names `{producer_name}` {match.group('label')} but its sidecar must "
-                f"produce exactly one {expected_type} record",
+                f"Input names `{producer_name}` {match.group('label')} but its {INTERFACE_FILE} "
+                f"produces no {expected_type} record",
             )
             failed = True
             continue
-        if consumer is None or records[0] not in consumer.consumes:
+        matching = sorted(set(records) & set(consumer.consumes))
+        if not matching:
             fail(
                 name,
                 f"Input names `{producer_name}` {match.group('label')} but {INTERFACE_FILE} "
-                f"does not consume {records[0]}",
+                "does not consume any exact identity produced for that record type",
             )
             failed = True
 

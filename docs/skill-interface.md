@@ -36,9 +36,14 @@ Each record is the tuple `(publisher UUID, record type, major version, media typ
 
 A consumer that names a producer's record in its `**Input**:` line uses the standardized form
 ``a `<producer>` <Title Case Record Name>`` (for example, ``a `static-review` Review Record``).
-Workspace validation checks that the producer declares exactly one matching record type and that the
-consumer sidecar consumes that identity. This narrow prose check catches a missing declaration; the
-sidecars, not prose, remain authoritative for seam discovery.
+When the named producer is in the same source tree, workspace validation requires at least one exact
+identity shared by the producer's matching `produces` declarations and the consumer's `consumes`
+declarations. A producer may publish multiple majors during migration. When the named producer is
+not in the source tree, validation accepts a matching record type only when the consumer declares it
+under a foreign publisher UUID; an absent local producer cannot be satisfied by an orphaned local
+identity. This build-time concession cannot verify a foreign skill slug. Installed runtime
+discovery performs the full identity match against interfaces actually present. Sidecars, not prose,
+remain authoritative for seam discovery.
 
 When a producer's record is consumed by another skill, mark the Markdown fence that defines the
 record's visible output shape:
