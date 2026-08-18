@@ -67,7 +67,7 @@ class Known:
         return value
 
 
-def _scalar(value: str, number: int) -> str:
+def _raw_scalar(value: str, number: int) -> str:
     if not value:
         raise KnownError(f"line {number}: scalar must not be empty")
     if value[0] in "'\"[{":
@@ -103,7 +103,7 @@ def load(path: Path) -> tuple[Known, ...]:
                     raise KnownError(f"line {number}: schema must precede knowns")
                 if schema is not None:
                     raise KnownError(f"line {number}: duplicate schema")
-                schema = _scalar(value or "", number)
+                schema = _raw_scalar(value or "", number)
             else:
                 if saw_knowns:
                     raise KnownError(f"line {number}: duplicate knowns")
@@ -119,7 +119,7 @@ def load(path: Path) -> tuple[Known, ...]:
         if start:
             if not saw_knowns:
                 raise KnownError(f"line {number}: known entry appears before knowns")
-            current = {"id": _scalar(start.group(1), number)}
+            current = {"id": _raw_scalar(start.group(1), number)}
             entries.append(current)
             active_list = None
             continue
@@ -138,7 +138,7 @@ def load(path: Path) -> tuple[Known, ...]:
                 current[key] = []
                 active_list = key
             else:
-                current[key] = _scalar(value or "", number)
+                current[key] = _raw_scalar(value or "", number)
                 active_list = None
             continue
         item = LIST_ITEM.fullmatch(raw)
@@ -147,7 +147,7 @@ def load(path: Path) -> tuple[Known, ...]:
                 raise KnownError(f"line {number}: list item has no list field")
             values = current[active_list]
             assert isinstance(values, list)
-            values.append(_scalar(item.group(1), number))
+            values.append(_raw_scalar(item.group(1), number))
             continue
         raise KnownError(f"line {number}: unsupported YAML shape")
 
