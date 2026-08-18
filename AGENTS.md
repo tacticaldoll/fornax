@@ -484,6 +484,10 @@ Prefer lightweight tests that match the risk of the change.
   `pipx run ruff==0.16.1 check .` locally for the same answer before pushing. Never auto-apply a fix
   as part of another change, and treat a ruff version bump as its own commit — preview rules move
   between releases.
+- CI runs the standard-library workspace gate in a dedicated Python 3.8 job so maintenance scripts
+  retain their minimum contributor-runtime compatibility. The independently packaged Fornax CLI
+  keeps its declared Python 3.10 minimum and runs in the main validation job; do not lower that
+  package boundary to match the maintenance scripts.
 - Enforcement: CI (`.github/workflows/validate.yml`) runs the validator on every push; enable the
   local pre-commit hook once per clone with `git config core.hooksPath .githooks`.
 - Validate `templates/skill` after template changes.
