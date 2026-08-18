@@ -315,8 +315,17 @@ def validate_record_inputs(skill_dir: Path, name: str, content: str) -> bool:
     for match in claims:
         producer_name = match.group("producer")
         expected_type = record_type(match.group("label"))
-        producer_path = skill_dir.parent / producer_name / INTERFACE_FILE
+        producer_dir = skill_dir.parent / producer_name
+        producer_path = producer_dir / INTERFACE_FILE
         if not producer_path.exists():
+            if producer_dir.is_dir():
+                fail(
+                    name,
+                    f"Input names local producer `{producer_name}` {match.group('label')} but it "
+                    f"has no {INTERFACE_FILE}",
+                )
+                failed = True
+                continue
             foreign = [
                 record
                 for record in consumer.consumes

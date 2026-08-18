@@ -314,6 +314,26 @@ class ValidateSkillTests(unittest.TestCase):
 
         self.assertTrue(passed, output)
 
+    def test_local_producer_without_a_sidecar_cannot_use_the_foreign_concession(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_skill(root, "local-review")
+            text = SKILL_MD.replace(
+                "the thing this fixture consumes", "a `local-review` Review Record"
+            )
+            passed, output = check_skill(
+                root,
+                skill_md_text=text,
+                interface_text=(
+                    f"publisher: {PUBLISHER}\nconsumes:\n"
+                    f"  - {FOREIGN_PUBLISHER}/review-record@1 text/markdown\n"
+                ),
+            )
+
+        self.assertFalse(passed)
+        self.assertIn("local producer `local-review`", output)
+        self.assertIn("has no skill-interface.yaml", output)
+
     def test_absent_local_producer_rejects_a_local_identity(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
