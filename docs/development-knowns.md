@@ -5,7 +5,9 @@ judgment. Entries are project knowledge, not a transcript of review feedback: a 
 or experiment may supply evidence, but does not own the statement or authorize its treatment.
 
 Git history records changes in understanding. Update the current entry instead of appending an event
-log, and remove routine facts already stated clearly in `PROJECT.md` or `AGENTS.md`.
+log, and remove routine facts already stated clearly in `PROJECT.md` or `AGENTS.md`. Statements,
+rationales, and evidence are human-maintained judgment and can become stale; `--check` validates
+their structure, not the truth of prose or path-like text embedded in it.
 
 ## Entry model
 
@@ -26,8 +28,8 @@ Treatment is not work authorization. Only an explicit `work: backlog` or `work: 
 `remediate` entry authorizes implementation; `work: done` may accompany a `resolved` entry. After a
 review, triage, spike, test, or experiment verifies a non-obvious current condition likely to affect
 future development judgment, the repository workflow must suggest a project-centered registry
-addition or update. It must not write the suggestion or start its repair until the user authorizes
-that repository change.
+addition or update. It must not write the suggestion into the registry or start its repair until the
+user authorizes that repository change.
 
 ## Constrained YAML and views
 

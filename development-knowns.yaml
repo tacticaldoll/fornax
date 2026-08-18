@@ -8,6 +8,7 @@ knowns:
     evidence:
       - scripts/seam_contract.py assigns RecordShape and Seam aliases at module load time.
       - The workspace supports the system Python 3.8 runtime used by contributors.
+      - .github/workflows/validate.yml runs the workspace gate on Python 3.8.
     declined-changes:
       - Replace typing.List and typing.Tuple in runtime alias assignments with list and tuple.
     reconsider-when: The minimum supported Python version becomes 3.9 or later.
@@ -35,4 +36,16 @@ knowns:
     declined-changes:
       - Replace the semantic relationship assertion with a check that only enumerates coverage labels.
     reconsider-when: Review coverage gains a structural representation that encodes item-to-gate relevance.
+    updated: 2026-08-18
+  - id: seam-inventory-repeats-shape-per-consumer
+    statement: Record seam inventory intentionally repeats a producer's record shape for each consumer seam.
+    kind: constraint
+    treatment: accept
+    rationale: The inventory unit is an exact producer-to-consumer seam, and each block remains mechanically derived from its declarations.
+    evidence:
+      - scripts/seam_contract.py renders each discovered producer and consumer pair as one block.
+      - docs/review-record-contract.md describes the generated output as a seam list.
+    declined-changes:
+      - Group consumers under one record block solely to deduplicate identical producer element tables.
+    reconsider-when: Repetition materially impairs review or the inventory changes from seam-oriented to record-oriented.
     updated: 2026-08-18
