@@ -12,6 +12,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 MARKDOWN_LINK = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
+MARKDOWN_DESTINATION = re.compile(
+    r'''(?P<destination><[^>\n]*>|\S+)(?:[ \t]+(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'))?'''
+)
 
 
 @dataclass(frozen=True)
@@ -32,6 +35,9 @@ def workspace_files(root: Path) -> list[Path]:
 
 def local_target(raw: str) -> str | None:
     target = raw.strip()
+    match = MARKDOWN_DESTINATION.fullmatch(target)
+    if match is not None:
+        target = match.group("destination")
     if target.startswith("<") and target.endswith(">"):
         target = target[1:-1]
     target = target.split("#", 1)[0]

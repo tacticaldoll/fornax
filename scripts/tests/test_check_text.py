@@ -32,6 +32,40 @@ class TextHygiene(unittest.TestCase):
         self.assertEqual(errors[0].path, path)
         self.assertIn("absolute Markdown link is not allowed", errors[0].message)
 
+    def test_valid_local_links_with_titles_pass(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            target = root / "target.md"
+            target.write_text("target\n", encoding="utf-8")
+            spaced_target = root / "target file.md"
+            spaced_target.write_text("target\n", encoding="utf-8")
+            source = root / "source.md"
+            source.write_text(
+                "See [double](target.md \"overview\"), "
+                "[single](target.md 'overview'), and "
+                "[angle](<target file.md> \"overview\").\n",
+                encoding="utf-8",
+            )
+
+            errors = check_text.check([source, target, spaced_target])
+
+        self.assertEqual(errors, [])
+
+    def test_link_titles_preserve_missing_and_absolute_checks(self) -> None:
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "fixture.md"
+            path.write_text(
+                "See [missing](missing.md \"overview\") and "
+                "[absolute](/docs/example.md 'overview').\n",
+                encoding="utf-8",
+            )
+
+            errors = check_text.check([path])
+
+        self.assertEqual(len(errors), 2)
+        self.assertIn("link not found: missing.md \"overview\"", errors[0].message)
+        self.assertIn("absolute Markdown link is not allowed", errors[1].message)
+
     def test_a_colon_in_the_source_path_remains_structured(self) -> None:
         with TemporaryDirectory() as tmp:
             parent = Path(tmp) / "with:colon"
