@@ -29,9 +29,10 @@ Settled; reopen only with a reason, not by default.
   for README grouping and the generated skill maps. The object-vs-meta and operation-kind
   distinctions are real but are *not* encoded as fields — nothing consumes them.
 - **A record contract exists only where one skill's output is another skill's input.** Fourteen
-  skills define an output; one of them is read by another skill (`static-review` → `triage-findings`,
-  `docs/review-record-contract.md`). The other thirteen have no contract because they have no
-  consumer, not because one is missing. A real seam opts into matching `skill-interface.yaml`
+  skills define an output; one of them is read by two skills (`static-review` → `handle-feedback`
+  and `static-review` → `triage-findings`, `docs/review-record-contract.md`). The other thirteen
+  outputs have no contract because they have no consumer, not because one is missing. A real seam
+  opts into matching `skill-interface.yaml`
   declarations, whose stable identity is publisher UUID, record type, major version, and media type.
   The sidecar supports local discovery and recommendation only; it carries no payload schema,
   eligibility rule, execution instruction, or authorization. The seam list is **derived from these
@@ -39,9 +40,10 @@ Settled; reopen only with a reason, not by default.
   zero seams reports clean. Invocation always remains a separate, explicitly authorized host action.
   The other thirteen outputs having no consumer is deliberate asymmetry, not a missing contract. Do
   not add a repository-wide payload schema: the sidecar declares identity and the inventory extracts
-  visible template headings, but one real seam is not evidence for a corpus-wide payload model.
-  Reconsider a wider schema only when a second real producer→consumer seam exists; two seams are the
-  first evidence that can show which payload constraints actually generalize.
+  visible template headings, but two consumers of the same record identity are not evidence for a
+  corpus-wide payload model. Reconsider a wider schema only when a second distinct record identity
+  crosses a producer→consumer seam; that is the first evidence that can show which payload
+  constraints actually generalize across records.
 - **Skills carry no version of their own.** Release versioning is the collection's —
   `distribution.json` plus the host manifest projections — because a skill has no distribution path
   of its own: hosts read `SKILL.md`, whose frontmatter has no version field; the deployer only
