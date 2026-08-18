@@ -75,6 +75,7 @@ class InterfaceParsing(unittest.TestCase):
             "flow publisher": declaration("produces", publisher=f"[{PUBLISHER}]"),
             "anchored publisher": declaration("produces", publisher=f"&publisher {PUBLISHER}"),
             "quoted record": declaration("produces", record=f"'{RECORD}'"),
+            "aliased record": declaration("produces", record="*record"),
             "tagged record": declaration("produces", record=f"!record {RECORD}"),
         }
         for label, text in cases.items():
