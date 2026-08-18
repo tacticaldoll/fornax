@@ -94,6 +94,16 @@ def _publisher(value: str) -> str:
     return publisher
 
 
+def _raw_scalar(value: str, number: int) -> str:
+    if value[0] in "'\"[{":
+        raise InterfaceError(f"line {number}: quoted and flow-style scalars are unsupported")
+    if value in {"|", ">"}:
+        raise InterfaceError(f"line {number}: multiline scalars are unsupported")
+    if re.search(r"(?:^|\s)[&*!][^\s]+", value):
+        raise InterfaceError(f"line {number}: YAML anchors, aliases, and tags are unsupported")
+    return value
+
+
 def load(path: Path, skill: str | None = None) -> SkillInterface:
     """Load one sidecar, accepting only the documented constrained YAML shape."""
     try:
@@ -112,7 +122,7 @@ def load(path: Path, skill: str | None = None) -> SkillInterface:
             if active_list is None:
                 raise InterfaceError(f"line {number}: list item has no list field")
             assert isinstance(values[active_list], list)
-            values[active_list].append(item.group(1))
+            values[active_list].append(_raw_scalar(item.group(1), number))
             continue
         field = TOP_LEVEL.fullmatch(raw)
         if not field:
@@ -128,7 +138,7 @@ def load(path: Path, skill: str | None = None) -> SkillInterface:
         else:
             if not scalar:
                 raise InterfaceError(f"line {number}: publisher must not be empty")
-            values[key] = scalar.strip("'\"")
+            values[key] = _raw_scalar(scalar, number)
             active_list = None
 
     if "publisher" not in values:

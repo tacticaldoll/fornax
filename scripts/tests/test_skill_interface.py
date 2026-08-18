@@ -69,6 +69,21 @@ class InterfaceParsing(unittest.TestCase):
                 with self.assertRaises(skill_interface.InterfaceError):
                     skill_interface.load(path)
 
+    def test_unsupported_scalar_syntax_fails_closed(self) -> None:
+        cases = {
+            "quoted publisher": declaration("produces", publisher=f"'{PUBLISHER}'"),
+            "flow publisher": declaration("produces", publisher=f"[{PUBLISHER}]"),
+            "anchored publisher": declaration("produces", publisher=f"&publisher {PUBLISHER}"),
+            "quoted record": declaration("produces", record=f"'{RECORD}'"),
+            "tagged record": declaration("produces", record=f"!record {RECORD}"),
+        }
+        for label, text in cases.items():
+            with self.subTest(label=label), TemporaryDirectory() as tmp:
+                path = Path(tmp) / skill_interface.INTERFACE_FILE
+                path.write_text(text, encoding="utf-8")
+                with self.assertRaisesRegex(skill_interface.InterfaceError, "unsupported"):
+                    skill_interface.load(path)
+
 
 class Recommendation(unittest.TestCase):
     def interface(self, skill: str) -> skill_interface.SkillInterface:
