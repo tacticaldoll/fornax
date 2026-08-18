@@ -11,11 +11,11 @@ skills directory. "Plugin preferred" is not "plugin only": some hosts expose Age
 through directory discovery.
 
 The CLI supports formal deployment only and exposes no local source option. Its workspace version
-selects the matching tag from the canonical Fornax remote. Deployment proceeds only when the tag,
-remote default HEAD, and manifest version agree on one commit. Plugin marketplaces and extensions
-install from that verified remote; directory channels receive independent copies from a detached,
-engine-managed snapshot of the same commit, never from a working checkout and never through
-symlinks. Local host development is deliberately outside the `fornax` CLI.
+selects the matching tag from the canonical Fornax remote. Deployment proceeds only when the tag is
+reachable from the remote default branch and its manifest declares the matching version. Plugin
+marketplaces and extensions install that verified tag; directory channels receive independent
+copies from a detached, engine-managed snapshot of the same commit, never from a working checkout
+and never through symlinks. Local host development is deliberately outside the `fornax` CLI.
 
 ## Capability matrix
 
