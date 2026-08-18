@@ -37,6 +37,11 @@ Settled; reopen only with a reason, not by default.
   eligibility rule, execution instruction, or authorization. The seam list is **derived from these
   declarations** rather than prose or a maintained list, so a second seam appears automatically and
   zero seams reports clean. Invocation always remains a separate, explicitly authorized host action.
+  The other thirteen outputs having no consumer is deliberate asymmetry, not a missing contract. Do
+  not add a repository-wide payload schema: the sidecar declares identity and the inventory extracts
+  visible template headings, but one real seam is not evidence for a corpus-wide payload model.
+  Reconsider a wider schema only when a second real producer→consumer seam exists; two seams are the
+  first evidence that can show which payload constraints actually generalize.
 - **Skills carry no version of their own.** Release versioning is the collection's —
   `distribution.json` plus the host manifest projections — because a skill has no distribution path
   of its own: hosts read `SKILL.md`, whose frontmatter has no version field; the deployer only
