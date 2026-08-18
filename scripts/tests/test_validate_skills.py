@@ -350,7 +350,9 @@ class ValidateSkillTests(unittest.TestCase):
             )
 
         self.assertFalse(passed)
+        self.assertIn("no local skill named `missing-review` exists", output)
         self.assertIn("declares no matching foreign identity", output)
+        self.assertIn("correct the producer name or declare the external record identity", output)
 
     def test_generic_feedback_input_does_not_require_a_sidecar(self) -> None:
         with TemporaryDirectory() as tmp:

@@ -335,8 +335,9 @@ def validate_record_inputs(skill_dir: Path, name: str, content: str) -> bool:
             if not foreign:
                 fail(
                     name,
-                    f"Input names `{producer_name}` {match.group('label')} but no local producer "
-                    f"{INTERFACE_FILE} exists and the consumer declares no matching foreign "
+                    f"Input names `{producer_name}` {match.group('label')} but no local skill "
+                    f"named `{producer_name}` exists and the consumer declares no matching "
+                    "foreign identity; correct the producer name or declare the external record "
                     "identity",
                 )
                 failed = True
