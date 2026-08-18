@@ -4,17 +4,14 @@
 from __future__ import annotations
 
 import os
-import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from markdown_links import iter_markdown_links, local_target
+
 
 ROOT = Path(__file__).resolve().parent.parent
-MARKDOWN_LINK = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
-MARKDOWN_DESTINATION = re.compile(
-    r'''(?P<destination><[^>\n]*>|\S+)(?:[ \t]+(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'))?'''
-)
 
 
 @dataclass(frozen=True)
@@ -31,19 +28,6 @@ def workspace_files(root: Path) -> list[Path]:
         capture_output=True,
     )
     return [root / os.fsdecode(path) for path in result.stdout.split(b"\0") if path]
-
-
-def local_target(raw: str) -> str | None:
-    target = raw.strip()
-    match = MARKDOWN_DESTINATION.fullmatch(target)
-    if match is not None:
-        target = match.group("destination")
-    if target.startswith("<") and target.endswith(">"):
-        target = target[1:-1]
-    target = target.split("#", 1)[0]
-    if not target or re.match(r"^[a-z][a-z0-9+.-]*:", target, re.IGNORECASE):
-        return None
-    return target
 
 
 def check(files: list[Path]) -> list[Diagnostic]:
@@ -66,15 +50,17 @@ def check(files: list[Path]) -> list[Diagnostic]:
             content = data.decode("utf-8")
         except UnicodeDecodeError:
             continue
-        for raw in MARKDOWN_LINK.findall(content):
-            target = local_target(raw)
+        for link in iter_markdown_links(content):
+            target = local_target(link.destination)
             if target is None:
                 continue
             if Path(target).is_absolute():
-                errors.append(Diagnostic(path, f"absolute Markdown link is not allowed: {raw}"))
+                errors.append(
+                    Diagnostic(path, f"absolute Markdown link is not allowed: {link.raw_target}")
+                )
                 continue
             if not (path.parent / target).exists():
-                errors.append(Diagnostic(path, f"link not found: {raw}"))
+                errors.append(Diagnostic(path, f"link not found: {link.raw_target}"))
     return errors
 
 

@@ -141,6 +141,19 @@ class ValidateSkillTests(unittest.TestCase):
         self.assertFalse(passed)
         self.assertIn("link not found", output)
 
+    def test_valid_relative_link_with_a_parenthesized_title_passes(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            text = SKILL_MD + '\nSee [the reference](references/guide.md "short (local) guide").\n'
+            skill_dir = fixtures.write_skill(root, NAME, skill_md_text=text)
+            reference = skill_dir / "references" / "guide.md"
+            reference.parent.mkdir()
+            reference.write_text("# Guide\n", encoding="utf-8")
+
+            passed, output = check(skill_dir)
+
+        self.assertTrue(passed, output)
+
     def test_valid_optional_interface_passes(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)

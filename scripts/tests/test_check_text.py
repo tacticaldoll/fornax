@@ -43,7 +43,8 @@ class TextHygiene(unittest.TestCase):
             source.write_text(
                 "See [double](target.md \"overview\"), "
                 "[single](target.md 'overview'), and "
-                "[angle](<target file.md> \"overview\").\n",
+                "[angle](<target file.md> \"overview\"), plus "
+                "[nested](target.md \"short (local) guide\").\n",
                 encoding="utf-8",
             )
 

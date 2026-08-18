@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from uuid import UUID
 
+from markdown_links import iter_markdown_links, local_target
 from skill_interface import INTERFACE_FILE, InterfaceError, load as load_interface
 from skill_model import FAMILIES, HANDOFF, STATUSES, listed
 
@@ -28,7 +29,6 @@ from skill_model import FAMILIES, HANDOFF, STATUSES, listed
 NAME_PATTERN = re.compile(r"^[a-z0-9-]+$")
 VERSION_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
 FRONTMATTER_PATTERN = re.compile(r"^---\s*\r?\n(.*?)\r?\n---", re.DOTALL)
-MARKDOWN_LINK_PATTERN = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 INPUT_LINE_PATTERN = re.compile(r"^\*\*Input\*\*\s*:\s*(.+)$", re.MULTILINE)
 RECORD_INPUT_PATTERN = re.compile(
     r"`(?P<producer>[a-z0-9]+(?:-[a-z0-9]+)*)`\s+"
@@ -228,38 +228,31 @@ def fail(skill_name: str, message: str) -> None:
     print(f"FAIL {skill_name} - {message}")
 
 
-def is_external_link(target: str) -> bool:
-    return bool(re.match(r"^[a-z][a-z0-9+.-]*:", target, re.IGNORECASE))
-
-
-def normalize_markdown_link_target(target: str) -> str:
-    target = target.strip()
-
-    if target.startswith("<") and target.endswith(">"):
-        target = target[1:-1]
-
-    return target.split("#", 1)[0]
-
-
 def validate_markdown_links(skill_dir: Path, name: str) -> bool:
     failed = False
 
     for markdown_file in sorted(skill_dir.rglob("*.md")):
         content = markdown_file.read_text(encoding="utf-8")
 
-        for target in MARKDOWN_LINK_PATTERN.findall(content):
-            link_target = normalize_markdown_link_target(target)
+        for link in iter_markdown_links(content):
+            link_target = local_target(link.destination)
 
-            if not link_target or is_external_link(link_target):
+            if link_target is None:
                 continue
 
             if Path(link_target).is_absolute():
-                fail(name, f"{markdown_file.relative_to(skill_dir)} has absolute link: {target}")
+                fail(
+                    name,
+                    f"{markdown_file.relative_to(skill_dir)} has absolute link: {link.raw_target}",
+                )
                 failed = True
                 continue
 
             if not (markdown_file.parent / link_target).exists():
-                fail(name, f"{markdown_file.relative_to(skill_dir)} link not found: {target}")
+                fail(
+                    name,
+                    f"{markdown_file.relative_to(skill_dir)} link not found: {link.raw_target}",
+                )
                 failed = True
 
     return failed
