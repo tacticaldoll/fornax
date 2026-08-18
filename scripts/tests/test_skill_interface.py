@@ -107,6 +107,39 @@ class Recommendation(unittest.TestCase):
 
         self.assertEqual(len(matches), 2)
 
+    def test_a_present_preference_excludes_other_skills_when_its_sources_tie(self) -> None:
+        record = skill_interface.RecordIdentity.parse(RECORD)
+        first = self.interface("beta")
+        second = skill_interface.SkillInterface(
+            first.skill, first.publisher, first.produces, first.consumes, "/other/beta"
+        )
+
+        matches = skill_interface.recommend(
+            record,
+            [first, second, self.interface("alpha")],
+            ("beta",),
+        )
+
+        self.assertEqual([(item.skill, item.source) for item in matches], [
+            ("beta", "/installed/beta"),
+            ("beta", "/other/beta"),
+        ])
+
+    def test_a_lower_ranked_preference_cannot_outrank_a_present_tied_preference(self) -> None:
+        record = skill_interface.RecordIdentity.parse(RECORD)
+        first = self.interface("beta")
+        second = skill_interface.SkillInterface(
+            first.skill, first.publisher, first.produces, first.consumes, "/other/beta"
+        )
+
+        matches = skill_interface.recommend(
+            record,
+            [first, second, self.interface("alpha")],
+            ("beta", "alpha"),
+        )
+
+        self.assertEqual({item.skill for item in matches}, {"beta"})
+
     def test_cli_reports_no_match_without_invoking_anything(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)

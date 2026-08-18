@@ -34,6 +34,22 @@ Each record is the tuple `(publisher UUID, record type, major version, media typ
 - Major starts at 1 and changes only when an old consumer cannot read the new record.
 - Media type describes representation. It is not a payload schema.
 
+When a producer's record is consumed by another skill, mark the Markdown fence that defines the
+record's visible output shape:
+
+````text
+<!-- OUTPUT-TEMPLATE: <record-type>@<major> <media-type> -->
+```markdown
+...
+```
+````
+
+The marker belongs immediately before the `markdown` fence. It is scoped to its own skill folder and
+inherits the publisher from that folder's `skill-interface.yaml`; seam discovery matches the full
+four-part record identity before using the marker to select a template inside the matched producer.
+Each produced record has exactly one marked template. A missing or duplicate marker fails the seam
+inventory check.
+
 Unknown structure fails closed. Payload schemas, eligibility rules, execution instructions,
 authorization, network lookup, and cryptographic publisher verification are outside version 1.
 
@@ -41,5 +57,7 @@ authorization, network lookup, and cryptographic publisher verification are outs
 
 Build indexes locally from installed skills that opt in. Match the complete record tuple exactly.
 When one consumer matches, recommend it; when several match, an explicit user preference may select
-one, otherwise present the tied candidates. Keep the full index out of agent context and expose it
-only on demand. A recommendation is information, not permission to invoke.
+one, otherwise present the tied candidates. Repeated preferences are ordered: the first named skill
+with any match wins, and duplicate installed sources for that skill remain tied rather than falling
+through to a lower-ranked skill. Keep the full index out of agent context and expose it only on
+demand. A recommendation is information, not permission to invoke.

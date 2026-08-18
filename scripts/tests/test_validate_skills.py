@@ -190,9 +190,9 @@ class ProjectedDescriptionTests(unittest.TestCase):
         output = StringIO()
 
         with redirect_stdout(output):
-            passed = validate_skills.validate_distribution(root)
+            result = validate_skills.validate_distribution(root)
 
-        return passed, output.getvalue()
+        return result.passed, output.getvalue()
 
     def edit(self, path: Path, mutate) -> None:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -203,9 +203,12 @@ class ProjectedDescriptionTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             fixtures.write_distribution(root)
-            passed, output = self.check_distribution(root)
+            output = StringIO()
+            with redirect_stdout(output):
+                result = validate_skills.validate_distribution(root)
 
-        self.assertTrue(passed, output)
+        self.assertTrue(result.passed, output.getvalue())
+        self.assertEqual(result.publisher_id, PUBLISHER)
 
     def test_a_rewritten_description_fails(self) -> None:
         with TemporaryDirectory() as tmp:

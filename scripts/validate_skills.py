@@ -17,6 +17,7 @@ import argparse
 import json
 import re
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from uuid import UUID
 
@@ -35,6 +36,14 @@ HOST_VERSION_MANIFESTS = (
     ".cursor-plugin/plugin.json",
     "gemini-extension.json",
 )
+
+
+@dataclass(frozen=True)
+class DistributionValidation:
+    passed: bool
+    publisher_id: str | None
+
+
 HOST_DESCRIPTION_MANIFESTS = HOST_VERSION_MANIFESTS + (".claude-plugin/marketplace.json",)
 
 
@@ -83,14 +92,14 @@ def validate_projected_descriptions(root: Path, canonical: object) -> bool:
     return failed
 
 
-def validate_distribution(root: Path) -> bool:
+def validate_distribution(root: Path) -> DistributionValidation:
     """Validate canonical distribution metadata and host projections."""
     distribution_file = root / "distribution.json"
     try:
         distribution = json.loads(distribution_file.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
         print(f"FAIL distribution.json - {error}")
-        return False
+        return DistributionValidation(False, None)
 
     failed = False
     name = distribution.get("name")
@@ -106,21 +115,24 @@ def validate_distribution(root: Path) -> bool:
     if not isinstance(version, str) or not VERSION_PATTERN.fullmatch(version):
         print("FAIL distribution.json - version must use semantic version format x.y.z")
         failed = True
+    canonical_publisher: str | None = None
     if not isinstance(publisher_id, str):
         print("FAIL distribution.json - publisher_id must be a UUID")
         failed = True
     else:
         try:
-            canonical_publisher = str(UUID(publisher_id))
+            parsed_publisher = str(UUID(publisher_id))
         except ValueError:
             print("FAIL distribution.json - publisher_id must be a UUID")
             failed = True
         else:
-            if publisher_id != canonical_publisher:
+            if publisher_id != parsed_publisher:
                 print(
                     "FAIL distribution.json - publisher_id must use canonical lowercase UUID form"
                 )
                 failed = True
+            else:
+                canonical_publisher = parsed_publisher
     if skills_directory != "skills":
         print("FAIL distribution.json - skills_directory must be skills")
         failed = True
@@ -145,7 +157,7 @@ def validate_distribution(root: Path) -> bool:
 
     if not failed:
         print(f"OK   distribution {name} {version}")
-    return not failed
+    return DistributionValidation(not failed, canonical_publisher)
 
 
 def get_top_level_yaml_value(content: str, key: str) -> str | None:
@@ -404,7 +416,7 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
     return not skill_failed
 
 
-def validate_interface_publishers(skills_path: Path, publisher_id: object) -> bool:
+def validate_interface_publishers(skills_path: Path, publisher_id: str) -> bool:
     """Require this collection's sidecars to share its canonical publisher identity."""
     failed = False
     for sidecar in sorted(skills_path.glob(f"*/{INTERFACE_FILE}")):
@@ -412,7 +424,7 @@ def validate_interface_publishers(skills_path: Path, publisher_id: object) -> bo
             interface = load_interface(sidecar)
         except InterfaceError:
             continue  # validate_skill reports invalid declarations with the skill context
-        if publisher_id and interface.publisher != publisher_id:
+        if interface.publisher != publisher_id:
             fail(sidecar.parent.name, f"{INTERFACE_FILE} publisher must match distribution.json")
             failed = True
     return not failed
@@ -439,18 +451,16 @@ def main() -> int:
         print(f"Skills directory not found: {skills_path}", file=sys.stderr)
         return 1
 
-    failed = not validate_distribution(Path.cwd())
+    distribution = validate_distribution(Path.cwd())
+    failed = not distribution.passed
 
     for skill_dir in sorted(path for path in skills_path.iterdir() if path.is_dir()):
         if not validate_skill(skill_dir, args.allow_template_placeholders):
             failed = True
 
-    try:
-        distribution = json.loads(Path("distribution.json").read_text(encoding="utf-8"))
-        publisher_id = distribution.get("publisher_id")
-    except (OSError, json.JSONDecodeError):
-        publisher_id = None
-    if not validate_interface_publishers(skills_path, publisher_id):
+    if distribution.publisher_id is not None and not validate_interface_publishers(
+        skills_path, distribution.publisher_id
+    ):
         failed = True
 
     if failed:

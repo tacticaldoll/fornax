@@ -31,8 +31,15 @@ from __future__ import annotations
 import argparse
 import re
 from pathlib import Path
+from typing import List, Tuple
 
-from skill_interface import InterfaceError, SkillInterface, load as load_interface
+from skill_interface import (
+    INTERFACE_FILE,
+    InterfaceError,
+    RecordIdentity,
+    SkillInterface,
+    load as load_interface,
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -51,6 +58,9 @@ OUTPUT_TEMPLATE = re.compile(
 )
 HEADER_FIELD = re.compile(r"^\*\*([^*]+)\*\*\s*:", re.MULTILINE)
 SECTION = re.compile(r"^#{2,3} (.+)$", re.MULTILINE)
+
+RecordShape = List[Tuple[str, str]]
+Seam = Tuple[str, str, str, RecordShape]
 
 
 class SeamError(Exception):
@@ -79,7 +89,7 @@ def write(path: Path, text: str) -> None:
         raise SeamError(f"{where(path)} - {error}") from error
 
 
-def elements(skill_md: str, record) -> list[tuple[str, str]]:
+def elements(skill_md: str, record: RecordIdentity) -> RecordShape:
     """The record shape a producer states: its header fields, then its sections.
 
     Read only the explicitly marked output template for this record. Other Markdown
@@ -103,7 +113,7 @@ def elements(skill_md: str, record) -> list[tuple[str, str]]:
     ]
 
 
-def load(skills_dir: Path):
+def load(skills_dir: Path) -> list[Seam]:
     """Every seam the corpus declares, as (consumer, producer, record, elements)."""
     try:
         names = sorted(p.name for p in skills_dir.iterdir() if p.is_dir())
@@ -113,14 +123,14 @@ def load(skills_dir: Path):
     body = {name: read(skills_dir / name / "SKILL.md") for name in names}
     interfaces: list[SkillInterface] = []
     for name in names:
-        sidecar = skills_dir / name / "skill-interface.yaml"
+        sidecar = skills_dir / name / INTERFACE_FILE
         if not sidecar.exists():
             continue
         try:
             interfaces.append(load_interface(sidecar, name))
         except InterfaceError as error:
             raise SeamError(f"{where(sidecar)} - {error}") from error
-    seams = []
+    seams: list[Seam] = []
 
     for consumer in interfaces:
         for consumed in consumer.consumes:
@@ -143,7 +153,7 @@ def load(skills_dir: Path):
     return seams
 
 
-def render(seams) -> str:
+def render(seams: list[Seam]) -> str:
     lines = [START]
 
     if not seams:

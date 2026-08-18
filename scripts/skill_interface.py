@@ -179,7 +179,7 @@ def recommend(
     )
     for preferred in preferences:
         preferred_matches = [interface for interface in matches if interface.skill == preferred]
-        if len(preferred_matches) == 1:
+        if preferred_matches:
             return preferred_matches
     return matches
 
