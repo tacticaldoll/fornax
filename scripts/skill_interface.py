@@ -25,6 +25,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from uuid import UUID
 
+from constrained_yaml import raw_scalar
+
 
 INTERFACE_FILE = "skill-interface.yaml"
 RECORD_PATTERN = re.compile(
@@ -95,13 +97,7 @@ def _publisher(value: str) -> str:
 
 
 def _raw_scalar(value: str, number: int) -> str:
-    if value[0] in "'\"[{":
-        raise InterfaceError(f"line {number}: quoted and flow-style scalars are unsupported")
-    if value in {"|", ">"}:
-        raise InterfaceError(f"line {number}: multiline scalars are unsupported")
-    if re.search(r"(?:^|\s)[&*!][^\s]+", value):
-        raise InterfaceError(f"line {number}: YAML anchors, aliases, and tags are unsupported")
-    return value
+    return raw_scalar(value, number, InterfaceError)
 
 
 def load(path: Path, skill: str | None = None) -> SkillInterface:

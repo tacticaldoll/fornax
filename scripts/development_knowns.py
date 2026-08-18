@@ -22,6 +22,8 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
+from constrained_yaml import raw_scalar
+
 
 ROOT = Path(__file__).resolve().parent.parent
 REGISTRY = Path("development-knowns.yaml")
@@ -68,15 +70,7 @@ class Known:
 
 
 def _raw_scalar(value: str, number: int) -> str:
-    if not value:
-        raise KnownError(f"line {number}: scalar must not be empty")
-    if value[0] in "'\"[{":
-        raise KnownError(f"line {number}: quoted and flow-style scalars are unsupported")
-    if value in {"|", ">"}:
-        raise KnownError(f"line {number}: multiline scalars are unsupported")
-    if re.search(r"(?:^|\s)[&*!][^\s]+", value):
-        raise KnownError(f"line {number}: YAML anchors, aliases, and tags are unsupported")
-    return value
+    return raw_scalar(value, number, KnownError)
 
 
 def load(path: Path) -> tuple[Known, ...]:
