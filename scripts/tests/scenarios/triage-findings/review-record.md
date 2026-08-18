@@ -1,5 +1,6 @@
 # Review Record fixture
 
+**Fixture provenance**: foreign or pre-rule record retained to exercise unenumerated Coverage
 **Source**: `crates/xuanji/src`
 **Scope**: baseline handling; covered units are not enumerated
 **Calibration**: Gates 1-7

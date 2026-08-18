@@ -43,6 +43,16 @@ class ReviewContractTests(unittest.TestCase):
                 with self.subTest(record=record, label=label):
                     self.assertIn(label, coverage)
 
+    def test_foreign_or_pre_rule_fixture_remains_the_unenumerated_compatibility_case(self) -> None:
+        record = ROOT / "scripts/tests/scenarios/triage-findings/review-record.md"
+        content = record.read_text(encoding="utf-8")
+        coverage = next(line for line in content.splitlines() if line.startswith("**Coverage**:"))
+
+        self.assertIn("foreign or pre-rule", content)
+        for label in COVERAGE_SETS:
+            with self.subTest(label=label):
+                self.assertNotIn(label, coverage)
+
 
 if __name__ == "__main__":
     unittest.main()
