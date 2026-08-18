@@ -23,9 +23,11 @@ Treatment-specific fields make the state meaningful:
 - `resolved` requires `verification`.
 
 Treatment is not work authorization. Only an explicit `work: backlog` or `work: in-progress` on a
-`remediate` entry authorizes implementation; `work: done` may accompany a `resolved` entry. Review
-and triage workflows may propose a registry update, but must not write one or start its repair until
-the user authorizes that repository change.
+`remediate` entry authorizes implementation; `work: done` may accompany a `resolved` entry. After a
+review, triage, spike, test, or experiment verifies a non-obvious current condition likely to affect
+future development judgment, the repository workflow must suggest a project-centered registry
+addition or update. It must not write the suggestion or start its repair until the user authorizes
+that repository change.
 
 ## Constrained YAML and views
 

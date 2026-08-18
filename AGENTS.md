@@ -459,7 +459,9 @@ Prefer lightweight tests that match the risk of the change.
 - Run `python3 scripts/development_knowns.py --check` through the workspace gate. Record only
   non-obvious current conditions that affect development judgment; external review language is
   evidence, not the project statement, and a treatment never authorizes work without an explicit
-  `work` state. See `docs/development-knowns.md`.
+  `work` state. After review, triage, spike, test, or experiment verifies such a condition, suggest a
+  project-centered registry update automatically, but do not write it or execute its repair without
+  explicit user authorization. See `docs/development-knowns.md`.
 - Regenerate the README skill maps with `python3 scripts/skill_graph.py --write` after changing a
   skill's `family` or its handoff targets; `--check` fails when the committed block is stale.
 - Regenerate the record inventory with `python3 scripts/seam_contract.py --write` after changing the
