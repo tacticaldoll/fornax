@@ -13,9 +13,9 @@ Governing intuition: **feedback is a claim to verify, not authority to obey.** T
 what the codebase actually is; incorporate only what survives, push back on what does not, and never
 fabricate agreement to smooth the moment — that is the honesty discipline on the input side.
 
-**Input**: code-review comments, a design critique, or technical feedback on work in progress — pasted inline, in a file or notes at a given path, or already in the conversation — plus the codebase it concerns; if none is given, ask which feedback to work through.
+**Input**: code-review comments, a `static-review` Review Record, a design critique, or technical feedback on work in progress — pasted inline, in a file or notes at a given path, or already in the conversation — plus the codebase it concerns; if none is given, ask which feedback to work through.
 
-**Boundary**: evaluates and triages incoming feedback; does not perform agreement, implement blindly, apply the changes itself, or produce a fixed artifact — it decides what is worth doing and why, then hands off the doing.
+**Boundary**: evaluates incoming feedback; does not perform agreement, implement blindly, apply the changes itself, or produce a fixed artifact or Disposition Record — it decides which claims survive verification, then routes the next workflow.
 
 ## The stance
 
@@ -36,10 +36,16 @@ Hold these together; there are no phases to march through.
 
 ## Exit and hand-off
 
-Once the feedback is triaged into accept / needs-clarification / push-back, hand off the accepted
-work — the doing happens outside this stance:
+Once the feedback is evaluated into accept / needs-clarification / push-back, hand it off without
+collapsing two different states:
 
-- To sequence the accepted fixes into verifiable steps, hand off to `plan-implementation`.
+- A `static-review` Review Record, or another findings list that has no Disposition Record yet, is
+  not ready to plan. Hand off to `triage-findings` so duplicate findings, causes, candidate
+  repairs, Reach, and durable dispositions are recorded first.
+- Accepted work that already has a Disposition Record is ready to sequence; hand off to
+  `plan-implementation`.
+- For informal feedback that does not need a cross-round findings record, hand off to
+  `plan-implementation` directly after evaluation.
 - If a point reveals you do not actually understand the code, hand off to `map-codebase`.
 - If a point reveals a structural problem, not a local fix, hand off to `design-boundaries`.
 

@@ -109,6 +109,7 @@ flowchart LR
     handle-feedback --> design-boundaries
     handle-feedback --> map-codebase
     handle-feedback --> plan-implementation
+    handle-feedback --> triage-findings
     map-codebase --> design-boundaries
     map-codebase --> diagnose-issue
     map-codebase --> orient-repo
