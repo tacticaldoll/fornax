@@ -73,6 +73,21 @@ class PathBoundaryTests(unittest.TestCase):
         self.assertIs(found.verdict, Verdict.UNRESOLVABLE)
         self.assertIsNotNone(found.error)
 
+    def test_an_unresolvable_boundary_makes_every_candidate_unresolvable(self) -> None:
+        # Resolving the root can fail the same way resolving a candidate can, so it
+        # is reported the same way instead of escaping as an exception.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp) / "loop"
+            root.symlink_to("loop", target_is_directory=True)
+
+            boundary = Boundary.at(root)
+            found = resolve_within(root / "anything.md", boundary)
+
+        self.assertIsNone(boundary.root)
+        self.assertIsNotNone(boundary.error)
+        self.assertIs(found.verdict, Verdict.UNRESOLVABLE)
+        self.assertIs(found.error, boundary.error)
+
     def test_a_boundary_holds_its_root_already_resolved(self) -> None:
         with TemporaryDirectory() as tmp:
             parent = Path(tmp)

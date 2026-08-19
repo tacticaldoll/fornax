@@ -32,13 +32,24 @@ class Verdict(enum.Enum):
 
 @dataclass(frozen=True)
 class Boundary:
-    """A root already resolved, so a loop over many candidates resolves it once."""
+    """A root resolved once, or the failure that resolving it produced.
 
-    root: Path
+    Resolving a root can fail for the same reasons resolving a candidate can, so it
+    would be incoherent for one to be a fact and the other an exception. The callers
+    showed why it matters: one caught OSError but not RuntimeError, the other guarded
+    nothing at all. A failed root is remembered instead, and every candidate measured
+    against it comes back UNRESOLVABLE carrying the root's own error.
+    """
+
+    root: Path | None
+    error: Exception | None = None
 
     @classmethod
     def at(cls, root: Path) -> "Boundary":
-        return cls(root.resolve())
+        try:
+            return cls(root.resolve())
+        except (OSError, RuntimeError) as error:
+            return cls(None, error)
 
 
 @dataclass(frozen=True)
@@ -62,8 +73,12 @@ def resolve_within(candidate: Path, boundary: Boundary) -> Resolved:
     a path which both escapes and is missing reads as an escape — calling it "not
     found" would send the reader to the wrong problem. Existence is asked of the
     resolved target, which is why a symlink pointing inside the boundary at nothing
-    is ABSENT rather than INSIDE.
+    is ABSENT rather than INSIDE. A boundary that could not be resolved at all comes
+    ahead of even that: nothing can be inside a root that does not resolve.
     """
+    if boundary.root is None:
+        return Resolved(Verdict.UNRESOLVABLE, boundary.error)
+
     try:
         resolved = candidate.resolve()
     except (OSError, RuntimeError) as error:
