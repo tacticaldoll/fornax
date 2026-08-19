@@ -219,6 +219,59 @@ class ValidateSkillTests(unittest.TestCase):
         self.assertFalse(passed)
         self.assertIn("loop.md could not be resolved", output)
 
+    def test_an_absolute_entrypoint_outside_the_skill_fails(self) -> None:
+        # Joining an absolute right operand discards the skill folder, so the old
+        # existence check saw a path anywhere on the machine and passed it.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            outside = root / "outside.md"
+            outside.write_text("# Outside\n", encoding="utf-8")
+            text = MANIFEST.replace("entrypoint: SKILL.md", f"entrypoint: {outside}")
+            skill_dir = fixtures.write_skill(root, NAME, manifest_text=text)
+
+            passed, output = check(skill_dir)
+
+        self.assertFalse(passed)
+        self.assertIn("entrypoint leaves the skill folder", output)
+
+    def test_a_parent_relative_entrypoint_fails(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "outside.md").write_text("# Outside\n", encoding="utf-8")
+            text = MANIFEST.replace("entrypoint: SKILL.md", "entrypoint: ../outside.md")
+            skill_dir = fixtures.write_skill(root, NAME, manifest_text=text)
+
+            passed, output = check(skill_dir)
+
+        self.assertFalse(passed)
+        self.assertIn("entrypoint leaves the skill folder", output)
+
+    def test_a_parent_relative_resource_path_fails(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "shared").mkdir()
+            text = MANIFEST + "resources:\n  scripts: ../shared\n"
+            skill_dir = fixtures.write_skill(root, NAME, manifest_text=text)
+
+            passed, output = check(skill_dir)
+
+        self.assertFalse(passed)
+        self.assertIn("resources.scripts leaves the skill folder", output)
+
+    def test_a_resource_directory_symlinked_outside_the_skill_fails(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            shared = root / "shared"
+            shared.mkdir()
+            text = MANIFEST + "resources:\n  scripts: scripts\n"
+            skill_dir = fixtures.write_skill(root, NAME, manifest_text=text)
+            (skill_dir / "scripts").symlink_to(shared, target_is_directory=True)
+
+            passed, output = check(skill_dir)
+
+        self.assertFalse(passed)
+        self.assertIn("resources.scripts leaves the skill folder", output)
+
     def test_padded_broken_relative_link_fails(self) -> None:
         with TemporaryDirectory() as tmp:
             text = SKILL_MD + "\nSee [the reference]( references/missing.md ).\n"

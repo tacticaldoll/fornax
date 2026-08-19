@@ -439,6 +439,7 @@ def validate_skill_manifest(
     name: str,
     manifest: str,
     allow_template_placeholders: bool,
+    boundary: Boundary,
 ) -> tuple[bool, str | None, str | None]:
     """Validate one skill manifest and return values shared with SKILL.md checks."""
     failed = False
@@ -474,9 +475,20 @@ def validate_skill_manifest(
         fail(name, f"skill.yaml family must be {listed(FAMILIES)}")
         failed = True
 
-    if entrypoint and not (skill_dir / entrypoint).exists():
-        fail(name, f"skill.yaml entrypoint not found: {entrypoint}")
-        failed = True
+    if entrypoint:
+        found = resolve_within(skill_dir / entrypoint, boundary)
+        if found.verdict is Verdict.UNRESOLVABLE:
+            fail(
+                name,
+                f"skill.yaml entrypoint could not be resolved: {entrypoint} ({found.error})",
+            )
+            failed = True
+        elif found.verdict is Verdict.OUTSIDE:
+            fail(name, f"skill.yaml entrypoint leaves the skill folder: {entrypoint}")
+            failed = True
+        elif found.verdict is Verdict.ABSENT:
+            fail(name, f"skill.yaml entrypoint not found: {entrypoint}")
+            failed = True
 
     for resource_key in ("scripts", "references", "assets"):
         resource_path = get_yaml_mapping_value(manifest, "resources", resource_key)
@@ -489,7 +501,18 @@ def validate_skill_manifest(
             failed = True
             continue
 
-        if not (skill_dir / resource_path).exists():
+        found = resolve_within(skill_dir / resource_path, boundary)
+        if found.verdict is Verdict.UNRESOLVABLE:
+            fail(
+                name,
+                f"resources.{resource_key} could not be resolved: "
+                f"{resource_path} ({found.error})",
+            )
+            failed = True
+        elif found.verdict is Verdict.OUTSIDE:
+            fail(name, f"resources.{resource_key} leaves the skill folder: {resource_path}")
+            failed = True
+        elif found.verdict is Verdict.ABSENT:
             fail(name, f"resources.{resource_key} path not found: {resource_path}")
             failed = True
 
@@ -570,7 +593,7 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
         return False
 
     manifest_failed, manifest_name, manifest_description = validate_skill_manifest(
-        skill_dir, name, manifest, allow_template_placeholders
+        skill_dir, name, manifest, allow_template_placeholders, boundary
     )
     if manifest_failed:
         skill_failed = True
