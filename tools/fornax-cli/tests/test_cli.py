@@ -17,10 +17,16 @@ REQUIREMENT = re.compile(r'"([^"]+)"')
 
 
 def pins(lines: list[str]) -> dict[str, str]:
-    """Map package name to exact version for every ``name==version`` line given."""
+    """Map package name to exact version for every ``name==version`` line given.
+
+    A requirements line may carry a trailing comment or an environment marker. Both
+    are legal, and both otherwise end up inside the version string, which turns a
+    legitimate edit into a confusing comparison failure.
+    """
     found = {}
     for line in lines:
-        name, separator, version = line.strip().strip('",').partition("==")
+        requirement = line.partition("#")[0].partition(";")[0]
+        name, separator, version = requirement.strip().strip('",').partition("==")
         if separator:
             found[name.strip()] = version.strip()
     return found
@@ -45,6 +51,19 @@ class FornaxCliTests(unittest.TestCase):
         self.assertEqual(cli.FORNAX_POLICY.identity, "fornax")
         self.assertEqual(cli.FORNAX_POLICY.prefix, "fornax-")
         self.assertEqual(cli.FORNAX_POLICY.provenance_file, ".fornax-install.json")
+
+    def test_pins_reads_past_a_comment_and_an_environment_marker(self) -> None:
+        # Both forms are legal in a requirements file and both used to land inside
+        # the version, so the comparison failed on an edit that was fine.
+        cases = (
+            "markdown-it-py==4.2.0",
+            "markdown-it-py==4.2.0  # pinned for CommonMark",
+            'markdown-it-py==4.2.0 ; python_version >= "3.10"',
+            '  "markdown-it-py==4.2.0",',
+        )
+        for line in cases:
+            with self.subTest(line=line):
+                self.assertEqual(pins([line]), {"markdown-it-py": "4.2.0"})
 
     def test_validation_commands_run_under_this_interpreter(self) -> None:
         # A bare "python3" is whatever sits on PATH, which is neither guaranteed to
