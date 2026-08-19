@@ -258,6 +258,27 @@ class ValidateSkillTests(unittest.TestCase):
         self.assertFalse(passed)
         self.assertIn('resources.scripts must not use ".." segments', output)
 
+    def test_a_manifest_path_naming_nothing_is_reported_for_either_field(self) -> None:
+        # The absent branch of the shared check, which neither field covered before.
+        cases = {
+            "entrypoint": (
+                MANIFEST.replace("entrypoint: SKILL.md", "entrypoint: gone.md"),
+                "skill.yaml entrypoint not found: gone.md",
+            ),
+            "resource": (
+                MANIFEST + "resources:\n  assets: gone\n",
+                "resources.assets not found: gone",
+            ),
+        }
+        for label, (text, expected) in cases.items():
+            with self.subTest(label=label), TemporaryDirectory() as tmp:
+                skill_dir = fixtures.write_skill(Path(tmp), NAME, manifest_text=text)
+
+                passed, output = check(skill_dir)
+
+                self.assertFalse(passed)
+                self.assertIn(expected, output)
+
     def test_portability_is_judged_without_the_filesystem(self) -> None:
         # A path that does not exist anywhere: only a syntactic rule can produce
         # this message, so this is what separates it from containment.

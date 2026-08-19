@@ -448,6 +448,32 @@ def portable_path_error(value: str) -> str | None:
     return None
 
 
+def validate_manifest_path(label: str, value: str, name: str, boundary: Boundary) -> bool:
+    """Hold one declared manifest path to the portability rule and the package boundary.
+
+    The entrypoint and the three resource keys differ only in what they are called,
+    so they share the sequence rather than restating it. The syntactic rule runs
+    first: it needs no filesystem, and an absolute path that happens to resolve
+    inside the folder would otherwise pass containment and still break on copy.
+    """
+    portability = portable_path_error(value)
+    if portability:
+        fail(name, f"{label} {portability}: {value}")
+        return True
+
+    found = resolve_within(boundary.declared / value, boundary)
+    if found.verdict is Verdict.UNRESOLVABLE:
+        fail(name, f"{label} could not be resolved: {value} ({found.error})")
+        return True
+    if found.verdict is Verdict.OUTSIDE:
+        fail(name, f"{label} leaves the skill folder: {value}")
+        return True
+    if found.verdict is Verdict.ABSENT:
+        fail(name, f"{label} not found: {value}")
+        return True
+    return False
+
+
 def validate_skill_manifest(
     name: str,
     manifest: str,
@@ -488,50 +514,15 @@ def validate_skill_manifest(
         fail(name, f"skill.yaml family must be {listed(FAMILIES)}")
         failed = True
 
-    portability = portable_path_error(entrypoint) if entrypoint else None
-    if entrypoint and portability:
-        fail(name, f"skill.yaml entrypoint {portability}: {entrypoint}")
+    if entrypoint and validate_manifest_path("skill.yaml entrypoint", entrypoint, name, boundary):
         failed = True
-    elif entrypoint:
-        found = resolve_within(boundary.declared / entrypoint, boundary)
-        if found.verdict is Verdict.UNRESOLVABLE:
-            fail(
-                name,
-                f"skill.yaml entrypoint could not be resolved: {entrypoint} ({found.error})",
-            )
-            failed = True
-        elif found.verdict is Verdict.OUTSIDE:
-            fail(name, f"skill.yaml entrypoint leaves the skill folder: {entrypoint}")
-            failed = True
-        elif found.verdict is Verdict.ABSENT:
-            fail(name, f"skill.yaml entrypoint not found: {entrypoint}")
-            failed = True
 
     for resource_key in ("scripts", "references", "assets"):
         resource_path = get_yaml_mapping_value(manifest, "resources", resource_key)
 
-        if not resource_path:
-            continue
-
-        portability = portable_path_error(resource_path)
-        if portability:
-            fail(name, f"resources.{resource_key} {portability}: {resource_path}")
-            failed = True
-            continue
-
-        found = resolve_within(boundary.declared / resource_path, boundary)
-        if found.verdict is Verdict.UNRESOLVABLE:
-            fail(
-                name,
-                f"resources.{resource_key} could not be resolved: "
-                f"{resource_path} ({found.error})",
-            )
-            failed = True
-        elif found.verdict is Verdict.OUTSIDE:
-            fail(name, f"resources.{resource_key} leaves the skill folder: {resource_path}")
-            failed = True
-        elif found.verdict is Verdict.ABSENT:
-            fail(name, f"resources.{resource_key} path not found: {resource_path}")
+        if resource_path and validate_manifest_path(
+            f"resources.{resource_key}", resource_path, name, boundary
+        ):
             failed = True
 
     return failed, manifest_name, get_top_level_yaml_value(manifest, "description")
