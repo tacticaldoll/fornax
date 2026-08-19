@@ -32,7 +32,7 @@ class Verdict(enum.Enum):
 
 @dataclass(frozen=True)
 class Boundary:
-    """A root resolved once, or the failure that resolving it produced.
+    """A root as it was declared, resolved once, or the failure that resolving it gave.
 
     Resolving a root can fail for the same reasons resolving a candidate can, so it
     would be incoherent for one to be a fact and the other an exception. The callers
@@ -41,15 +41,26 @@ class Boundary:
     against it comes back UNRESOLVABLE carrying the root's own error.
     """
 
+    declared: Path
     root: Path | None
     error: Exception | None = None
 
     @classmethod
     def at(cls, root: Path) -> "Boundary":
         try:
-            return cls(root.resolve())
+            return cls(root, root.resolve())
         except (OSError, RuntimeError) as error:
-            return cls(None, error)
+            return cls(root, None, error)
+
+    def relative(self, path: Path) -> Path:
+        """One path as a caller's diagnostics name it: relative to the declared root.
+
+        Carried here so a caller passes one value rather than a root and a boundary
+        that have to agree. Containment is measured against the resolved root while
+        messages are phrased against the declared one, and nothing outside this type
+        should have to keep the two in step.
+        """
+        return path.relative_to(self.declared)
 
 
 @dataclass(frozen=True)

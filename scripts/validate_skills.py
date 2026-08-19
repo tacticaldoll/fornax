@@ -250,14 +250,14 @@ def fail(skill_name: str, message: str) -> None:
     print(f"FAIL {skill_name} - {message}")
 
 
-def read_skill_text(path: Path, skill_dir: Path, name: str, boundary: Boundary) -> str | None:
+def read_skill_text(path: Path, name: str, boundary: Boundary) -> str | None:
     """Read one skill-owned text file or emit the validator's normal diagnostic.
 
     An absent path falls through to the read, which reports it as unreadable. The
     boundary owner states absence as a fact; whether it is an error is this
     caller's decision, and here every path came from a directory listing.
     """
-    relative_path = path.relative_to(skill_dir)
+    relative_path = boundary.relative(path)
     found = resolve_within(path, boundary)
     if found.verdict is Verdict.UNRESOLVABLE:
         fail(name, f"{relative_path} could not be resolved: {found.error}")
@@ -274,14 +274,12 @@ def read_skill_text(path: Path, skill_dir: Path, name: str, boundary: Boundary) 
     return None
 
 
-def read_markdown_files(
-    skill_dir: Path, name: str, boundary: Boundary
-) -> tuple[dict[Path, str], bool]:
+def read_markdown_files(name: str, boundary: Boundary) -> tuple[dict[Path, str], bool]:
     """Read every Markdown file once so sibling checks share the same failure boundary."""
     contents = {}
     failed = False
-    for markdown_file in sorted(skill_dir.rglob("*.md")):
-        content = read_skill_text(markdown_file, skill_dir, name, boundary)
+    for markdown_file in sorted(boundary.declared.rglob("*.md")):
+        content = read_skill_text(markdown_file, name, boundary)
         if content is None:
             failed = True
         else:
@@ -290,12 +288,12 @@ def read_markdown_files(
 
 
 def validate_markdown_links(
-    skill_dir: Path, name: str, markdown_files: dict[Path, str], boundary: Boundary
+    name: str, markdown_files: dict[Path, str], boundary: Boundary
 ) -> bool:
     failed = False
 
     for markdown_file, content in markdown_files.items():
-        relative_path = markdown_file.relative_to(skill_dir)
+        relative_path = boundary.relative(markdown_file)
 
         for link in iter_markdown_links(content):
             link_target = local_target(link.destination)
@@ -451,7 +449,6 @@ def portable_path_error(value: str) -> str | None:
 
 
 def validate_skill_manifest(
-    skill_dir: Path,
     name: str,
     manifest: str,
     allow_template_placeholders: bool,
@@ -496,7 +493,7 @@ def validate_skill_manifest(
         fail(name, f"skill.yaml entrypoint {portability}: {entrypoint}")
         failed = True
     elif entrypoint:
-        found = resolve_within(skill_dir / entrypoint, boundary)
+        found = resolve_within(boundary.declared / entrypoint, boundary)
         if found.verdict is Verdict.UNRESOLVABLE:
             fail(
                 name,
@@ -522,7 +519,7 @@ def validate_skill_manifest(
             failed = True
             continue
 
-        found = resolve_within(skill_dir / resource_path, boundary)
+        found = resolve_within(boundary.declared / resource_path, boundary)
         if found.verdict is Verdict.UNRESOLVABLE:
             fail(
                 name,
@@ -609,17 +606,17 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
 
     boundary = Boundary.at(skill_dir)
 
-    manifest = read_skill_text(manifest_file, skill_dir, name, boundary)
+    manifest = read_skill_text(manifest_file, name, boundary)
     if manifest is None:
         return False
 
     manifest_failed, manifest_name, manifest_description = validate_skill_manifest(
-        skill_dir, name, manifest, allow_template_placeholders, boundary
+        name, manifest, allow_template_placeholders, boundary
     )
     if manifest_failed:
         skill_failed = True
 
-    content = read_skill_text(skill_file, skill_dir, name, boundary)
+    content = read_skill_text(skill_file, name, boundary)
     if content is None:
         return False
     frontmatter_match = FRONTMATTER_PATTERN.search(content)
@@ -652,13 +649,11 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
 
     if not allow_template_placeholders:
         known_skills = {path.name for path in skill_dir.parent.iterdir() if path.is_dir()}
-        markdown_files, markdown_failed = read_markdown_files(
-            skill_dir, name, boundary
-        )
+        markdown_files, markdown_failed = read_markdown_files(name, boundary)
         if markdown_failed:
             skill_failed = True
 
-        if validate_markdown_links(skill_dir, name, markdown_files, boundary):
+        if validate_markdown_links(name, markdown_files, boundary):
             skill_failed = True
 
         if validate_handoffs(skill_dir, name, known_skills, markdown_files):
