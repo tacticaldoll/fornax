@@ -339,6 +339,26 @@ class ValidateSkillTests(unittest.TestCase):
                 self.assertFalse(passed)
                 self.assertIn(expected, output)
 
+    def test_triggers_must_be_a_non_empty_list_of_strings(self) -> None:
+        # The required-field check proved only that the key existed, so every shape
+        # below satisfied it while the schema calls triggers a list of strings.
+        block = f"triggers:\n  - user asks for {NAME}\n"
+        for label, variant in {
+            "empty block": "triggers:\n",
+            "scalar": "triggers: not-a-list\n",
+            "flow list": "triggers: []\n",
+            "one empty item": "triggers:\n  - \n",
+        }.items():
+            with self.subTest(label=label), TemporaryDirectory() as tmp:
+                text = MANIFEST.replace(block, variant)
+                self.assertNotEqual(text, MANIFEST, "the triggers block must be replaced")
+                skill_dir = fixtures.write_skill(Path(tmp), NAME, manifest_text=text)
+
+                passed, output = check(skill_dir)
+
+                self.assertFalse(passed)
+                self.assertIn("skill.yaml triggers must be a non-empty list", output)
+
     def test_a_windows_absolute_entrypoint_is_not_portable(self) -> None:
         # PosixPath does not read "C:/..." as absolute, so the running host's grammar
         # alone let this reach containment and fail as merely "not found".

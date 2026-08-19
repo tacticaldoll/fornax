@@ -524,11 +524,16 @@ def validate_skill_manifest(
 
     for field in REQUIRED_MANIFEST_FIELDS:
         if field in BLOCK_MANIFEST_FIELDS:
-            declared = declares_key(manifest, field)
-        else:
-            declared = declares_value(manifest, field)
-
-        if not declared:
+            if not declares_key(manifest, field):
+                fail(name, f"skill.yaml missing {field}")
+                failed = True
+            elif not any(get_yaml_list(manifest, field)):
+                # Present is not enough: a scalar, an empty block, a flow list and a
+                # list of empty items all declare the key. any() is false unless one
+                # item carries text.
+                fail(name, f"skill.yaml {field} must be a non-empty list of strings")
+                failed = True
+        elif not declares_value(manifest, field):
             fail(name, f"skill.yaml missing {field}")
             failed = True
 
