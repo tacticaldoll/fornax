@@ -248,8 +248,8 @@ actually consumes or produces the declared record.
 Create the pinned Python 3.10 maintenance environment once per clone:
 
 ```sh
-uv python install 3.10
-uv venv --python 3.10
+uv python install
+uv venv
 uv pip sync --python .venv/bin/python requirements-maintenance.txt
 ```
 

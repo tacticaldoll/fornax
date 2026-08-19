@@ -11,9 +11,9 @@ them in so the block never has to be pasted by hand; `--check` fails when the
 committed block no longer matches the skills.
 
 Usage:
-    python3 scripts/skill_graph.py            # print the maps Markdown to stdout
-    python3 scripts/skill_graph.py --write    # splice the maps into README.md
-    python3 scripts/skill_graph.py --check    # fail if README.md is out of date
+    .venv/bin/python scripts/skill_graph.py            # print the maps Markdown to stdout
+    .venv/bin/python scripts/skill_graph.py --write    # splice the maps into README.md
+    .venv/bin/python scripts/skill_graph.py --check    # fail if README.md is out of date
 """
 
 from __future__ import annotations
@@ -136,7 +136,7 @@ def run(args: argparse.Namespace) -> int:
     if args.check:
         raise MapError(
             f"{where(readme_path)} - skill maps are out of date; "
-            "run python3 scripts/skill_graph.py --write"
+            "run .venv/bin/python scripts/skill_graph.py --write"
         )
 
     write(readme_path, readme[:start] + block + readme[end:])

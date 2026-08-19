@@ -457,20 +457,20 @@ Prefer lightweight tests that match the risk of the change.
 - Use `.venv/bin/python scripts/check_workspace.py` as the public local entry point; CI runs the
   same script in its pinned Python 3.10 environment. Keep component checks independently runnable
   for focused diagnostics.
-- Run `python3 scripts/development_knowns.py --check` through the workspace gate. Record only
+- Run `.venv/bin/python scripts/development_knowns.py --check` through the workspace gate. Record only
   non-obvious current conditions that affect development judgment; external review language is
   evidence, not the project statement, and a treatment never authorizes work without an explicit
   `work` state. After review, triage, spike, test, or experiment verifies such a condition, suggest a
   project-centered registry update automatically, but do not write it or execute its repair without
   explicit user authorization. See `docs/development-knowns.md`.
-- Regenerate the README skill maps with `python3 scripts/skill_graph.py --write` after changing a
+- Regenerate the README skill maps with `.venv/bin/python scripts/skill_graph.py --write` after changing a
   skill's `family` or its handoff targets; `--check` fails when the committed block is stale.
-- Regenerate the record inventory with `python3 scripts/seam_contract.py --write` after changing the
+- Regenerate the record inventory with `.venv/bin/python scripts/seam_contract.py --write` after changing the
   marked output template of a skill another skill reads, or either skill's interface sidecar; `--check`
   fails when `docs/review-record-contract.md` is stale. The seam list is derived, so a new one needs
   no edit to be counted and no seams at all is a clean answer.
 - Cover a new or changed validation rule in `scripts/tests/`, run with
-  `PYTHONPATH=scripts python3 -m unittest discover -s scripts/tests`. Check the fixture actually
+  `PYTHONPATH=scripts .venv/bin/python -m unittest discover -s scripts/tests`. Check the fixture actually
   fails when the rule is removed; a suite that passes either way proves nothing. The
   `tools/fornax-cli` suite stays CI-only because it needs the deployment engine installed.
 - The two non-Python sources are syntax-checked in CI, install-free on the runner: the OpenCode
@@ -485,10 +485,10 @@ Prefer lightweight tests that match the risk of the change.
   `pipx run ruff==0.16.1 check .` locally for the same answer before pushing. Never auto-apply a fix
   as part of another change, and treat a ruff version bump as its own commit — preview rules move
   between releases.
-- CI runs the workspace gate with `requirements-maintenance.txt` in a dedicated Python 3.10 job so
-  maintenance scripts retain their minimum contributor-runtime compatibility. The pre-commit hook
-  uses the same pinned environment from `.venv`; it never installs or upgrades dependencies during
-  a commit. The independently packaged Fornax CLI keeps its declared Python 3.10 minimum.
+- `.python-version` is the single source for the minimum maintenance runtime. CI consumes it
+  directly, and `scripts/runtime_contract.py` keeps Ruff's syntax target aligned. The pre-commit
+  hook uses the same pinned environment from `.venv`; it never installs or upgrades dependencies
+  during a commit. The independently packaged Fornax CLI keeps its declared Python 3.10 minimum.
 - Enforcement: CI (`.github/workflows/validate.yml`) runs the validator on every push; enable the
   local pre-commit hook once per clone with `git config core.hooksPath .githooks`.
 - Validate `templates/skill` after template changes.

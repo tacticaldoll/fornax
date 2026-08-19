@@ -11,6 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 STEPS = (
+    ("runtime contract", "scripts/runtime_contract.py"),
     ("production skills", "scripts/validate_skills.py"),
     (
         "skill template",

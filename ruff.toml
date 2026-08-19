@@ -14,12 +14,9 @@
 # adopted, and ones that would have required editing the pinned CLI adapter just
 # to land the gate.
 
-# Keep aligned with the python38-runtime-generic-aliases development known.
-target-version = "py38"
+# Keep aligned mechanically with .python-version through scripts/runtime_contract.py.
+target-version = "py310"
 line-length = 100
-
-[per-file-target-version]
-"tools/fornax-cli/**/*.py" = "py310"
 
 [lint]
 preview = true

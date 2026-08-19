@@ -42,16 +42,16 @@ model genuinely needs richer structure or another full YAML consumer appears.
 Validate the registry with:
 
 ```sh
-python3 scripts/development_knowns.py --check
+.venv/bin/python scripts/development_knowns.py --check
 ```
 
 Read-only views are derived on demand and never committed:
 
 ```sh
-python3 scripts/development_knowns.py --list backlog
-python3 scripts/development_knowns.py --list watchlist
-python3 scripts/development_knowns.py --list accepted
-python3 scripts/development_knowns.py --list resolved
+.venv/bin/python scripts/development_knowns.py --list backlog
+.venv/bin/python scripts/development_knowns.py --list watchlist
+.venv/bin/python scripts/development_knowns.py --list accepted
+.venv/bin/python scripts/development_knowns.py --list resolved
 ```
 
 The backlog view contains only explicitly authorized `backlog` or `in-progress` work. The other

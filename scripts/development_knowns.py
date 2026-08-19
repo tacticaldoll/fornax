@@ -7,11 +7,11 @@ fields contain scalars, and multiline values, aliases, anchors, tags, flow
 collections, and quoted scalars are rejected.
 
 Usage:
-    python3 scripts/development_knowns.py --check
-    python3 scripts/development_knowns.py --list backlog
-    python3 scripts/development_knowns.py --list watchlist
-    python3 scripts/development_knowns.py --list accepted
-    python3 scripts/development_knowns.py --list resolved
+    .venv/bin/python scripts/development_knowns.py --check
+    .venv/bin/python scripts/development_knowns.py --list backlog
+    .venv/bin/python scripts/development_knowns.py --list watchlist
+    .venv/bin/python scripts/development_knowns.py --list accepted
+    .venv/bin/python scripts/development_knowns.py --list resolved
 """
 
 from __future__ import annotations
