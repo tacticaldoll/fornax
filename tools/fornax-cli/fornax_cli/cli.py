@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
@@ -35,9 +36,9 @@ FORNAX_POLICY = DistributionPolicy(
     marketplace="fornax",
     plugin="fornax",
     validation_commands=(
-        ("python3", "scripts/validate_skills.py"),
+        (sys.executable, "scripts/validate_skills.py"),
         (
-            "python3",
+            sys.executable,
             "scripts/validate_skills.py",
             "--skills-path",
             "templates",

@@ -1,12 +1,18 @@
 from __future__ import annotations
 
 import json
+import re
+import sys
 import unittest
 from contextlib import redirect_stderr
 from io import StringIO
+from pathlib import Path
 from unittest.mock import patch
 
 from fornax_cli import cli
+
+
+DEPENDENCIES = re.compile(r"^dependencies\s*=\s*\[(.*?)^\]", re.MULTILINE | re.DOTALL)
 
 
 class FornaxCliTests(unittest.TestCase):
@@ -28,6 +34,26 @@ class FornaxCliTests(unittest.TestCase):
         self.assertEqual(cli.FORNAX_POLICY.identity, "fornax")
         self.assertEqual(cli.FORNAX_POLICY.prefix, "fornax-")
         self.assertEqual(cli.FORNAX_POLICY.provenance_file, ".fornax-install.json")
+
+    def test_validation_commands_run_under_this_interpreter(self) -> None:
+        # A bare "python3" is whatever sits on PATH, which is neither guaranteed to
+        # satisfy .python-version nor to import what the validator needs.
+        self.assertTrue(cli.FORNAX_POLICY.validation_commands)
+
+        for command in cli.FORNAX_POLICY.validation_commands:
+            with self.subTest(command=command):
+                self.assertEqual(command[0], sys.executable)
+
+    def test_cli_declares_the_dependency_snapshot_validation_needs(self) -> None:
+        pyproject = (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(
+            encoding="utf-8"
+        )
+        declared = DEPENDENCIES.search(pyproject)
+
+        if declared is None:
+            self.fail("pyproject.toml must declare a dependencies array")
+
+        self.assertIn("markdown-it-py", declared.group(1))
 
     def test_main_binds_workspace_version_and_policy(self) -> None:
         with patch.object(cli, "engine_main", return_value=0) as engine:
