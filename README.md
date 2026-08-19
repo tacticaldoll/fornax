@@ -260,10 +260,19 @@ enabled with `git config core.hooksPath .githooks`:
 .venv/bin/python scripts/check_workspace.py
 ```
 
-It checks production and template skill structure, optional interface sidecars, tracked text and
-local links, generated skill maps and record inventory, and the validation test suite. Run it before
-installing, publishing, or copying skills. A stale generated block is fixed with its matching
-`--write` command.
+It runs eight checks, in this order:
+
+1. the maintenance runtime contract — `.python-version`, Ruff's target, and the running interpreter
+2. production skill structure, including any optional interface sidecar
+3. the same structure for `templates/skill`
+4. the generated README skill maps
+5. the generated record-seam inventory
+6. the `development-knowns.yaml` registry
+7. tracked text hygiene and repository-local Markdown links
+8. the validation test suite
+
+Run it before installing, publishing, or copying skills. A stale generated block is fixed with its
+matching `--write` command.
 
 Three more run in CI only; the hook runs only the pinned maintenance environment:
 
