@@ -258,6 +258,44 @@ class ValidateSkillTests(unittest.TestCase):
         self.assertFalse(passed)
         self.assertIn('resources.scripts must not use ".." segments', output)
 
+    def test_a_key_with_no_value_is_missing_not_the_next_line(self) -> None:
+        # Whitespace allowed to cross the newline made an empty key match the line
+        # below it, so an empty entrypoint reported "not found: triggers:". The key
+        # must sit above another line for this to reproduce.
+        with TemporaryDirectory() as tmp:
+            text = (
+                f"name: {NAME}\n"
+                "family: implementation\n"
+                f"description: {fixtures.DESCRIPTION}\n"
+                "entrypoint:\n"
+                "triggers:\n"
+                f"  - user asks for {NAME}\n"
+            )
+            skill_dir = fixtures.write_skill(Path(tmp), NAME, manifest_text=text)
+
+            passed, output = check(skill_dir)
+
+        self.assertFalse(passed)
+        self.assertIn("skill.yaml missing entrypoint", output)
+        self.assertNotIn("triggers", output)
+
+    def test_an_empty_frontmatter_name_is_missing(self) -> None:
+        with TemporaryDirectory() as tmp:
+            text = (
+                "---\n"
+                "name:\n"
+                f"description: {fixtures.DESCRIPTION}\n"
+                "---\n"
+                f"\n# {NAME}\n"
+                "\n**Input**: the thing this fixture consumes — if none is given, ask for it.\n"
+            )
+            skill_dir = fixtures.write_skill(Path(tmp), NAME, skill_md_text=text)
+
+            passed, output = check(skill_dir)
+
+        self.assertFalse(passed)
+        self.assertIn("frontmatter missing name", output)
+
     def test_a_manifest_path_naming_nothing_is_reported_for_either_field(self) -> None:
         # The absent branch of the shared check, which neither field covered before.
         cases = {

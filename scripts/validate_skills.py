@@ -31,12 +31,14 @@ from skill_model import FAMILIES, HANDOFF, STATUSES, listed
 NAME_PATTERN = re.compile(r"^[a-z0-9-]+$")
 VERSION_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
 FRONTMATTER_PATTERN = re.compile(r"^---\s*\r?\n(.*?)\r?\n---", re.DOTALL)
-INPUT_LINE_PATTERN = re.compile(r"^\*\*Input\*\*\s*:\s*(.+)$", re.MULTILINE)
+INPUT_LINE_PATTERN = re.compile(r"^\*\*Input\*\*[^\S\n]*:[^\S\n]*([^\n]+)$", re.MULTILINE)
 RECORD_INPUT_PATTERN = re.compile(
     r"`(?P<producer>[a-z0-9]+(?:-[a-z0-9]+)*)`\s+"
     r"(?P<label>[A-Z][A-Za-z0-9]*(?:\s+[A-Z][A-Za-z0-9]*)*\s+Record)\b"
 )
 REQUIRED_MANIFEST_FIELDS = ("name", "family", "description", "triggers", "entrypoint")
+# Required fields whose value is the block beneath them rather than same-line text.
+BLOCK_MANIFEST_FIELDS = ("triggers",)
 HOST_VERSION_MANIFESTS = (
     ".claude-plugin/plugin.json",
     ".codex-plugin/plugin.json",
@@ -187,8 +189,26 @@ def validate_distribution(root: Path) -> DistributionValidation:
     return DistributionValidation(not failed, canonical_publisher)
 
 
+def declares_key(text: str, key: str) -> bool:
+    """Whether one key appears at all, for a key whose value is the block beneath it."""
+    return bool(re.search(rf"^{re.escape(key)}[^\S\n]*:", text, re.MULTILINE))
+
+
+def declares_value(text: str, key: str) -> bool:
+    r"""Whether one key names a value on its own line.
+
+    ``[^\S\n]`` rather than ``\s`` throughout: whitespace that may cross the newline
+    lets an empty key match the next line, which is how an empty entrypoint came to
+    report itself as "not found: triggers:" and how an empty frontmatter name passed
+    by matching "description:".
+    """
+    return bool(re.search(rf"^{re.escape(key)}[^\S\n]*:[^\S\n]*\S", text, re.MULTILINE))
+
+
 def get_top_level_yaml_value(content: str, key: str) -> str | None:
-    pattern = re.compile(rf"^{re.escape(key)}\s*:\s*(.+?)\s*$", re.MULTILINE)
+    pattern = re.compile(
+        rf"^{re.escape(key)}[^\S\n]*:[^\S\n]*([^\n]+?)[^\S\n]*$", re.MULTILINE
+    )
     match = pattern.search(content)
 
     if not match:
@@ -484,11 +504,16 @@ def validate_skill_manifest(
     failed = False
 
     for field in REQUIRED_MANIFEST_FIELDS:
-        if not re.search(rf"^{re.escape(field)}\s*:", manifest, re.MULTILINE):
+        if field in BLOCK_MANIFEST_FIELDS:
+            declared = declares_key(manifest, field)
+        else:
+            declared = declares_value(manifest, field)
+
+        if not declared:
             fail(name, f"skill.yaml missing {field}")
             failed = True
 
-    if re.search(r"^version\s*:", manifest, re.MULTILINE):
+    if declares_key(manifest, "version"):
         fail(
             name,
             "skill.yaml must not set version; release versioning is the collection's "
@@ -540,7 +565,7 @@ def validate_skill_document(
     failed = False
     frontmatter_name = get_top_level_yaml_value(frontmatter, "name")
 
-    if not re.search(r"^name\s*:\s*\S+", frontmatter, re.MULTILINE):
+    if not declares_value(frontmatter, "name"):
         fail(name, "frontmatter missing name")
         failed = True
 
@@ -552,7 +577,7 @@ def validate_skill_document(
         fail(name, "skill.yaml name and SKILL.md frontmatter name must match")
         failed = True
 
-    if not re.search(r"^description\s*:\s*\S+", frontmatter, re.MULTILINE):
+    if not declares_value(frontmatter, "description"):
         fail(name, "frontmatter missing description")
         failed = True
 
@@ -570,7 +595,7 @@ def validate_skill_document(
         fail(name, "skill.yaml description must start with 'Use when '")
         failed = True
 
-    if not re.search(r"^\*\*Input\*\*\s*:", content, re.MULTILINE):
+    if not declares_key(content, "**Input**"):
         fail(name, "SKILL.md must state an **Input**: contract line")
         failed = True
 
