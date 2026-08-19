@@ -35,6 +35,26 @@ class RuntimeContractTests(unittest.TestCase):
             ["ruff.toml target-version must be py310 to match .python-version"],
         )
 
+    def test_an_interpreter_below_the_declared_floor_fails(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_contract(root, "3.10", "py310")
+
+            errors = runtime_contract.check(root, running=(3, 8))
+
+        self.assertEqual(len(errors), 1)
+        self.assertIn("requires Python 3.10 or newer", errors[0])
+        self.assertIn("this interpreter is 3.8", errors[0])
+        self.assertIn("README.md", errors[0])
+
+    def test_an_interpreter_at_or_above_the_floor_passes(self) -> None:
+        for running in ((3, 10), (3, 12), (4, 0)):
+            with self.subTest(running=running), TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                self.write_contract(root, "3.10", "py310")
+
+                self.assertEqual(runtime_contract.check(root, running=running), [])
+
     def test_invalid_or_missing_declarations_fail_cleanly(self) -> None:
         cases = (
             ("3.10.1", 'target-version = "py310"\n', ".python-version must contain major.minor"),

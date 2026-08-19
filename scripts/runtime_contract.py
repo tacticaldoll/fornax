@@ -1,9 +1,17 @@
 #!/usr/bin/env python3
-"""Keep the maintenance Python floor aligned with Ruff's syntax target."""
+"""Keep the declared maintenance runtime consistent with everything that reads it.
+
+.python-version is the single source for the floor, so two things must agree with
+it: Ruff's syntax target, and the interpreter actually running. The second matters
+because the pre-commit hook only checks that .venv/bin/python is executable — a
+virtualenv built before the floor moved satisfies that and then fails later with an
+ImportError rather than saying what is wrong.
+"""
 
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
 
@@ -22,7 +30,7 @@ def _read(path: Path, errors: list[str]) -> str | None:
     return None
 
 
-def check(root: Path) -> list[str]:
+def check(root: Path, running: tuple[int, int] = sys.version_info[:2]) -> list[str]:
     """Return runtime-contract diagnostics for one repository root."""
     errors: list[str] = []
     version_text = _read(root / ".python-version", errors)
@@ -35,6 +43,13 @@ def check(root: Path) -> list[str]:
             errors.append(".python-version must contain major.minor")
         else:
             version = match.groups()
+            floor = (int(version[0]), int(version[1]))
+            if running < floor:
+                errors.append(
+                    f".python-version requires Python {floor[0]}.{floor[1]} or newer, but "
+                    f"this interpreter is {running[0]}.{running[1]}; run the maintenance "
+                    "environment setup from README.md"
+                )
 
     target = None
     if ruff_text is not None:
