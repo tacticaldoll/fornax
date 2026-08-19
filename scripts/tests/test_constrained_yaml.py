@@ -38,6 +38,14 @@ class RawScalarTests(unittest.TestCase):
             ):
                 constrained_yaml.raw_scalar(value, 3, FixtureError)
 
+    def test_a_sigil_after_the_first_character_is_ordinary_text(self) -> None:
+        # YAML reads &, * and ! as node properties only where a node starts. A rule
+        # that also fired mid-value refused prose and shell fragments the registry
+        # legitimately contains, and no fixture proved that branch either way.
+        for value in ("covers *.py files", "run a && b", "use !important here"):
+            with self.subTest(value=value):
+                self.assertEqual(constrained_yaml.raw_scalar(value, 3, FixtureError), value)
+
     def test_a_hash_inside_a_word_is_not_a_comment(self) -> None:
         # YAML only starts a comment at a line start or after whitespace, so this
         # must round-trip rather than be rejected with the comment cases above.

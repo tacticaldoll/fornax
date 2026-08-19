@@ -10,6 +10,10 @@ about comments here concerns the other kind: one sharing a line with a value. YA
 would treat that as a comment and end the scalar before it; a reader that kept it
 would store a value nothing else agrees on. Rejecting is the only answer that does
 not silently diverge.
+
+The anchor, alias, and tag rule tests the first character only, because that is
+the one position where YAML reads &, * or ! as a node property. Anywhere else they
+are ordinary text, and a wider rule would refuse prose the registry needs.
 """
 
 from __future__ import annotations
@@ -31,6 +35,6 @@ def raw_scalar(value: str, number: int, error_factory: ErrorFactory) -> str:
         raise error_factory(f"line {number}: multiline scalars are unsupported")
     if re.search(r"(?:^|\s)#", value):
         raise error_factory(f"line {number}: comments are unsupported")
-    if re.search(r"(?:^|\s)[&*!][^\s]+", value):
+    if value[0] in "&*!":
         raise error_factory(f"line {number}: YAML anchors, aliases, and tags are unsupported")
     return value
