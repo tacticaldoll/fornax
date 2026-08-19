@@ -396,10 +396,11 @@ Judge the increment by what changed for the people who install the collection:
 - Major for removed or renamed skills, trigger changes, removed behavior, incompatible script
   interfaces, and for a field removed or renamed in the shipped manifest schema.
 
-`skill.yaml` and the `SKILL.md` frontmatter travel to every installed host, and
-`docs/skill-yaml-schema.md` calls the manifest something registries and installers parse — so their
-schema is a published interface. A field added, removed, or renamed there counts even when nothing
-in this repository reads it.
+`skill.yaml`, the `SKILL.md` frontmatter, and the optional `skill-interface.yaml` travel to every
+installed host, and `docs/skill-yaml-schema.md` calls the manifest something registries and
+installers parse — so their schema is a published interface. `distribution.json` is one as well: it
+carries the collection's identity and the version every host manifest projects. A field added,
+removed, or renamed in any of them counts even when nothing in this repository reads it.
 
 While the collection is pre-1.0, a major-class change takes the minor position instead; `1.0.0` is a
 maturity decision, not an increment this rule can reach.
