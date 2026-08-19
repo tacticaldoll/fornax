@@ -468,20 +468,30 @@ def portable_path_error(value: str) -> str | None:
     return None
 
 
-def validate_manifest_path(label: str, value: str, name: str, boundary: Boundary) -> bool:
-    """Hold one declared manifest path to the portability rule and the package boundary.
+def validate_manifest_path(
+    label: str, value: str, name: str, boundary: Boundary, *, expect_directory: bool
+) -> bool:
+    """Hold one declared manifest path to portability, containment, and its kind.
 
-    The entrypoint and the three resource keys differ only in what they are called,
-    so they share the sequence rather than restating it. The syntactic rule runs
-    first: it needs no filesystem, and an absolute path that happens to resolve
-    inside the folder would otherwise pass containment and still break on copy.
+    The entrypoint and the three resource keys differ in what they are called and in
+    what they must name, so they share the sequence rather than restating it. The
+    syntactic rule runs first: it needs no filesystem, and an absolute path that
+    happens to resolve inside the folder would otherwise pass containment and still
+    break on copy.
+
+    The kind check is here rather than in path_boundary because the owner states no
+    file-type policy — what counts as the right kind is exactly what differs between
+    callers. docs/skill-yaml-schema.md says the entrypoint names the primary
+    instruction file and the resource keys name bundled directories, and existence
+    alone let a directory pass as an entrypoint and a file pass as a resource root.
     """
     portability = portable_path_error(value)
     if portability:
         fail(name, f"{label} {portability}: {value}")
         return True
 
-    found = resolve_within(boundary.declared / value, boundary)
+    target = boundary.declared / value
+    found = resolve_within(target, boundary)
     if found.verdict is Verdict.UNRESOLVABLE:
         fail(name, f"{label} could not be resolved: {value} ({found.error})")
         return True
@@ -491,6 +501,14 @@ def validate_manifest_path(label: str, value: str, name: str, boundary: Boundary
     if found.verdict is Verdict.ABSENT:
         fail(name, f"{label} not found: {value}")
         return True
+
+    if expect_directory and not target.is_dir():
+        fail(name, f"{label} must name a directory: {value}")
+        return True
+    if not expect_directory and not target.is_file():
+        fail(name, f"{label} must name a file: {value}")
+        return True
+
     return False
 
 
@@ -539,14 +557,16 @@ def validate_skill_manifest(
         fail(name, f"skill.yaml family must be {listed(FAMILIES)}")
         failed = True
 
-    if entrypoint and validate_manifest_path("skill.yaml entrypoint", entrypoint, name, boundary):
+    if entrypoint and validate_manifest_path(
+        "skill.yaml entrypoint", entrypoint, name, boundary, expect_directory=False
+    ):
         failed = True
 
     for resource_key in ("scripts", "references", "assets"):
         resource_path = get_yaml_mapping_value(manifest, "resources", resource_key)
 
         if resource_path and validate_manifest_path(
-            f"resources.{resource_key}", resource_path, name, boundary
+            f"resources.{resource_key}", resource_path, name, boundary, expect_directory=True
         ):
             failed = True
 

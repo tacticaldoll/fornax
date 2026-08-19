@@ -296,6 +296,28 @@ class ValidateSkillTests(unittest.TestCase):
         self.assertFalse(passed)
         self.assertIn("frontmatter missing name", output)
 
+    def test_an_entrypoint_naming_a_directory_fails(self) -> None:
+        # Existence alone accepted it, so a manifest no host can load passed.
+        with TemporaryDirectory() as tmp:
+            text = MANIFEST.replace("entrypoint: SKILL.md", "entrypoint: references")
+            skill_dir = fixtures.write_skill(Path(tmp), NAME, manifest_text=text)
+            (skill_dir / "references").mkdir()
+
+            passed, output = check(skill_dir)
+
+        self.assertFalse(passed)
+        self.assertIn("skill.yaml entrypoint must name a file: references", output)
+
+    def test_a_resource_key_naming_a_file_fails(self) -> None:
+        with TemporaryDirectory() as tmp:
+            text = MANIFEST + "resources:\n  scripts: SKILL.md\n"
+            skill_dir = fixtures.write_skill(Path(tmp), NAME, manifest_text=text)
+
+            passed, output = check(skill_dir)
+
+        self.assertFalse(passed)
+        self.assertIn("resources.scripts must name a directory: SKILL.md", output)
+
     def test_a_manifest_path_naming_nothing_is_reported_for_either_field(self) -> None:
         # The absent branch of the shared check, which neither field covered before.
         cases = {
