@@ -154,6 +154,21 @@ class ValidateSkillTests(unittest.TestCase):
 
         self.assertTrue(passed, output)
 
+    def test_padded_broken_relative_link_fails(self) -> None:
+        with TemporaryDirectory() as tmp:
+            text = SKILL_MD + "\nSee [the reference]( references/missing.md ).\n"
+            passed, output = check_skill(Path(tmp), skill_md_text=text)
+
+        self.assertFalse(passed)
+        self.assertIn("link not found: references/missing.md", output)
+
+    def test_local_query_and_network_links_pass(self) -> None:
+        with TemporaryDirectory() as tmp:
+            text = SKILL_MD + "\n[Self](SKILL.md?raw=1#input) [Web](//example.com/guide)\n"
+            passed, output = check_skill(Path(tmp), skill_md_text=text)
+
+        self.assertTrue(passed, output)
+
     def test_code_spans_are_ignored_but_escaped_labels_are_checked(self) -> None:
         with TemporaryDirectory() as tmp:
             text = (
@@ -167,6 +182,22 @@ class ValidateSkillTests(unittest.TestCase):
         self.assertFalse(passed)
         self.assertIn("link not found: missing.md", output)
         self.assertNotIn("inside-code.md", output)
+
+    def test_code_spans_do_not_hide_links_in_later_paragraphs(self) -> None:
+        with TemporaryDirectory() as tmp:
+            text = SKILL_MD + "\n` lone\n\nSee [missing](missing.md).\n\n` later\n"
+            passed, output = check_skill(Path(tmp), skill_md_text=text)
+
+        self.assertFalse(passed)
+        self.assertIn("link not found: missing.md", output)
+
+    def test_code_spans_do_not_hide_links_across_heading_boundaries(self) -> None:
+        with TemporaryDirectory() as tmp:
+            text = SKILL_MD + "\n# ` heading\nSee [missing](missing.md).\n` later\n"
+            passed, output = check_skill(Path(tmp), skill_md_text=text)
+
+        self.assertFalse(passed)
+        self.assertIn("link not found: missing.md", output)
 
     def test_valid_optional_interface_passes(self) -> None:
         with TemporaryDirectory() as tmp:

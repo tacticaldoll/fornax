@@ -67,6 +67,42 @@ class TextHygiene(unittest.TestCase):
         self.assertIn("link not found: missing.md \"overview\"", errors[0].message)
         self.assertIn("absolute Markdown link is not allowed", errors[1].message)
 
+    def test_padded_missing_link_is_checked(self) -> None:
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "fixture.md"
+            path.write_text("See [missing]( missing.md ).\n", encoding="utf-8")
+
+            errors = check_text.check([path])
+
+        self.assertEqual(len(errors), 1)
+        self.assertIn("link not found: missing.md", errors[0].message)
+
+    def test_percent_encoded_fragment_marker_is_checked_as_a_filename(self) -> None:
+        with TemporaryDirectory() as tmp:
+            parent = Path(tmp)
+            path = parent / "fixture.md"
+            path.write_text("See [guide](target%23part.md).\n", encoding="utf-8")
+            (parent / "target#part.md").write_text("# Target\n", encoding="utf-8")
+
+            errors = check_text.check([path])
+
+        self.assertEqual(errors, [])
+
+    def test_uri_query_is_not_a_filename_and_network_links_are_external(self) -> None:
+        with TemporaryDirectory() as tmp:
+            parent = Path(tmp)
+            path = parent / "fixture.md"
+            path.write_text(
+                "[local](target.md?raw=1#section) and "
+                "[network](//example.com/guide).\n",
+                encoding="utf-8",
+            )
+            (parent / "target.md").write_text("# Target\n", encoding="utf-8")
+
+            errors = check_text.check([path])
+
+        self.assertEqual(errors, [])
+
     def test_code_spans_are_ignored_but_escaped_labels_are_checked(self) -> None:
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / "fixture.md"
@@ -80,6 +116,34 @@ class TextHygiene(unittest.TestCase):
 
         self.assertEqual(len(errors), 1)
         self.assertIn("link not found: missing.md", errors[0].message)
+
+    def test_code_spans_do_not_hide_links_in_later_paragraphs(self) -> None:
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "fixture.md"
+            path.write_text(
+                "` lone\n\nSee [missing](missing.md).\n\n` later\n",
+                encoding="utf-8",
+            )
+
+            errors = check_text.check([path])
+
+        self.assertEqual(len(errors), 1)
+        self.assertIn("link not found: missing.md", errors[0].message)
+
+    def test_code_spans_do_not_hide_links_across_other_block_boundaries(self) -> None:
+        cases = (
+            "# ` heading\nSee [missing](missing.md).\n` later\n",
+            "- ` first\n- See [missing](missing.md).\n- ` third\n",
+        )
+        for text in cases:
+            with self.subTest(text=text), TemporaryDirectory() as tmp:
+                path = Path(tmp) / "fixture.md"
+                path.write_text(text, encoding="utf-8")
+
+                errors = check_text.check([path])
+
+            self.assertEqual(len(errors), 1)
+            self.assertIn("link not found: missing.md", errors[0].message)
 
     def test_a_colon_in_the_source_path_remains_structured(self) -> None:
         with TemporaryDirectory() as tmp:

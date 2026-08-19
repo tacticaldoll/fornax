@@ -241,9 +241,10 @@ def validate_markdown_links(skill_dir: Path, name: str) -> bool:
                 continue
 
             if Path(link_target).is_absolute():
+                relative_path = markdown_file.relative_to(skill_dir)
                 fail(
                     name,
-                    f"{markdown_file.relative_to(skill_dir)} has absolute link: {link.raw_target}",
+                    f"{relative_path} has absolute link: {link.shown_target}",
                 )
                 failed = True
                 continue
@@ -251,7 +252,7 @@ def validate_markdown_links(skill_dir: Path, name: str) -> bool:
             if not (markdown_file.parent / link_target).exists():
                 fail(
                     name,
-                    f"{markdown_file.relative_to(skill_dir)} link not found: {link.raw_target}",
+                    f"{markdown_file.relative_to(skill_dir)} link not found: {link.shown_target}",
                 )
                 failed = True
 

@@ -56,11 +56,11 @@ def check(files: list[Path]) -> list[Diagnostic]:
                 continue
             if Path(target).is_absolute():
                 errors.append(
-                    Diagnostic(path, f"absolute Markdown link is not allowed: {link.raw_target}")
+                    Diagnostic(path, f"absolute Markdown link is not allowed: {link.shown_target}")
                 )
                 continue
             if not (path.parent / target).exists():
-                errors.append(Diagnostic(path, f"link not found: {link.raw_target}"))
+                errors.append(Diagnostic(path, f"link not found: {link.shown_target}"))
     return errors
 
 
