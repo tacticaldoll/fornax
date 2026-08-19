@@ -254,6 +254,18 @@ class TextHygiene(unittest.TestCase):
         self.assertEqual(len(errors), 1)
         self.assertIn("link could not be resolved", errors[0].message)
 
+    def test_a_windows_absolute_link_is_not_treated_as_external(self) -> None:
+        # A drive letter is a valid one-character URI scheme, so this matched as
+        # external and skipped the absolute-link rule on every host.
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "fixture.md"
+            path.write_text("See [guide](C:/docs/guide.md).\n", encoding="utf-8")
+
+            errors = check(path)
+
+        self.assertEqual(len(errors), 1)
+        self.assertIn("absolute Markdown link is not allowed", errors[0].message)
+
     def test_a_tracked_symlink_that_escapes_to_a_missing_target_is_reported(self) -> None:
         # The escape guard used to sit behind is_file(), which is false for a broken
         # symlink, so exactly the malformed cases were skipped in silence.

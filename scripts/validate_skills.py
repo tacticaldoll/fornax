@@ -22,6 +22,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from uuid import UUID
 
+from host_paths import has_parent_segment_anywhere, is_absolute_anywhere
 from markdown_links import iter_markdown_links, local_target
 from path_boundary import Boundary, Verdict, resolve_within
 from skill_interface import INTERFACE_FILE, InterfaceError, load as load_interface
@@ -321,7 +322,7 @@ def validate_markdown_links(
             if link_target is None:
                 continue
 
-            if Path(link_target).is_absolute():
+            if is_absolute_anywhere(link_target):
                 fail(name, f"{relative_path} has absolute link: {link.shown_target}")
                 failed = True
                 continue
@@ -461,9 +462,9 @@ def portable_path_error(value: str) -> str | None:
     target it names exists. docs/skill-yaml-schema.md states the rule; this
     enforces it.
     """
-    if Path(value).is_absolute():
+    if is_absolute_anywhere(value):
         return "must use a relative path"
-    if ".." in Path(value).parts:
+    if has_parent_segment_anywhere(value):
         return 'must not use ".." segments'
     return None
 

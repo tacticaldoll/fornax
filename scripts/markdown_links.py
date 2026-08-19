@@ -11,6 +11,8 @@ from urllib.parse import unquote
 from markdown_it import MarkdownIt
 from markdown_it.token import Token
 
+from host_paths import is_absolute_anywhere
+
 
 EXTERNAL_SCHEME = re.compile(r"^[a-z][a-z0-9+.-]*:", re.IGNORECASE)
 PARSER = MarkdownIt("commonmark")
@@ -60,6 +62,13 @@ def local_target(destination: str) -> Optional[str]:
     if destination.startswith("//"):
         return None
     target = destination.split("#", 1)[0].split("?", 1)[0]
-    if not target or EXTERNAL_SCHEME.match(target):
+    if not target:
+        return None
+    if is_absolute_anywhere(target):
+        # Before the scheme test on purpose: a Windows drive letter is a valid
+        # one-character scheme, so "C:/docs/x.md" matched as external and skipped the
+        # absolute-link rule entirely. Returning it lets each caller refuse it.
+        return unquote(target)
+    if EXTERNAL_SCHEME.match(target):
         return None
     return unquote(target)

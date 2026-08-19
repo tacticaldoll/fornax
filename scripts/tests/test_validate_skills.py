@@ -339,6 +339,42 @@ class ValidateSkillTests(unittest.TestCase):
                 self.assertFalse(passed)
                 self.assertIn(expected, output)
 
+    def test_a_windows_absolute_entrypoint_is_not_portable(self) -> None:
+        # PosixPath does not read "C:/..." as absolute, so the running host's grammar
+        # alone let this reach containment and fail as merely "not found".
+        with TemporaryDirectory() as tmp:
+            text = MANIFEST.replace("entrypoint: SKILL.md", "entrypoint: C:/docs/guide.md")
+            skill_dir = fixtures.write_skill(Path(tmp), NAME, manifest_text=text)
+
+            passed, output = check(skill_dir)
+
+        self.assertFalse(passed)
+        self.assertIn("skill.yaml entrypoint must use a relative path", output)
+
+    def test_a_backslash_traversal_is_rejected_even_though_posix_reads_a_filename(self) -> None:
+        # The reachable case. A directory literally named "..\shared" is creatable on
+        # POSIX, so without both grammars this manifest passed here in full and only
+        # escaped the folder once installed on Windows.
+        with TemporaryDirectory() as tmp:
+            text = MANIFEST + "resources:\n  scripts: ..\\shared\n"
+            skill_dir = fixtures.write_skill(Path(tmp), NAME, manifest_text=text)
+            (skill_dir / "..\\shared").mkdir()
+
+            passed, output = check(skill_dir)
+
+        self.assertFalse(passed)
+        self.assertIn('resources.scripts must not use ".." segments', output)
+
+    def test_a_windows_absolute_link_is_not_treated_as_external(self) -> None:
+        with TemporaryDirectory() as tmp:
+            text = SKILL_MD + "\n[Guide](C:/docs/guide.md)\n"
+            skill_dir = fixtures.write_skill(Path(tmp), NAME, skill_md_text=text)
+
+            passed, output = check(skill_dir)
+
+        self.assertFalse(passed)
+        self.assertIn("has absolute link: C:/docs/guide.md", output)
+
     def test_portability_is_judged_without_the_filesystem(self) -> None:
         # A path that does not exist anywhere: only a syntactic rule can produce
         # this message, so this is what separates it from containment.

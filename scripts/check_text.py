@@ -8,6 +8,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from host_paths import is_absolute_anywhere
 from markdown_links import iter_markdown_links, local_target
 from path_boundary import Boundary, Verdict, resolve_within
 
@@ -68,7 +69,7 @@ def check(files: list[Path], root: Path) -> list[Diagnostic]:
             target = local_target(link.destination)
             if target is None:
                 continue
-            if Path(target).is_absolute():
+            if is_absolute_anywhere(target):
                 errors.append(
                     Diagnostic(path, f"absolute Markdown link is not allowed: {link.shown_target}")
                 )
