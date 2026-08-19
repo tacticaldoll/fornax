@@ -1,18 +1,5 @@
 schema: 1
 knowns:
-  - id: python38-runtime-generic-aliases
-    statement: Maintenance scripts that assign generic aliases must remain executable on Python 3.8.
-    kind: constraint
-    treatment: accept
-    rationale: Future annotations postpone annotations but do not make built-in generic alias assignment valid on Python 3.8.
-    evidence:
-      - scripts/seam_contract.py assigns RecordShape and Seam aliases at module load time.
-      - The workspace supports the system Python 3.8 runtime used by contributors.
-      - .github/workflows/validate.yml runs the workspace gate on Python 3.8.
-    declined-changes:
-      - Replace typing.List and typing.Tuple in runtime alias assignments with list and tuple.
-    reconsider-when: The minimum supported Python version becomes 3.9 or later.
-    updated: 2026-08-18
   - id: independently-runnable-link-checks
     statement: Component checks retain overlapping absolute Markdown link validation.
     kind: constraint
