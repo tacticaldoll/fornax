@@ -434,6 +434,22 @@ def validate_record_inputs(skill_dir: Path, name: str, content: str) -> bool:
     return failed
 
 
+def portable_path_error(value: str) -> str | None:
+    """Why a manifest path is not portable, judged without touching the filesystem.
+
+    Containment cannot cover this. An absolute path that happens to resolve inside
+    the skill folder passes containment and still breaks the moment the folder is
+    copied to a host, and a manifest can be judged by an installer before the
+    target it names exists. docs/skill-yaml-schema.md states the rule; this
+    enforces it.
+    """
+    if Path(value).is_absolute():
+        return "must use a relative path"
+    if ".." in Path(value).parts:
+        return 'must not use ".." segments'
+    return None
+
+
 def validate_skill_manifest(
     skill_dir: Path,
     name: str,
@@ -475,7 +491,11 @@ def validate_skill_manifest(
         fail(name, f"skill.yaml family must be {listed(FAMILIES)}")
         failed = True
 
-    if entrypoint:
+    portability = portable_path_error(entrypoint) if entrypoint else None
+    if entrypoint and portability:
+        fail(name, f"skill.yaml entrypoint {portability}: {entrypoint}")
+        failed = True
+    elif entrypoint:
         found = resolve_within(skill_dir / entrypoint, boundary)
         if found.verdict is Verdict.UNRESOLVABLE:
             fail(
@@ -496,8 +516,9 @@ def validate_skill_manifest(
         if not resource_path:
             continue
 
-        if Path(resource_path).is_absolute():
-            fail(name, f"resources.{resource_key} must use a relative path")
+        portability = portable_path_error(resource_path)
+        if portability:
+            fail(name, f"resources.{resource_key} {portability}: {resource_path}")
             failed = True
             continue
 

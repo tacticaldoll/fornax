@@ -219,7 +219,7 @@ class ValidateSkillTests(unittest.TestCase):
         self.assertFalse(passed)
         self.assertIn("loop.md could not be resolved", output)
 
-    def test_an_absolute_entrypoint_outside_the_skill_fails(self) -> None:
+    def test_an_absolute_entrypoint_that_exists_is_rejected(self) -> None:
         # Joining an absolute right operand discards the skill folder, so the old
         # existence check saw a path anywhere on the machine and passed it.
         with TemporaryDirectory() as tmp:
@@ -232,9 +232,9 @@ class ValidateSkillTests(unittest.TestCase):
             passed, output = check(skill_dir)
 
         self.assertFalse(passed)
-        self.assertIn("entrypoint leaves the skill folder", output)
+        self.assertIn("entrypoint must use a relative path", output)
 
-    def test_a_parent_relative_entrypoint_fails(self) -> None:
+    def test_a_parent_relative_entrypoint_is_rejected(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "outside.md").write_text("# Outside\n", encoding="utf-8")
@@ -244,9 +244,9 @@ class ValidateSkillTests(unittest.TestCase):
             passed, output = check(skill_dir)
 
         self.assertFalse(passed)
-        self.assertIn("entrypoint leaves the skill folder", output)
+        self.assertIn('entrypoint must not use ".." segments', output)
 
-    def test_a_parent_relative_resource_path_fails(self) -> None:
+    def test_a_parent_relative_resource_path_is_rejected(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "shared").mkdir()
@@ -256,7 +256,45 @@ class ValidateSkillTests(unittest.TestCase):
             passed, output = check(skill_dir)
 
         self.assertFalse(passed)
-        self.assertIn("resources.scripts leaves the skill folder", output)
+        self.assertIn('resources.scripts must not use ".." segments', output)
+
+    def test_portability_is_judged_without_the_filesystem(self) -> None:
+        # A path that does not exist anywhere: only a syntactic rule can produce
+        # this message, so this is what separates it from containment.
+        cases = {
+            "absolute entrypoint": (
+                MANIFEST.replace("entrypoint: SKILL.md", "entrypoint: /nowhere/absent.md"),
+                "entrypoint must use a relative path",
+            ),
+            "parent-relative resource": (
+                MANIFEST + "resources:\n  references: ../absent\n",
+                'resources.references must not use ".." segments',
+            ),
+        }
+        for label, (text, expected) in cases.items():
+            with self.subTest(label=label), TemporaryDirectory() as tmp:
+                skill_dir = fixtures.write_skill(Path(tmp), NAME, manifest_text=text)
+
+                passed, output = check(skill_dir)
+
+                self.assertFalse(passed)
+                self.assertIn(expected, output)
+
+    def test_an_entrypoint_symlinked_outside_the_skill_fails(self) -> None:
+        # Syntactically clean and still an escape, so this is containment's oracle
+        # for entrypoint rather than the portability rule's.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            outside = root / "outside.md"
+            outside.write_text("# Outside\n", encoding="utf-8")
+            text = MANIFEST.replace("entrypoint: SKILL.md", "entrypoint: alias.md")
+            skill_dir = fixtures.write_skill(root, NAME, manifest_text=text)
+            (skill_dir / "alias.md").symlink_to(outside)
+
+            passed, output = check(skill_dir)
+
+        self.assertFalse(passed)
+        self.assertIn("entrypoint leaves the skill folder", output)
 
     def test_a_resource_directory_symlinked_outside_the_skill_fails(self) -> None:
         with TemporaryDirectory() as tmp:
