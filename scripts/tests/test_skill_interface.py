@@ -18,6 +18,14 @@ def declaration(kind: str, record: str = RECORD, publisher: str = PUBLISHER) -> 
 
 
 class InterfaceParsing(unittest.TestCase):
+    def test_invalid_utf8_is_an_interface_error(self) -> None:
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / skill_interface.INTERFACE_FILE
+            path.write_bytes(b"publisher: \xff\n")
+
+            with self.assertRaisesRegex(skill_interface.InterfaceError, "must use UTF-8"):
+                skill_interface.load(path)
+
     def test_a_producer_round_trips_its_record_identity(self) -> None:
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / skill_interface.INTERFACE_FILE

@@ -30,10 +30,14 @@ def workspace_files(root: Path) -> list[Path]:
     return [root / os.fsdecode(path) for path in result.stdout.split(b"\0") if path]
 
 
-def check(files: list[Path]) -> list[Diagnostic]:
+def check(files: list[Path], root: Path) -> list[Diagnostic]:
     errors: list[Diagnostic] = []
+    resolved_root = root.resolve()
     for path in files:
         if not path.is_file():
+            continue
+        if not path.resolve().is_relative_to(resolved_root):
+            errors.append(Diagnostic(path, "tracked path leaves repository"))
             continue
         try:
             data = path.read_bytes()
@@ -49,6 +53,7 @@ def check(files: list[Path]) -> list[Diagnostic]:
         try:
             content = data.decode("utf-8")
         except UnicodeDecodeError:
+            errors.append(Diagnostic(path, "Markdown file must use UTF-8"))
             continue
         for link in iter_markdown_links(content):
             target = local_target(link.destination)
@@ -59,14 +64,29 @@ def check(files: list[Path]) -> list[Diagnostic]:
                     Diagnostic(path, f"absolute Markdown link is not allowed: {link.shown_target}")
                 )
                 continue
-            if not (path.parent / target).exists():
+            try:
+                target_path = (path.parent / target).resolve()
+            except (OSError, RuntimeError) as error:
+                errors.append(
+                    Diagnostic(
+                        path,
+                        f"link could not be resolved: {link.shown_target} ({error})",
+                    )
+                )
+                continue
+            if not target_path.is_relative_to(resolved_root):
+                errors.append(
+                    Diagnostic(path, f"link leaves repository: {link.shown_target}")
+                )
+                continue
+            if not target_path.exists():
                 errors.append(Diagnostic(path, f"link not found: {link.shown_target}"))
     return errors
 
 
 def main() -> int:
     try:
-        errors = check(workspace_files(ROOT))
+        errors = check(workspace_files(ROOT), ROOT)
     except (OSError, subprocess.CalledProcessError) as error:
         print(f"FAIL text hygiene - {error}")
         return 1

@@ -7,8 +7,9 @@ working directory as the repository root — unlike skill_graph.py, which
 anchors itself to its own location.
 
 Usage:
-    python3 scripts/validate_skills.py
-    python3 scripts/validate_skills.py --skills-path templates --allow-template-placeholders
+    .venv/bin/python scripts/validate_skills.py
+    .venv/bin/python scripts/validate_skills.py --skills-path templates \
+        --allow-template-placeholders
 """
 
 from __future__ import annotations
@@ -52,6 +53,19 @@ class DistributionValidation:
     publisher_id: str | None
 
 
+def read_json_object(path: Path) -> tuple[dict | None, str | None]:
+    """Read one UTF-8 JSON object and return a diagnostic instead of raising."""
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except UnicodeError:
+        return None, "must use UTF-8"
+    except (OSError, json.JSONDecodeError) as error:
+        return None, str(error)
+    if not isinstance(value, dict):
+        return None, "must contain a JSON object"
+    return value, None
+
+
 def described_paths(manifest: dict) -> list[tuple[str, str]]:
     """Every description a host manifest carries, labelled by where it sits."""
     found = []
@@ -81,10 +95,17 @@ def validate_projected_descriptions(root: Path, canonical: object) -> bool:
 
     for relative_path in HOST_DESCRIPTION_MANIFESTS:
         path = root / relative_path
-        try:
-            manifest = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            continue  # the version pass already reports an unreadable manifest
+        manifest, error = read_json_object(path)
+        if error is not None:
+            if relative_path not in HOST_VERSION_MANIFESTS:
+                print(f"FAIL {relative_path} - {error}")
+                failed = True
+            continue
+        assert manifest is not None
+        if not isinstance(manifest.get("plugins", []), list):
+            print(f"FAIL {relative_path} - plugins must be a list")
+            failed = True
+            continue
 
         for label, description in described_paths(manifest):
             if not description.startswith(canonical):
@@ -100,11 +121,11 @@ def validate_projected_descriptions(root: Path, canonical: object) -> bool:
 def validate_distribution(root: Path) -> DistributionValidation:
     """Validate canonical distribution metadata and host projections."""
     distribution_file = root / "distribution.json"
-    try:
-        distribution = json.loads(distribution_file.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
+    distribution, error = read_json_object(distribution_file)
+    if error is not None:
         print(f"FAIL distribution.json - {error}")
         return DistributionValidation(False, None)
+    assert distribution is not None
 
     failed = False
     name = distribution.get("name")
@@ -144,12 +165,12 @@ def validate_distribution(root: Path) -> DistributionValidation:
 
     for relative_path in HOST_VERSION_MANIFESTS:
         path = root / relative_path
-        try:
-            manifest = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as error:
+        manifest, error = read_json_object(path)
+        if error is not None:
             print(f"FAIL {relative_path} - {error}")
             failed = True
             continue
+        assert manifest is not None
         if manifest.get("name") != name:
             print(f"FAIL {relative_path} - name must match distribution.json")
             failed = True
@@ -228,12 +249,45 @@ def fail(skill_name: str, message: str) -> None:
     print(f"FAIL {skill_name} - {message}")
 
 
-def validate_markdown_links(skill_dir: Path, name: str) -> bool:
+def read_skill_text(path: Path, skill_dir: Path, name: str) -> str | None:
+    """Read one skill-owned text file or emit the validator's normal diagnostic."""
+    relative_path = path.relative_to(skill_dir)
+    try:
+        resolved_path = path.resolve()
+    except (OSError, RuntimeError) as error:
+        fail(name, f"{relative_path} could not be resolved: {error}")
+        return None
+    if not resolved_path.is_relative_to(skill_dir.resolve()):
+        fail(name, f"{path.relative_to(skill_dir)} leaves skill directory")
+        return None
+    try:
+        return path.read_text(encoding="utf-8")
+    except UnicodeError:
+        fail(name, f"{path.relative_to(skill_dir)} must use UTF-8")
+    except OSError as error:
+        fail(name, f"{path.relative_to(skill_dir)} could not be read: {error}")
+    return None
+
+
+def read_markdown_files(skill_dir: Path, name: str) -> tuple[dict[Path, str], bool]:
+    """Read every Markdown file once so sibling checks share the same failure boundary."""
+    contents = {}
+    failed = False
+    for markdown_file in sorted(skill_dir.rglob("*.md")):
+        content = read_skill_text(markdown_file, skill_dir, name)
+        if content is None:
+            failed = True
+        else:
+            contents[markdown_file] = content
+    return contents, failed
+
+
+def validate_markdown_links(
+    skill_dir: Path, name: str, markdown_files: dict[Path, str]
+) -> bool:
     failed = False
 
-    for markdown_file in sorted(skill_dir.rglob("*.md")):
-        content = markdown_file.read_text(encoding="utf-8")
-
+    for markdown_file, content in markdown_files.items():
         for link in iter_markdown_links(content):
             link_target = local_target(link.destination)
 
@@ -249,7 +303,25 @@ def validate_markdown_links(skill_dir: Path, name: str) -> bool:
                 failed = True
                 continue
 
-            if not (markdown_file.parent / link_target).exists():
+            try:
+                target_path = (markdown_file.parent / link_target).resolve()
+            except (OSError, RuntimeError) as error:
+                fail(
+                    name,
+                    f"{markdown_file.relative_to(skill_dir)} link could not be resolved: "
+                    f"{link.shown_target} ({error})",
+                )
+                failed = True
+                continue
+            if not target_path.is_relative_to(skill_dir.resolve()):
+                fail(
+                    name,
+                    f"{markdown_file.relative_to(skill_dir)} link leaves skill directory: "
+                    f"{link.shown_target}",
+                )
+                failed = True
+                continue
+            if not target_path.exists():
                 fail(
                     name,
                     f"{markdown_file.relative_to(skill_dir)} link not found: {link.shown_target}",
@@ -259,12 +331,15 @@ def validate_markdown_links(skill_dir: Path, name: str) -> bool:
     return failed
 
 
-def validate_handoffs(skill_dir: Path, name: str, known_skills: set[str]) -> bool:
+def validate_handoffs(
+    skill_dir: Path,
+    name: str,
+    known_skills: set[str],
+    markdown_files: dict[Path, str],
+) -> bool:
     failed = False
 
-    for markdown_file in sorted(skill_dir.rglob("*.md")):
-        content = markdown_file.read_text(encoding="utf-8")
-
+    for markdown_file, content in markdown_files.items():
         for target_skill in HANDOFF.findall(content):
             if target_skill not in known_skills:
                 fail(
@@ -490,7 +565,9 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
         fail(name, "missing skill.yaml")
         return False
 
-    manifest = manifest_file.read_text(encoding="utf-8")
+    manifest = read_skill_text(manifest_file, skill_dir, name)
+    if manifest is None:
+        return False
 
     manifest_failed, manifest_name, manifest_description = validate_skill_manifest(
         skill_dir, name, manifest, allow_template_placeholders
@@ -498,7 +575,9 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
     if manifest_failed:
         skill_failed = True
 
-    content = skill_file.read_text(encoding="utf-8")
+    content = read_skill_text(skill_file, skill_dir, name)
+    if content is None:
+        return False
     frontmatter_match = FRONTMATTER_PATTERN.search(content)
 
     if not frontmatter_match:
@@ -529,11 +608,14 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
 
     if not allow_template_placeholders:
         known_skills = {path.name for path in skill_dir.parent.iterdir() if path.is_dir()}
-
-        if validate_markdown_links(skill_dir, name):
+        markdown_files, markdown_failed = read_markdown_files(skill_dir, name)
+        if markdown_failed:
             skill_failed = True
 
-        if validate_handoffs(skill_dir, name, known_skills):
+        if validate_markdown_links(skill_dir, name, markdown_files):
+            skill_failed = True
+
+        if validate_handoffs(skill_dir, name, known_skills, markdown_files):
             skill_failed = True
 
     if not skill_failed:

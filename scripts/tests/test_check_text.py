@@ -2,32 +2,49 @@ from __future__ import annotations
 
 import subprocess
 import unittest
+from os.path import commonpath
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import check_text
 
 
+def check(*files: Path) -> list[check_text.Diagnostic]:
+    root = Path(commonpath([str(path.parent) for path in files]))
+    return check_text.check(list(files), root)
+
+
 class TextHygiene(unittest.TestCase):
+    def test_invalid_utf8_markdown_fails(self) -> None:
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "fixture.md"
+            path.write_bytes(b"# invalid \xff\n")
+
+            errors = check(path)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0].path, path)
+        self.assertEqual(errors[0].message, "Markdown file must use UTF-8")
+
     def test_missing_terminal_newline_fails(self) -> None:
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / "fixture.md"
             path.write_text("no newline", encoding="utf-8")
-            errors = check_text.check([path])
+            errors = check(path)
         self.assertIn("must end with a newline", errors[0].message)
 
     def test_missing_local_markdown_link_fails(self) -> None:
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / "fixture.md"
             path.write_text("See [missing](missing.md).\n", encoding="utf-8")
-            errors = check_text.check([path])
+            errors = check(path)
         self.assertIn("link not found", errors[0].message)
 
     def test_absolute_markdown_link_fails(self) -> None:
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / "fixture.md"
             path.write_text("See [absolute](/docs/example.md).\n", encoding="utf-8")
-            errors = check_text.check([path])
+            errors = check(path)
 
         self.assertEqual(errors[0].path, path)
         self.assertIn("absolute Markdown link is not allowed", errors[0].message)
@@ -48,7 +65,7 @@ class TextHygiene(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            errors = check_text.check([source, target, spaced_target])
+            errors = check(source, target, spaced_target)
 
         self.assertEqual(errors, [])
 
@@ -61,7 +78,7 @@ class TextHygiene(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            errors = check_text.check([path])
+            errors = check(path)
 
         self.assertEqual(len(errors), 2)
         self.assertIn("link not found: missing.md \"overview\"", errors[0].message)
@@ -72,7 +89,7 @@ class TextHygiene(unittest.TestCase):
             path = Path(tmp) / "fixture.md"
             path.write_text("See [missing]( missing.md ).\n", encoding="utf-8")
 
-            errors = check_text.check([path])
+            errors = check(path)
 
         self.assertEqual(len(errors), 1)
         self.assertIn("link not found: missing.md", errors[0].message)
@@ -84,7 +101,7 @@ class TextHygiene(unittest.TestCase):
             path.write_text("See [guide](target%23part.md).\n", encoding="utf-8")
             (parent / "target#part.md").write_text("# Target\n", encoding="utf-8")
 
-            errors = check_text.check([path])
+            errors = check(path)
 
         self.assertEqual(errors, [])
 
@@ -99,7 +116,7 @@ class TextHygiene(unittest.TestCase):
             )
             (parent / "target.md").write_text("# Target\n", encoding="utf-8")
 
-            errors = check_text.check([path])
+            errors = check(path)
 
         self.assertEqual(errors, [])
 
@@ -112,7 +129,7 @@ class TextHygiene(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            errors = check_text.check([path])
+            errors = check(path)
 
         self.assertEqual(len(errors), 1)
         self.assertIn("link not found: missing.md", errors[0].message)
@@ -125,7 +142,7 @@ class TextHygiene(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            errors = check_text.check([path])
+            errors = check(path)
 
         self.assertEqual(len(errors), 1)
         self.assertIn("link not found: missing.md", errors[0].message)
@@ -140,7 +157,7 @@ class TextHygiene(unittest.TestCase):
                 path = Path(tmp) / "fixture.md"
                 path.write_text(text, encoding="utf-8")
 
-                errors = check_text.check([path])
+                errors = check(path)
 
             self.assertEqual(len(errors), 1)
             self.assertIn("link not found: missing.md", errors[0].message)
@@ -151,7 +168,7 @@ class TextHygiene(unittest.TestCase):
             parent.mkdir()
             path = parent / "fixture.md"
             path.write_text("no newline", encoding="utf-8")
-            errors = check_text.check([path])
+            errors = check(path)
 
         self.assertEqual(errors[0].path, path)
         self.assertEqual(errors[0].message, "text file must end with a newline")
@@ -179,8 +196,63 @@ class TextHygiene(unittest.TestCase):
             source.write_text("See [target](target.md).\n", encoding="utf-8")
             binary = root / "image.bin"
             binary.write_bytes(b"not text\0without newline")
-            errors = check_text.check([source, target, binary])
+            errors = check(source, target, binary)
         self.assertEqual(errors, [])
+
+    def test_parent_link_that_remains_in_the_repository_passes(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            docs = root / "docs"
+            docs.mkdir()
+            source = docs / "source.md"
+            source.write_text("[target](../target.md)\n", encoding="utf-8")
+            (root / "target.md").write_text("# Target\n", encoding="utf-8")
+
+            errors = check_text.check([source], root)
+
+        self.assertEqual(errors, [])
+
+    def test_link_that_leaves_the_repository_fails(self) -> None:
+        with TemporaryDirectory() as tmp:
+            parent = Path(tmp)
+            root = parent / "repo"
+            root.mkdir()
+            source = root / "source.md"
+            source.write_text("[outside](../outside.md)\n", encoding="utf-8")
+            (parent / "outside.md").write_text("# Outside\n", encoding="utf-8")
+
+            errors = check_text.check([source], root)
+
+        self.assertEqual(len(errors), 1)
+        self.assertIn("link leaves repository", errors[0].message)
+
+    def test_link_cannot_escape_through_a_symlink(self) -> None:
+        with TemporaryDirectory() as tmp:
+            parent = Path(tmp)
+            root = parent / "repo"
+            root.mkdir()
+            outside = parent / "outside.md"
+            outside.write_text("# Outside\n", encoding="utf-8")
+            (root / "alias.md").symlink_to(outside)
+            source = root / "source.md"
+            source.write_text("[outside](alias.md)\n", encoding="utf-8")
+
+            errors = check_text.check([source], root)
+
+        self.assertEqual(len(errors), 1)
+        self.assertIn("link leaves repository", errors[0].message)
+
+    def test_symlink_loop_fails_without_a_traceback(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "loop.md").symlink_to("loop.md")
+            source = root / "source.md"
+            source.write_text("[loop](loop.md)\n", encoding="utf-8")
+
+            errors = check_text.check([source], root)
+
+        self.assertEqual(len(errors), 1)
+        self.assertIn("link could not be resolved", errors[0].message)
 
 
 if __name__ == "__main__":

@@ -20,9 +20,9 @@ The block lives in docs/review-record-contract.md between the SEAM-INVENTORY mar
 Standard library only.
 
 Usage:
-    python3 scripts/seam_contract.py            # print the block to stdout
-    python3 scripts/seam_contract.py --write    # splice it into the contract
-    python3 scripts/seam_contract.py --check    # fail when the contract is out of date
+    .venv/bin/python scripts/seam_contract.py            # print the block to stdout
+    .venv/bin/python scripts/seam_contract.py --write    # splice it into the contract
+    .venv/bin/python scripts/seam_contract.py --check    # fail when the contract is out of date
 """
 
 from __future__ import annotations
@@ -77,6 +77,8 @@ def where(path: Path) -> str:
 def read(path: Path) -> str:
     try:
         return path.read_text(encoding="utf-8")
+    except UnicodeError as error:
+        raise SeamError(f"{where(path)} - must use UTF-8") from error
     except OSError as error:
         raise SeamError(f"{where(path)} - {error}") from error
 
@@ -209,7 +211,7 @@ def run(args: argparse.Namespace) -> int:
     if args.check:
         raise SeamError(
             f"{where(contract_path)} - seam inventory is out of date; "
-            "run python3 scripts/seam_contract.py --write"
+            "run .venv/bin/python scripts/seam_contract.py --write"
         )
 
     write(contract_path, contract[:start] + block + contract[end:])

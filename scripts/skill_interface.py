@@ -11,9 +11,10 @@ Record identities use this canonical form::
     <publisher-uuid>/<record-type>@<major> <media-type>
 
 Usage:
-    python3 scripts/skill_interface.py --skills-path skills --list
-    python3 scripts/skill_interface.py --skills-path skills --recommend RECORD
-    python3 scripts/skill_interface.py --skills-path skills --recommend RECORD --prefer SKILL
+    .venv/bin/python scripts/skill_interface.py --skills-path skills --list
+    .venv/bin/python scripts/skill_interface.py --skills-path skills --recommend RECORD
+    .venv/bin/python scripts/skill_interface.py --skills-path skills \
+        --recommend RECORD --prefer SKILL
 """
 
 from __future__ import annotations
@@ -104,6 +105,8 @@ def load(path: Path, skill: str | None = None) -> SkillInterface:
     """Load one sidecar, accepting only the documented constrained YAML shape."""
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
+    except UnicodeError as error:
+        raise InterfaceError(f"{path.name} must use UTF-8") from error
     except OSError as error:
         raise InterfaceError(str(error)) from error
 

@@ -95,6 +95,14 @@ def run(root: Path, *argv: str) -> tuple[int, str]:
 
 
 class SeamDiscovery(unittest.TestCase):
+    def test_invalid_utf8_is_a_seam_error(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "SKILL.md"
+            path.write_bytes(b"# invalid \xff\n")
+
+            with self.assertRaisesRegex(seam_contract.SeamError, "must use UTF-8"):
+                seam_contract.read(path)
+
     def test_render_uses_one_blank_line_between_seams(self):
         shape = [("Source", "field")]
         block = seam_contract.render(

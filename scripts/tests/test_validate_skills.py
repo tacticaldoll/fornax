@@ -35,6 +35,21 @@ def check_skill(root: Path, **overrides: str) -> tuple[bool, str]:
 
 
 class ValidateSkillTests(unittest.TestCase):
+    def test_invalid_utf8_inputs_fail_without_a_traceback(self) -> None:
+        cases = ("skill.yaml", "SKILL.md", "references/guide.md")
+        for relative in cases:
+            with self.subTest(relative=relative), TemporaryDirectory() as tmp:
+                skill_dir = fixtures.write_skill(Path(tmp), NAME)
+                path = skill_dir / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b"# invalid \xff\n")
+
+                passed, output = check(skill_dir)
+
+                self.assertFalse(passed)
+                self.assertIn(relative, output)
+                self.assertIn("must use UTF-8", output)
+
     def test_fixture_skill_passes(self) -> None:
         with TemporaryDirectory() as tmp:
             passed, output = check_skill(Path(tmp))
@@ -153,6 +168,56 @@ class ValidateSkillTests(unittest.TestCase):
             passed, output = check(skill_dir)
 
         self.assertTrue(passed, output)
+
+    def test_parent_link_that_remains_in_the_skill_passes(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            skill_dir = fixtures.write_skill(root, NAME)
+            guide = skill_dir / "references" / "guide.md"
+            guide.parent.mkdir()
+            guide.write_text("[self](../SKILL.md)\n", encoding="utf-8")
+
+            passed, output = check(skill_dir)
+
+        self.assertTrue(passed, output)
+
+    def test_link_that_leaves_the_skill_fails(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            text = SKILL_MD + "\n[Outside](../outside.md)\n"
+            skill_dir = fixtures.write_skill(root, NAME, skill_md_text=text)
+            (root / "outside.md").write_text("# Outside\n", encoding="utf-8")
+
+            passed, output = check(skill_dir)
+
+        self.assertFalse(passed)
+        self.assertIn("link leaves skill directory", output)
+
+    def test_link_cannot_escape_the_skill_through_a_symlink(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            text = SKILL_MD + "\n[Outside](references/outside.md)\n"
+            skill_dir = fixtures.write_skill(root, NAME, skill_md_text=text)
+            outside = root / "outside.md"
+            outside.write_text("# Outside\n", encoding="utf-8")
+            references = skill_dir / "references"
+            references.mkdir()
+            (references / "outside.md").symlink_to(outside)
+
+            passed, output = check(skill_dir)
+
+        self.assertFalse(passed)
+        self.assertIn("leaves skill directory", output)
+
+    def test_symlink_loop_fails_without_a_traceback(self) -> None:
+        with TemporaryDirectory() as tmp:
+            skill_dir = fixtures.write_skill(Path(tmp), NAME)
+            (skill_dir / "loop.md").symlink_to("loop.md")
+
+            passed, output = check(skill_dir)
+
+        self.assertFalse(passed)
+        self.assertIn("loop.md could not be resolved", output)
 
     def test_padded_broken_relative_link_fails(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -436,6 +501,56 @@ class ProjectedDescriptionTests(unittest.TestCase):
         data = json.loads(path.read_text(encoding="utf-8"))
         mutate(data)
         path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+    def test_invalid_utf8_distribution_inputs_fail_without_a_traceback(self) -> None:
+        cases = (
+            "distribution.json",
+            ".codex-plugin/plugin.json",
+            ".claude-plugin/marketplace.json",
+        )
+        for relative in cases:
+            with self.subTest(relative=relative), TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                fixtures.write_distribution(root)
+                (root / relative).write_bytes(b'{"invalid": "\xff"}\n')
+
+                passed, output = self.check_distribution(root)
+
+                self.assertFalse(passed)
+                self.assertIn(relative, output)
+                self.assertIn("must use UTF-8", output)
+
+    def test_non_object_distribution_inputs_fail_without_a_traceback(self) -> None:
+        cases = (
+            "distribution.json",
+            ".codex-plugin/plugin.json",
+            ".claude-plugin/marketplace.json",
+        )
+        for relative in cases:
+            with self.subTest(relative=relative), TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                fixtures.write_distribution(root)
+                (root / relative).write_text("[]\n", encoding="utf-8")
+
+                passed, output = self.check_distribution(root)
+
+                self.assertFalse(passed)
+                self.assertIn(relative, output)
+                self.assertIn("must contain a JSON object", output)
+
+    def test_non_list_marketplace_plugins_fail_without_a_traceback(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_distribution(root)
+            self.edit(
+                root / ".claude-plugin" / "marketplace.json",
+                lambda data: data.__setitem__("plugins", None),
+            )
+
+            passed, output = self.check_distribution(root)
+
+        self.assertFalse(passed)
+        self.assertIn(".claude-plugin/marketplace.json - plugins must be a list", output)
 
     def test_matching_projections_pass(self) -> None:
         with TemporaryDirectory() as tmp:
