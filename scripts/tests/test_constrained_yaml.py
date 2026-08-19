@@ -29,9 +29,19 @@ class RawScalarTests(unittest.TestCase):
             "anchor": ("&shared value", "YAML anchors, aliases, and tags are unsupported"),
             "alias": ("*shared", "YAML anchors, aliases, and tags are unsupported"),
             "tag": ("!custom value", "YAML anchors, aliases, and tags are unsupported"),
+            "trailing comment": ("value # note", "comments are unsupported"),
+            "comment as the whole value": ("# note", "comments are unsupported"),
         }
         for label, (value, message) in cases.items():
             with self.subTest(label=label), self.assertRaisesRegex(
                 FixtureError, re.escape(message)
             ):
                 constrained_yaml.raw_scalar(value, 3, FixtureError)
+
+    def test_a_hash_inside_a_word_is_not_a_comment(self) -> None:
+        # YAML only starts a comment at a line start or after whitespace, so this
+        # must round-trip rather than be rejected with the comment cases above.
+        self.assertEqual(
+            constrained_yaml.raw_scalar("issue#42 stays", 3, FixtureError),
+            "issue#42 stays",
+        )

@@ -4,7 +4,8 @@
 The registry deliberately accepts a constrained YAML subset so its parser remains
 dependency-free. It is not a general YAML reader: mappings are flat, list-valued
 fields contain scalars, and multiline values, aliases, anchors, tags, flow
-collections, and quoted scalars are rejected.
+collections, and quoted scalars are rejected. A whole-line comment is skipped; one
+sharing a line with a value is rejected rather than absorbed into it.
 
 Usage:
     .venv/bin/python scripts/development_knowns.py --check

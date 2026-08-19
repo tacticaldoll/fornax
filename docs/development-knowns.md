@@ -35,9 +35,10 @@ user authorizes that repository change.
 
 The registry uses a deliberately small YAML subset: top-level `schema` and `knowns`, flat known
 mappings, single-line raw scalars, and block lists of single-line raw scalars. Quoted or multiline
-scalars, flow collections, arbitrary nesting, anchors, aliases, and tags are rejected. This keeps
-the registry parser dependency-free and auditable; adopt a full YAML dependency only if the data
-model genuinely needs richer structure or another full YAML consumer appears.
+scalars, flow collections, arbitrary nesting, anchors, aliases, and tags are rejected, as is a
+comment sharing a line with a value — a whole-line comment is skipped. This keeps the registry
+parser dependency-free and auditable; adopt a full YAML dependency only if the data model genuinely
+needs richer structure or another full YAML consumer appears.
 
 Validate the registry with:
 
