@@ -26,6 +26,19 @@ class InterfaceParsing(unittest.TestCase):
             with self.assertRaisesRegex(skill_interface.InterfaceError, "must use UTF-8"):
                 skill_interface.load(path)
 
+    def test_record_identities_are_not_ordered(self) -> None:
+        # Nothing sorts, compares or takes a min of an identity. Matching a producer
+        # to a consumer intersects two sets, which needs hashing — frozen=True gives
+        # that, so an ordering capability would be six methods nobody calls.
+        first = skill_interface.RecordIdentity.parse(RECORD)
+        second = skill_interface.RecordIdentity.parse(
+            f"{PUBLISHER}/other-record@1 text/markdown"
+        )
+
+        self.assertEqual(len({first, second}), 2)
+        with self.assertRaises(TypeError):
+            sorted([first, second])
+
     def test_a_producer_round_trips_its_record_identity(self) -> None:
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / skill_interface.INTERFACE_FILE

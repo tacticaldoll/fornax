@@ -45,7 +45,7 @@ class InterfaceError(ValueError):
     """An invalid interface declaration with a user-facing diagnostic."""
 
 
-@dataclass(frozen=True, order=True)
+@dataclass(frozen=True)
 class RecordIdentity:
     publisher: str
     record_type: str
