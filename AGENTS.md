@@ -155,14 +155,14 @@ When asked to create or update a skill:
 Validation command:
 
 ```sh
-python3 scripts/check_workspace.py
+.venv/bin/python scripts/check_workspace.py
 ```
 
 The workspace command includes template validation. Its direct form remains available when debugging
 template-only failures:
 
 ```sh
-python scripts/validate_skills.py --skills-path templates --allow-template-placeholders
+.venv/bin/python scripts/validate_skills.py --skills-path templates --allow-template-placeholders
 ```
 
 ## Skill Lifecycle
@@ -454,8 +454,9 @@ Use this checklist for new skills and meaningful updates:
 Prefer lightweight tests that match the risk of the change.
 
 - Run repository validation for every change.
-- Use `python3 scripts/check_workspace.py` as the public local and CI entry point. Keep its component
-  checks independently runnable for focused diagnostics.
+- Use `.venv/bin/python scripts/check_workspace.py` as the public local entry point; CI runs the
+  same script in its pinned Python 3.10 environment. Keep component checks independently runnable
+  for focused diagnostics.
 - Run `python3 scripts/development_knowns.py --check` through the workspace gate. Record only
   non-obvious current conditions that affect development judgment; external review language is
   evidence, not the project statement, and a treatment never authorizes work without an explicit
@@ -480,14 +481,14 @@ Prefer lightweight tests that match the risk of the change.
   so a syntax error would only surface for an OpenCode user.
 - Python style is checked in CI by `ruff check .` against `ruff.toml` — width 100, rules `E`/`F`/`W`
   with `preview` on, pinned to one ruff version so a release cannot fail an unrelated push. It is
-  CI-only because the pre-commit hook stays standard-library-only and needs no install; run
+  CI-only because the pre-commit hook runs only the pinned maintenance environment; run
   `pipx run ruff==0.16.1 check .` locally for the same answer before pushing. Never auto-apply a fix
   as part of another change, and treat a ruff version bump as its own commit — preview rules move
   between releases.
-- CI runs the standard-library workspace gate in a dedicated Python 3.8 job so maintenance scripts
-  retain their minimum contributor-runtime compatibility. The independently packaged Fornax CLI
-  keeps its declared Python 3.10 minimum and runs in the main validation job; do not lower that
-  package boundary to match the maintenance scripts.
+- CI runs the workspace gate with `requirements-maintenance.txt` in a dedicated Python 3.10 job so
+  maintenance scripts retain their minimum contributor-runtime compatibility. The pre-commit hook
+  uses the same pinned environment from `.venv`; it never installs or upgrades dependencies during
+  a commit. The independently packaged Fornax CLI keeps its declared Python 3.10 minimum.
 - Enforcement: CI (`.github/workflows/validate.yml`) runs the validator on every push; enable the
   local pre-commit hook once per clone with `git config core.hooksPath .githooks`.
 - Validate `templates/skill` after template changes.
@@ -506,7 +507,9 @@ Document any skipped test and the reason in the final report or PR notes.
 Keep scripts deterministic, portable, and easy to audit.
 
 - Use Python 3 for repository maintenance scripts and skill scripts by default.
-- Use only the Python standard library unless dependencies materially reduce complexity.
+- Use the Python standard library by default. A maintenance dependency is allowed only when it
+  materially reduces complexity; pin it and every transitive dependency in
+  `requirements-maintenance.txt`, and keep CI and the local hook on that same environment.
 - Use another scripting language only when the host toolchain requires it or the user explicitly
   asks for it.
 - Document script dependencies near the script or in the skill's `SKILL.md`.

@@ -36,8 +36,8 @@ user authorizes that repository change.
 The registry uses a deliberately small YAML subset: top-level `schema` and `knowns`, flat known
 mappings, single-line raw scalars, and block lists of single-line raw scalars. Quoted or multiline
 scalars, flow collections, arbitrary nesting, anchors, aliases, and tags are rejected. This keeps
-the local hook and CI standard-library-only; adopt a full YAML dependency only if the data model
-genuinely needs richer structure or another full YAML consumer appears.
+the registry parser dependency-free and auditable; adopt a full YAML dependency only if the data
+model genuinely needs richer structure or another full YAML consumer appears.
 
 Validate the registry with:
 

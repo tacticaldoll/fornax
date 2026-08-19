@@ -7,4 +7,10 @@ set -euo pipefail
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
-python3 scripts/check_workspace.py
+python_bin="$repo_root/.venv/bin/python"
+if [[ ! -x "$python_bin" ]]; then
+  echo "FAIL pre-commit - run the maintenance environment setup from README.md"
+  exit 1
+fi
+
+"$python_bin" scripts/check_workspace.py

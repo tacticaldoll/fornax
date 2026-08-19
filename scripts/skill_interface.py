@@ -3,8 +3,8 @@
 
 The sidecar intentionally uses a tiny YAML subset: one scalar ``publisher`` and
 scalar list items under ``produces`` and ``consumes``. Keeping the grammar this
-small lets workspace checks stay standard-library-only and fail closed instead
-of growing an incomplete general YAML parser.
+small lets this parser stay dependency-free and fail closed instead of growing
+an incomplete general YAML parser.
 
 Record identities use this canonical form::
 

@@ -245,12 +245,19 @@ actually consumes or produces the declared record.
 
 ## Validate
 
-One public command runs all fast deterministic checks in CI and in the pre-commit hook once enabled
-with
-`git config core.hooksPath .githooks`:
+Create the pinned Python 3.10 maintenance environment once per clone:
 
 ```sh
-python3 scripts/check_workspace.py
+uv python install 3.10
+uv venv --python 3.10
+uv pip sync --python .venv/bin/python requirements-maintenance.txt
+```
+
+One public command then runs all fast deterministic checks in CI and in the pre-commit hook once
+enabled with `git config core.hooksPath .githooks`:
+
+```sh
+.venv/bin/python scripts/check_workspace.py
 ```
 
 It checks production and template skill structure, optional interface sidecars, tracked text and
@@ -258,7 +265,7 @@ local links, generated skill maps and record inventory, and the validation test 
 installing, publishing, or copying skills. A stale generated block is fixed with its matching
 `--write` command.
 
-Three more run in CI only, because each needs something the hook deliberately does not install:
+Three more run in CI only; the hook runs only the pinned maintenance environment:
 
 ```sh
 pipx run ruff==0.16.1 check .                                    # Python style, pinned

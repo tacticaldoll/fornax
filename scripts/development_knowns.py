@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Validate and query the repository's project-centered development knowns.
 
-The registry deliberately accepts a constrained YAML subset so the workspace gate
-remains standard-library-only. It is not a general YAML reader: mappings are flat,
-list-valued fields contain scalars, and multiline values, aliases, anchors, tags,
-flow collections, and quoted scalars are rejected.
+The registry deliberately accepts a constrained YAML subset so its parser remains
+dependency-free. It is not a general YAML reader: mappings are flat, list-valued
+fields contain scalars, and multiline values, aliases, anchors, tags, flow
+collections, and quoted scalars are rejected.
 
 Usage:
     python3 scripts/development_knowns.py --check
