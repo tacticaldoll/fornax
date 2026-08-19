@@ -73,22 +73,17 @@ def check(files: list[Path], root: Path) -> list[Diagnostic]:
                     Diagnostic(path, f"absolute Markdown link is not allowed: {link.shown_target}")
                 )
                 continue
-            try:
-                target_path = (path.parent / target).resolve()
-            except (OSError, RuntimeError) as error:
+            found = resolve_within(path.parent / target, boundary)
+            if found.verdict is Verdict.UNRESOLVABLE:
                 errors.append(
                     Diagnostic(
                         path,
-                        f"link could not be resolved: {link.shown_target} ({error})",
+                        f"link could not be resolved: {link.shown_target} ({found.error})",
                     )
                 )
-                continue
-            if not target_path.is_relative_to(boundary.root):
-                errors.append(
-                    Diagnostic(path, f"link leaves repository: {link.shown_target}")
-                )
-                continue
-            if not target_path.exists():
+            elif found.verdict is Verdict.OUTSIDE:
+                errors.append(Diagnostic(path, f"link leaves repository: {link.shown_target}"))
+            elif found.verdict is Verdict.ABSENT:
                 errors.append(Diagnostic(path, f"link not found: {link.shown_target}"))
     return errors
 
