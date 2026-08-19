@@ -43,10 +43,14 @@ class Boundary:
 
 @dataclass(frozen=True)
 class Resolved:
-    """One verdict, the resolved path when there is one, and the resolution error."""
+    """One verdict, plus the resolution error when there was one.
+
+    The resolved path is deliberately not carried. No caller needs it, and a field
+    nothing reads is the same debt as a capability nobody calls. Add it back when a
+    diagnostic actually wants to name the target it resolved to.
+    """
 
     verdict: Verdict
-    path: Path | None = None
     error: Exception | None = None
 
 
@@ -63,12 +67,12 @@ def resolve_within(candidate: Path, boundary: Boundary) -> Resolved:
     try:
         resolved = candidate.resolve()
     except (OSError, RuntimeError) as error:
-        return Resolved(Verdict.UNRESOLVABLE, error=error)
+        return Resolved(Verdict.UNRESOLVABLE, error)
 
     if not resolved.is_relative_to(boundary.root):
-        return Resolved(Verdict.OUTSIDE, resolved)
+        return Resolved(Verdict.OUTSIDE)
 
     if not resolved.exists():
-        return Resolved(Verdict.ABSENT, resolved)
+        return Resolved(Verdict.ABSENT)
 
-    return Resolved(Verdict.INSIDE, resolved)
+    return Resolved(Verdict.INSIDE)

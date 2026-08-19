@@ -17,7 +17,6 @@ class PathBoundaryTests(unittest.TestCase):
             found = resolve_within(target, Boundary.at(root))
 
         self.assertIs(found.verdict, Verdict.INSIDE)
-        self.assertEqual(found.path, target.resolve())
 
     def test_a_path_outside_the_boundary_is_outside(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -73,7 +72,6 @@ class PathBoundaryTests(unittest.TestCase):
 
         self.assertIs(found.verdict, Verdict.UNRESOLVABLE)
         self.assertIsNotNone(found.error)
-        self.assertIsNone(found.path)
 
     def test_a_boundary_holds_its_root_already_resolved(self) -> None:
         with TemporaryDirectory() as tmp:
