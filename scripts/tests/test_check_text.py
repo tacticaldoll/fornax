@@ -254,6 +254,43 @@ class TextHygiene(unittest.TestCase):
         self.assertEqual(len(errors), 1)
         self.assertIn("link could not be resolved", errors[0].message)
 
+    def test_a_tracked_symlink_that_escapes_to_a_missing_target_is_reported(self) -> None:
+        # The escape guard used to sit behind is_file(), which is false for a broken
+        # symlink, so exactly the malformed cases were skipped in silence.
+        with TemporaryDirectory() as tmp:
+            parent = Path(tmp)
+            root = parent / "repo"
+            root.mkdir()
+            alias = root / "alias.md"
+            alias.symlink_to(parent / "never-created.md")
+
+            errors = check_text.check([alias], root)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0].message, "tracked path leaves repository")
+
+    def test_a_tracked_symlink_loop_is_reported_not_skipped(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            loop = root / "loop.md"
+            loop.symlink_to("loop.md")
+
+            errors = check_text.check([loop], root)
+
+        self.assertEqual(len(errors), 1)
+        self.assertIn("tracked path could not be resolved", errors[0].message)
+
+    def test_a_tracked_path_absent_from_the_working_tree_is_skipped(self) -> None:
+        # git ls-files --cached lists index entries whose file was deleted without
+        # staging the deletion. Failing on those would break an ordinary commit, so
+        # absence is a skip rather than a diagnostic.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+
+            errors = check_text.check([root / "deleted.md"], root)
+
+        self.assertEqual(errors, [])
+
 
 if __name__ == "__main__":
     unittest.main()

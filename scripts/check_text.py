@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from markdown_links import iter_markdown_links, local_target
+from path_boundary import Boundary, Verdict, resolve_within
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -32,12 +33,20 @@ def workspace_files(root: Path) -> list[Path]:
 
 def check(files: list[Path], root: Path) -> list[Diagnostic]:
     errors: list[Diagnostic] = []
-    resolved_root = root.resolve()
+    boundary = Boundary.at(root)
     for path in files:
-        if not path.is_file():
+        tracked = resolve_within(path, boundary)
+        if tracked.verdict is Verdict.UNRESOLVABLE:
+            errors.append(
+                Diagnostic(path, f"tracked path could not be resolved: {tracked.error}")
+            )
             continue
-        if not path.resolve().is_relative_to(resolved_root):
+        if tracked.verdict is Verdict.OUTSIDE:
             errors.append(Diagnostic(path, "tracked path leaves repository"))
+            continue
+        if tracked.verdict is Verdict.ABSENT:
+            continue  # git already reports the deletion, and there is no text to read
+        if not path.is_file():
             continue
         try:
             data = path.read_bytes()
@@ -74,7 +83,7 @@ def check(files: list[Path], root: Path) -> list[Diagnostic]:
                     )
                 )
                 continue
-            if not target_path.is_relative_to(resolved_root):
+            if not target_path.is_relative_to(boundary.root):
                 errors.append(
                     Diagnostic(path, f"link leaves repository: {link.shown_target}")
                 )
