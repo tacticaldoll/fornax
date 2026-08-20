@@ -11,6 +11,7 @@ from unittest.mock import patch
 import fixtures
 import skill_graph
 import skill_model
+from generated_block import BlockError
 
 BEFORE = "# Fixture\n\nProse above the block.\n\n"
 AFTER = "\nProse below the block.\n"
@@ -56,14 +57,15 @@ class RenderTests(unittest.TestCase):
 
 
 class ReaderAgreementTests(unittest.TestCase):
-    """The map and the validator must read one key the same way.
+    """One key, read the same way here and by the validator, and never guessed at.
 
-    Both cases passed before the read was delegated to skill_yaml: the mismatched
-    pair was trimmed down to a valid family here while the validator refused the
-    manifest, and the empty key read the description line beneath it.
+    Each bad declaration below used to produce a chart rather than a diagnostic. The
+    mismatched pair was trimmed to a valid family here while the validator refused
+    the same manifest; the empty key read the description line beneath it. Both then
+    left the skill out of every chart at exit 0.
     """
 
-    def family_of(self, declaration: str) -> str | None:
+    def family_of(self, declaration: str) -> str:
         with TemporaryDirectory() as tmp:
             skills = Path(tmp) / "skills"
             fixtures.write_skill(
@@ -78,17 +80,24 @@ class ReaderAgreementTests(unittest.TestCase):
         return family["quoted-skill"]
 
     def test_a_mismatched_quote_pair_is_not_trimmed_into_a_valid_family(self) -> None:
-        family = self.family_of("family: \"meta'")
+        with self.assertRaisesRegex(BlockError, "quoted-skill"):
+            self.family_of("family: \"meta'")
 
-        self.assertNotIn(family, skill_model.FAMILIES)
+    def test_an_empty_family_is_reported_rather_than_read_from_the_next_line(self) -> None:
+        with self.assertRaisesRegex(BlockError, "quoted-skill"):
+            self.family_of("family:")
 
-    def test_an_empty_family_does_not_read_the_line_beneath_it(self) -> None:
-        family = self.family_of("family:")
-
-        self.assertIsNone(family)
+    def test_an_unplaceable_family_names_the_allowed_values(self) -> None:
+        with self.assertRaisesRegex(BlockError, "family must be"):
+            self.family_of("family: invented")
 
     def test_a_quoted_family_still_reads(self) -> None:
         self.assertEqual(self.family_of("family: 'meta'"), "meta")
+
+    def test_every_declared_family_is_placeable(self) -> None:
+        for declared in skill_model.FAMILIES:
+            with self.subTest(family=declared):
+                self.assertEqual(self.family_of(f"family: {declared}"), declared)
 
 
 class WriteTests(unittest.TestCase):

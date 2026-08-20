@@ -6,6 +6,11 @@ SKILL.md, using the shared handoff pattern in skill_model.py, then prints
 Markdown with one Mermaid flowchart per family. Cross-family edges appear as
 bridges to nodes owned by another family.
 
+A family this module cannot place is a failure, not an omission. render() selects
+members by matching FAMILIES, so an unreadable or unknown value silently dropped
+the skill from every chart at exit 0, and `--check` agreed because the committed
+block recorded the same absence.
+
 The manifest read goes through skill_yaml rather than a pattern kept here. A
 private one diverged from it twice: ``\\s`` around the colon crossed the newline, so
 an empty `family:` read the line beneath it, and trimming quote *characters* could
@@ -30,7 +35,7 @@ from pathlib import Path
 
 import generated_block
 from generated_block import BlockError, Markers, Rendered
-from skill_model import FAMILIES, HANDOFF
+from skill_model import FAMILIES, HANDOFF, listed
 from skill_yaml import get_top_level_yaml_value
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -55,10 +60,20 @@ def load(skills_dir: Path):
     except OSError as error:
         raise BlockError(f"{where(skills_dir)} - {error}") from error
 
-    family: dict[str, str | None] = {}
+    family: dict[str, str] = {}
 
     for name in names:
-        family[name] = get_top_level_yaml_value(read(skills_dir / name / "skill.yaml"), "family")
+        declared = get_top_level_yaml_value(read(skills_dir / name / "skill.yaml"), "family")
+        if declared not in FAMILIES:
+            # Not an omission. render() places a skill by matching its family against
+            # FAMILIES, so anything else dropped it from every chart and still exited
+            # 0 — the one outcome a generated block exists to prevent, and invisible
+            # to `--check` because the committed block agreed about the absence.
+            found = "declares no readable family" if declared is None else f"declares {declared!r}"
+            raise BlockError(
+                f"skills/{name}/skill.yaml - family must be {listed(FAMILIES)}; {found}"
+            )
+        family[name] = declared
 
     edges: list[tuple[str, str]] = []
 
