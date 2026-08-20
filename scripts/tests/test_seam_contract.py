@@ -12,7 +12,7 @@ import fixtures
 import generated_block
 import seam_contract
 
-PUBLISHER = "9d0f3c1a-7b2e-4e61-8d45-2a6f90c3b817"
+PUBLISHER = fixtures.PUBLISHER_ID
 RECORD = f"{PUBLISHER}/review-record@1 text/markdown"
 
 BEFORE = "# Fixture\n\nProse above the block.\n\n"

@@ -12,7 +12,7 @@ import fixtures
 import skill_model
 import validate_skills
 
-PUBLISHER = "9d0f3c1a-7b2e-4e61-8d45-2a6f90c3b817"
+PUBLISHER = fixtures.PUBLISHER_ID
 FOREIGN_PUBLISHER = "c52ebc66-c01e-49af-9ed6-818ee4bc49f1"
 REVIEW_RECORD = f"{PUBLISHER}/review-record@1 text/markdown"
 
