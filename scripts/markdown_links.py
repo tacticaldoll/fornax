@@ -64,11 +64,15 @@ def local_target(destination: str) -> Optional[str]:
     target = destination.split("#", 1)[0].split("?", 1)[0]
     if not target:
         return None
-    if is_absolute_anywhere(target):
+    decoded = unquote(target)
+    if is_absolute_anywhere(decoded):
         # Before the scheme test on purpose: a Windows drive letter is a valid
         # one-character scheme, so "C:/docs/x.md" matched as external and skipped the
         # absolute-link rule entirely. Returning it lets each caller refuse it.
-        return unquote(target)
-    if EXTERNAL_SCHEME.match(target):
+        return decoded
+    if EXTERNAL_SCHEME.match(decoded):
+        # Both tests read the decoded destination. Judging the encoded one made
+        # "%68ttps://example.com" a local path, so an external link was reported as
+        # a missing file.
         return None
-    return unquote(target)
+    return decoded

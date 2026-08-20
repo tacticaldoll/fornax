@@ -199,6 +199,18 @@ class TextHygiene(unittest.TestCase):
             errors = check(source, target, binary)
         self.assertEqual(errors, [])
 
+    def test_a_markdown_file_holding_a_nul_is_reported_not_skipped(self) -> None:
+        # Skipping it in silence hid every link in the file, while invalid UTF-8 in
+        # the same position was reported.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            document = root / "document.md"
+            document.write_bytes(b"# doc\x00\nSee [missing](gone.md).\n")
+
+            errors = check(document)
+
+        self.assertEqual([error.message for error in errors], ["Markdown file must be text"])
+
     def test_parent_link_that_remains_in_the_repository_passes(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)

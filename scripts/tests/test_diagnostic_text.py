@@ -35,6 +35,7 @@ class DiagnosticTextTests(unittest.TestCase):
             (0x2028, "\\u2028"),  # Zl
             (0x2029, "\\u2029"),  # Zp
             (0xE0001, "\\U000e0001"),  # Cf above the BMP
+            (0xDCFF, "\\udcff"),      # Cs, what os.fsdecode gives a non-UTF-8 byte
         ):
             with self.subTest(code=code):
                 self.assertEqual(printable(chr(code)), expected)

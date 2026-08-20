@@ -14,9 +14,13 @@ is Unicode category Cc; the second is Cf, and an earlier rule that matched a cod
 *range* caught only the first.
 
 So the test is the category, taken from the Unicode database rather than a list kept
-here: Cc and Cf hide or redirect, Zl and Zp end a line where the file did not. Cs
-cannot occur in text decoded from UTF-8, and Co renders as whatever a font chooses
-rather than as a way to hide something, so neither is escaped.
+here: Cc and Cf hide or redirect, Zl and Zp end a line where the file did not. Cs is
+here for a third reason: a lone surrogate cannot come from *decoding* UTF-8, but it
+is exactly what ``os.fsdecode`` produces for a filename whose bytes are not UTF-8,
+and printing one raises UnicodeEncodeError. That crashed the text check on any
+repository holding such a file instead of reporting it — the report is the product,
+and no report at all is the worst version of losing it. Co renders as whatever a font
+chooses rather than as a way to hide something, so it is not escaped.
 
 One cost, recorded as a decision: U+200D ZERO WIDTH JOINER is Cf, so a joined emoji
 sequence in a diagnostic renders as its parts. For a one-line report that is the right
@@ -30,7 +34,7 @@ from __future__ import annotations
 
 import unicodedata
 
-HIDDEN = frozenset({"Cc", "Cf", "Zl", "Zp"})
+HIDDEN = frozenset({"Cc", "Cf", "Cs", "Zl", "Zp"})
 
 
 def _shown(character: str) -> str:

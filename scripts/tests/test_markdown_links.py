@@ -61,6 +61,16 @@ class MarkdownLinksTests(unittest.TestCase):
         self.assertIsNone(markdown_links.local_target("https://example.com/guide"))
         self.assertIsNone(markdown_links.local_target("//example.com/guide"))
 
+    def test_a_percent_encoded_scheme_is_still_external(self) -> None:
+        # Both tests read the decoded destination. Judging the encoded one made this
+        # a local path, so an external link was reported as a missing file.
+        self.assertIsNone(markdown_links.local_target("%68ttps://example.com/guide"))
+        self.assertIsNone(markdown_links.local_target("%6Dailto:someone@example.com"))
+
+    def test_a_percent_encoded_absolute_path_is_returned_for_the_caller_to_refuse(self) -> None:
+        self.assertEqual(markdown_links.local_target("%2F..%2Fescape"), "/../escape")
+        self.assertEqual(markdown_links.local_target("C:/docs/guide.md"), "C:/docs/guide.md")
+
     def test_percent_encoded_fragment_marker_remains_part_of_the_path(self) -> None:
         link = next(markdown_links.iter_markdown_links("[guide](target%23part.md)"))
 

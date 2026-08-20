@@ -55,7 +55,14 @@ def check(files: list[Path], root: Path) -> list[Diagnostic]:
         except OSError as error:
             errors.append(Diagnostic(path, str(error)))
             continue
-        if not data or b"\0" in data:
+        if not data:
+            continue
+        if b"\0" in data:
+            # A binary file is not this check's subject, but a .md holding a NUL is
+            # a Markdown file that is not text, and skipping it in silence hid every
+            # link in it. Invalid UTF-8 in a .md is already reported below.
+            if path.suffix.lower() == ".md":
+                errors.append(Diagnostic(path, "Markdown file must be text"))
             continue
         if not data.endswith(b"\n"):
             errors.append(Diagnostic(path, "text file must end with a newline"))
