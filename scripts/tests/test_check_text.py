@@ -199,6 +199,17 @@ class TextHygiene(unittest.TestCase):
             errors = check(source, target, binary)
         self.assertEqual(errors, [])
 
+    def test_a_link_holding_an_encoded_null_is_reported_not_raised(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            document = root / "document.md"
+            document.write_text("See [x](a%00b.md).\n", encoding="utf-8")
+
+            errors = check(document)
+
+        self.assertEqual(len(errors), 1)
+        self.assertIn("could not be resolved", errors[0].message)
+
     def test_a_markdown_file_holding_a_nul_is_reported_not_skipped(self) -> None:
         # Skipping it in silence hid every link in the file, while invalid UTF-8 in
         # the same position was reported.

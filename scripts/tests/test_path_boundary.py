@@ -62,6 +62,16 @@ class PathBoundaryTests(unittest.TestCase):
 
         self.assertIs(found.verdict, Verdict.ABSENT)
 
+    def test_an_embedded_null_byte_is_unresolvable_not_an_exception(self) -> None:
+        # A Markdown link holding %00 decodes to this, and resolving it used to raise
+        # ValueError out of the text check instead of being reported.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            found = resolve_within(root / "a\x00b.md", Boundary.at(root))
+
+        self.assertIs(found.verdict, Verdict.UNRESOLVABLE)
+        self.assertIsInstance(found.error, ValueError)
+
     def test_a_symlink_loop_is_unresolvable_and_carries_the_error(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)

@@ -49,7 +49,7 @@ class Boundary:
     def at(cls, root: Path) -> "Boundary":
         try:
             return cls(root, root.resolve())
-        except (OSError, RuntimeError) as error:
+        except (OSError, RuntimeError, ValueError) as error:
             return cls(root, None, error)
 
     def relative(self, path: Path) -> Path:
@@ -92,7 +92,7 @@ def resolve_within(candidate: Path, boundary: Boundary) -> Resolved:
 
     try:
         resolved = candidate.resolve()
-    except (OSError, RuntimeError) as error:
+    except (OSError, RuntimeError, ValueError) as error:
         return Resolved(Verdict.UNRESOLVABLE, error)
 
     if not resolved.is_relative_to(boundary.root):
