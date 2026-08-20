@@ -85,7 +85,7 @@ class SkillShapeTests(unittest.TestCase):
         cases = {
             "manifest name": (
                 {"manifest_text": MANIFEST.replace(f"name: {NAME}", "name: other-skill", 1)},
-                f"skill.yaml name 'other-skill' must match folder name",
+                "skill.yaml name 'other-skill' must match folder name",
             ),
             "frontmatter name": (
                 {"skill_md_text": SKILL_MD.replace(f"name: {NAME}", "name: other-skill", 1)},

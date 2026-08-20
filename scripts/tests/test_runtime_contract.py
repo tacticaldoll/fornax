@@ -86,7 +86,6 @@ class RuntimeContractTests(unittest.TestCase):
 
             self.assertIn(message, errors)
 
-
     def test_a_pinned_library_at_another_version_fails(self) -> None:
         # An environment holding a different version satisfies the floor and then
         # validates the workspace with a parser the pins do not name.
