@@ -4,7 +4,14 @@
 Reads each skill's `family` from skill.yaml and its handoff targets from
 SKILL.md, using the shared handoff pattern in skill_model.py, then prints
 Markdown with one Mermaid flowchart per family. Cross-family edges appear as
-bridges to nodes owned by another family. Standard library only.
+bridges to nodes owned by another family.
+
+The manifest read goes through skill_yaml rather than a pattern kept here. A
+private one diverged from it twice: ``\\s`` around the colon crossed the newline, so
+an empty `family:` read the line beneath it, and trimming quote *characters* could
+not tell a quoted scalar from a plain one, so `family: "meta'` read as `meta` here
+while the validator refused the manifest. Two readers disagreeing about one key is
+the thing this module has no reason to own.
 
 The maps live in README.md between the SKILL-MAPS markers. `--write` splices
 them in so the block never has to be pasted by hand; `--check` fails when the
@@ -19,14 +26,12 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import re
 from pathlib import Path
 
 import generated_block
 from generated_block import BlockError, Markers, Rendered
 from skill_model import FAMILIES, HANDOFF
-
-FAMILY = re.compile(r"^family\s*:\s*(.+?)\s*$", re.MULTILINE)
+from skill_yaml import get_top_level_yaml_value
 
 ROOT = Path(__file__).resolve().parent.parent
 MARKERS = Markers("SKILL-MAPS", "scripts/skill_graph.py")
@@ -53,8 +58,7 @@ def load(skills_dir: Path):
     family: dict[str, str | None] = {}
 
     for name in names:
-        match = FAMILY.search(read(skills_dir / name / "skill.yaml"))
-        family[name] = match.group(1).strip().strip("'\"") if match else None
+        family[name] = get_top_level_yaml_value(read(skills_dir / name / "skill.yaml"), "family")
 
     edges: list[tuple[str, str]] = []
 

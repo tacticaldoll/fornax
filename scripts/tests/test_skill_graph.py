@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 import fixtures
 import skill_graph
+import skill_model
 
 BEFORE = "# Fixture\n\nProse above the block.\n\n"
 AFTER = "\nProse below the block.\n"
@@ -52,6 +53,42 @@ class RenderTests(unittest.TestCase):
         self.assertNotIn("### Decisions & governance", block)
         self.assertIn("alpha-skill --> beta-skill", block)
         self.assertEqual(block.count("```mermaid"), 2)
+
+
+class ReaderAgreementTests(unittest.TestCase):
+    """The map and the validator must read one key the same way.
+
+    Both cases passed before the read was delegated to skill_yaml: the mismatched
+    pair was trimmed down to a valid family here while the validator refused the
+    manifest, and the empty key read the description line beneath it.
+    """
+
+    def family_of(self, declaration: str) -> str | None:
+        with TemporaryDirectory() as tmp:
+            skills = Path(tmp) / "skills"
+            fixtures.write_skill(
+                skills,
+                "quoted-skill",
+                manifest_text=fixtures.manifest("quoted-skill").replace(
+                    "family: implementation", declaration
+                ),
+            )
+            _, family, _ = skill_graph.load(skills)
+
+        return family["quoted-skill"]
+
+    def test_a_mismatched_quote_pair_is_not_trimmed_into_a_valid_family(self) -> None:
+        family = self.family_of("family: \"meta'")
+
+        self.assertNotIn(family, skill_model.FAMILIES)
+
+    def test_an_empty_family_does_not_read_the_line_beneath_it(self) -> None:
+        family = self.family_of("family:")
+
+        self.assertIsNone(family)
+
+    def test_a_quoted_family_still_reads(self) -> None:
+        self.assertEqual(self.family_of("family: 'meta'"), "meta")
 
 
 class WriteTests(unittest.TestCase):
