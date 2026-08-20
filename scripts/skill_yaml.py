@@ -11,7 +11,24 @@ one therefore reads what it needs and stays quiet about the rest.
 Every pattern uses ``[^\\S\\n]`` rather than ``\\s`` between a key and its value.
 Whitespace allowed to cross the newline lets a key with no value match the line
 beneath it, which is how an empty entrypoint once reported itself as
-"not found: triggers:". Standard library only.
+"not found: triggers:".
+
+**Reader contract.** A reader returns the value the key declares, or says the key
+is declared in a shape it does not read. It never substitutes a reading of its own
+for a shape it does not handle. Three readers used to: one attributed a nested
+item to the key above it, one returned an empty string for a key holding a block,
+and one trimmed quote characters from a scalar that was never quoted. Each
+substitution was silent, and a caller cannot guard what it is not told.
+
+``get_yaml_list`` and ``get_yaml_mapping_value`` carry the contract through
+``Shape``. ``declares_key`` and ``declares_value`` answer about declaration only,
+so they have nothing to substitute. ``clean_yaml_scalar`` returns the text as
+declared when it cannot parse a quote pair. ``get_top_level_yaml_value`` is **not
+yet** three-state: it returns ``None`` both for an absent key and for one declared
+without a same-line scalar. No defect has been reported against that, and it is
+recorded here rather than left to be rediscovered as an oversight.
+
+Standard library only.
 """
 
 from __future__ import annotations

@@ -187,5 +187,40 @@ class ListTests(unittest.TestCase):
         self.assertIs(get_yaml_list(text, "triggers").shape, Shape.UNREAD)
 
 
+class ReaderContractTests(unittest.TestCase):
+    """One assertion per reader that it does not substitute a reading of its own."""
+
+    DECLARED_UNREADABLY = "triggers:\n  examples:\n    - phantom\nresources:\n  scripts:\n"
+
+    def test_a_list_reader_separates_absent_from_declared_unreadably(self) -> None:
+        self.assertIs(get_yaml_list(self.DECLARED_UNREADABLY, "triggers").shape, Shape.UNREAD)
+        self.assertIs(get_yaml_list(self.DECLARED_UNREADABLY, "absent").shape, Shape.ABSENT)
+
+    def test_a_mapping_reader_separates_absent_from_declared_unreadably(self) -> None:
+        unread = get_yaml_mapping_value(self.DECLARED_UNREADABLY, "resources", "scripts")
+        absent = get_yaml_mapping_value(self.DECLARED_UNREADABLY, "resources", "assets")
+
+        self.assertIs(unread.shape, Shape.UNREAD)
+        self.assertIs(absent.shape, Shape.ABSENT)
+
+    def test_a_scalar_cleaner_returns_text_it_cannot_parse_as_declared(self) -> None:
+        for value in ('ends in a quote"', "\"unmatched'", "'"):
+            with self.subTest(value=value):
+                self.assertEqual(clean_yaml_scalar(value), value)
+
+    def test_declaration_readers_answer_about_declaration_only(self) -> None:
+        text = "entrypoint:\ntriggers:\n  - user asks\n"
+
+        self.assertTrue(declares_key(text, "entrypoint"))
+        self.assertFalse(declares_value(text, "entrypoint"))
+
+    def test_a_top_level_key_declared_without_a_value_is_not_yet_three_state(self) -> None:
+        """The one reader the contract does not yet cover; see the module docstring."""
+        text = "entrypoint:\ntriggers:\n  - user asks\n"
+
+        self.assertIsNone(get_top_level_yaml_value(text, "entrypoint"))
+        self.assertIsNone(get_top_level_yaml_value(text, "absent"))
+
+
 if __name__ == "__main__":
     unittest.main()
