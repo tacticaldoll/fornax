@@ -296,8 +296,10 @@ above as three-of-four.
 The `cache (gap)` row is **void as evidence**: that fixture eliminated all eight Kinds for the reader
 and stated `cache (gap)` as the expected cell, so the run measured instruction-following rather than
 gap detection. The fixture has since been stripped to the finding and its code excerpt. Gap detection
-is **untested**, which matters because the response to the previous gap failure was to promote the
-shape to a Kind — gap reporting is now the only thing keeping the list from growing once per shape.
+was **untested** at that revision, which mattered because the response to the previous gap failure
+was to promote the shape to a Kind — gap reporting is the only thing keeping the list from growing
+once per shape. **Closed on 2026-08-17**: 5/5 on the stripped fixture, every response naming `index`
+as the near miss and saying why it is wrong before naming the gap.
 
 The remaining lifecycle failure was read as representation rather than scope classification:
 responses identify `undetermined` and then duplicate the same prior finding into Carried forward, Out
