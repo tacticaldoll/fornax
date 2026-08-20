@@ -71,6 +71,8 @@ class ParserTests(unittest.TestCase):
             "alias": "*shared",
             "tag": "!custom value",
             "multiline": "|",
+            "multiline stripped": ">-",
+            "multiline indented": "|2",
             "flow": "[one, two]",
             "quoted": "'quoted value'",
         }

@@ -26,6 +26,14 @@ class RawScalarTests(unittest.TestCase):
             "flow mapping": ("{one: two}", "quoted and flow-style scalars are unsupported"),
             "literal multiline": ("|", "multiline scalars are unsupported"),
             "folded multiline": (">", "multiline scalars are unsupported"),
+            # Every indicator form. Comparing the whole value against the two bare
+            # tokens stored these as the value instead of refusing them.
+            "literal stripped": ("|-", "multiline scalars are unsupported"),
+            "literal kept": ("|+", "multiline scalars are unsupported"),
+            "folded stripped": (">-", "multiline scalars are unsupported"),
+            "folded kept": (">+", "multiline scalars are unsupported"),
+            "literal indented": ("|2", "multiline scalars are unsupported"),
+            "literal indented and stripped": ("|2-", "multiline scalars are unsupported"),
             "anchor": ("&shared value", "YAML anchors, aliases, and tags are unsupported"),
             "alias": ("*shared", "YAML anchors, aliases, and tags are unsupported"),
             "tag": ("!custom value", "YAML anchors, aliases, and tags are unsupported"),
