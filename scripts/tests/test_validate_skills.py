@@ -39,6 +39,19 @@ def check_skill(root: Path, **overrides: str) -> tuple[bool, str]:
     return check(fixtures.write_skill(root, NAME, **overrides))
 
 
+def write_sidecar(parent: Path, publisher: str) -> None:
+    """One skill declaring one produced record under the publisher it is given."""
+    fixtures.write_skill(
+        parent,
+        NAME,
+        interface_text=(
+            f"publisher: {publisher}\n"
+            "produces:\n"
+            f"  - {publisher}/example-record@1 text/markdown\n"
+        ),
+    )
+
+
 class SkillShapeTests(unittest.TestCase):
     """The rules a skill folder must satisfy before any of its content is judged.
 
@@ -1173,17 +1186,9 @@ class EntryPointTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             fixtures.write_distribution(root)
-            # With a sidecar, so the publisher stage compares one rather than walking
-            # an empty glob — otherwise the name claims a stage this never exercises.
-            fixtures.write_skill(
-                root / "skills",
-                NAME,
-                interface_text=(
-                    f"publisher: {PUBLISHER}\n"
-                    "produces:\n"
-                    f"  - {PUBLISHER}/example-record@1 text/markdown\n"
-                ),
-            )
+            # A matching sidecar, so the publisher stage compares one instead of
+            # walking an empty glob. The mismatched case below is what observes it.
+            write_sidecar(root / "skills", PUBLISHER)
             code, output = self.run_main(root)
 
         self.assertEqual(code, 0, output)
@@ -1203,15 +1208,7 @@ class EntryPointTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             fixtures.write_distribution(root)
-            fixtures.write_skill(
-                root / "skills",
-                NAME,
-                interface_text=(
-                    f"publisher: {FOREIGN_PUBLISHER}\n"
-                    "produces:\n"
-                    f"  - {FOREIGN_PUBLISHER}/example-record@1 text/markdown\n"
-                ),
-            )
+            write_sidecar(root / "skills", FOREIGN_PUBLISHER)
             code, output = self.run_main(root)
 
         self.assertEqual(code, 1)
@@ -1267,21 +1264,10 @@ class InterfacePublisherTests(unittest.TestCase):
 
         return not failed, output.getvalue()
 
-    def write_sidecar(self, root: Path, publisher: str) -> None:
-        fixtures.write_skill(
-            root,
-            NAME,
-            interface_text=(
-                f"publisher: {publisher}\n"
-                "produces:\n"
-                f"  - {publisher}/example-record@1 text/markdown\n"
-            ),
-        )
-
     def test_a_sidecar_from_another_publisher_fails_collection_validation(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
-            self.write_sidecar(root, FOREIGN_PUBLISHER)
+            write_sidecar(root, FOREIGN_PUBLISHER)
             passed, output = self.check_publishers(root, PUBLISHER)
 
         self.assertFalse(passed)
@@ -1290,7 +1276,7 @@ class InterfacePublisherTests(unittest.TestCase):
     def test_a_sidecar_matching_a_collection_that_is_not_this_one_passes(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
-            self.write_sidecar(root, FOREIGN_PUBLISHER)
+            write_sidecar(root, FOREIGN_PUBLISHER)
             passed, output = self.check_publishers(root, FOREIGN_PUBLISHER)
 
         self.assertTrue(passed, output)
@@ -1298,7 +1284,7 @@ class InterfacePublisherTests(unittest.TestCase):
     def test_this_collections_publisher_fails_a_collection_that_is_not_this_one(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
-            self.write_sidecar(root, PUBLISHER)
+            write_sidecar(root, PUBLISHER)
             passed, output = self.check_publishers(root, FOREIGN_PUBLISHER)
 
         self.assertFalse(passed)
@@ -1309,7 +1295,7 @@ class InterfacePublisherTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             fixtures.write_distribution(root, publisher_id=FOREIGN_PUBLISHER)
-            self.write_sidecar(root / "skills", FOREIGN_PUBLISHER)
+            write_sidecar(root / "skills", FOREIGN_PUBLISHER)
             output = StringIO()
             with redirect_stdout(output):
                 distribution = validate_skills.validate_distribution(root)
