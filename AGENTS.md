@@ -248,6 +248,14 @@ When adding custom deployment scripts, keep them thin:
 - Support project and user scopes.
 - Avoid destructive cleanup unless explicitly requested.
 - Preserve provenance such as source repo, ref, and installed path when practical.
+- **Pin an external dependency by tag, and treat a released tag as immutable.** The engine is
+  installed from `git+…@v<x.y.z>` in CI and in `tools/fornax-cli/pyproject.toml`, which is a mutable
+  ref: moving that tag silently changes what every deployment installs. A commit SHA would remove
+  that, and it is deliberately not used — a SHA makes an engine bump unreadable in a diff, and
+  `PROJECT.md` already fixes Fornax's own release identity to a tag rather than a hash. The
+  assumption that carries the risk is therefore stated rather than left implicit: a published tag is
+  never moved or deleted, in this collection or in the engine. Re-pin to a SHA if a tag is ever
+  observed to move.
 - Assign exactly one authoritative Fornax deployment channel per host and scope. A fallback channel
   must be explicit, not installed alongside the default.
 - Inventory all discovery surfaces before mutation. Never remove a skill solely because its name
