@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import json
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 import fixtures
 import skill_model
@@ -1088,6 +1089,52 @@ class ProjectedDescriptionTests(unittest.TestCase):
 
             self.assertFalse(passed)
             self.assertIn("publisher_id must be a UUID", output)
+
+
+class DirectoryListingTests(unittest.TestCase):
+    """A path that cannot be listed is a diagnostic, not a traceback.
+
+    Both listings let the OSError escape, and this is the entry point CI, the
+    pre-commit hook, and the deployment CLI's snapshot validation all invoke — so a
+    malformed layout surfaced as a stack trace from inside a release run. Every
+    sibling reader in this directory already reported it.
+    """
+
+    def test_a_skills_path_that_is_not_a_directory_is_reported(self) -> None:
+        with TemporaryDirectory() as tmp:
+            not_a_directory = Path(tmp) / "skills"
+            not_a_directory.write_text("not a directory\n", encoding="utf-8")
+            error = StringIO()
+            with redirect_stderr(error):
+                code = validate_skills.main(["--skills-path", str(not_a_directory)])
+
+        self.assertEqual(code, 1)
+        self.assertIn("Skills directory could not be read", error.getvalue())
+
+    def test_an_unlistable_sibling_directory_is_reported_against_the_skill(self) -> None:
+        with TemporaryDirectory() as tmp:
+            skill_dir = fixtures.write_skill(Path(tmp) / "skills", NAME)
+            with patch.object(
+                validate_skills,
+                "child_directories",
+                return_value=([], OSError("Permission denied")),
+            ):
+                passed, output = check(skill_dir)
+
+        self.assertFalse(passed)
+        self.assertIn("sibling skills could not be listed", output)
+        self.assertIn("Permission denied", output)
+
+    def test_a_listing_returns_only_directories_in_order(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for name in ("gamma", "alpha", "beta"):
+                (root / name).mkdir()
+            (root / "loose-file.txt").write_text("x\n", encoding="utf-8")
+            found, error = validate_skills.child_directories(root)
+
+        self.assertIsNone(error)
+        self.assertEqual([path.name for path in found], ["alpha", "beta", "gamma"])
 
 
 class SkillModelTests(unittest.TestCase):

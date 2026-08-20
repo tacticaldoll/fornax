@@ -54,6 +54,21 @@ def fail(skill_name: str, message: str) -> None:
     print(printable(f"FAIL {skill_name} - {message}"))
 
 
+def child_directories(path: Path) -> tuple[list[Path], OSError | None]:
+    """The directories directly under one path, or the error listing it gave.
+
+    A fact rather than a diagnostic, because the two callers phrase it differently
+    and answer to different scopes — the same reason path_boundary returns verdicts.
+    Both sites used to let the OSError escape, so a skills path that is not a
+    directory reached the user as a traceback from the one entry point CI, the
+    pre-commit hook, and the deployment CLI all run.
+    """
+    try:
+        return sorted(child for child in path.iterdir() if child.is_dir()), None
+    except OSError as error:
+        return [], error
+
+
 def read_skill_text(path: Path, name: str, boundary: Boundary) -> str | None:
     """Read one skill-owned text file or emit the validator's normal diagnostic.
 
@@ -480,7 +495,11 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
             skill_failed = True
 
     if not allow_template_placeholders:
-        known_skills = {path.name for path in skill_dir.parent.iterdir() if path.is_dir()}
+        siblings, listing_error = child_directories(skill_dir.parent)
+        if listing_error is not None:
+            fail(name, f"sibling skills could not be listed: {listing_error}")
+            return False
+        known_skills = {sibling.name for sibling in siblings}
         markdown_files, markdown_failed = read_markdown_files(name, boundary)
         if markdown_failed:
             skill_failed = True
@@ -511,7 +530,7 @@ def validate_interface_publishers(skills_path: Path, publisher_id: str) -> bool:
     return not failed
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Validate portable skill folders.")
     parser.add_argument(
         "--skills-path", default="skills", help="Directory containing skill folders."
@@ -521,21 +540,29 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Allow template placeholder names that do not match the folder name.",
     )
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def main() -> int:
-    args = parse_args()
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
     skills_path = Path(args.skills_path)
 
     if not skills_path.exists():
         print(printable(f"Skills directory not found: {skills_path}"), file=sys.stderr)
         return 1
 
+    skill_dirs, listing_error = child_directories(skills_path)
+    if listing_error is not None:
+        print(
+            printable(f"Skills directory could not be read: {skills_path} ({listing_error})"),
+            file=sys.stderr,
+        )
+        return 1
+
     distribution = validate_distribution(Path.cwd())
     failed = not distribution.passed
 
-    for skill_dir in sorted(path for path in skills_path.iterdir() if path.is_dir()):
+    for skill_dir in skill_dirs:
         if not validate_skill(skill_dir, args.allow_template_placeholders):
             failed = True
 
