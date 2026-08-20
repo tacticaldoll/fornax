@@ -30,6 +30,7 @@ from path_boundary import Boundary, Verdict, resolve_within
 from skill_interface import INTERFACE_FILE, InterfaceError, load as load_interface
 from skill_model import FAMILIES, HANDOFF, NAME_PATTERN, STATUSES, listed
 from skill_yaml import (
+    Shape,
     declares_key,
     declares_value,
     get_top_level_yaml_value,
@@ -309,12 +310,14 @@ def validate_skill_manifest(
             if not declares_key(manifest, field):
                 fail(name, f"skill.yaml missing {field}")
                 failed = True
-            elif not any(get_yaml_list(manifest, field)):
-                # Present is not enough: a scalar, an empty block, a flow list and a
-                # list of empty items all declare the key. any() is false unless one
-                # item carries text.
-                fail(name, f"skill.yaml {field} must be a non-empty list of strings")
-                failed = True
+            else:
+                # Present is not enough: a scalar, an empty block, a flow list, a
+                # nested mapping and a list of empty items all declare the key. The
+                # read must be a block list, and one item must carry text.
+                read = get_yaml_list(manifest, field)
+                if read.shape is not Shape.READ or not any(read.items):
+                    fail(name, f"skill.yaml {field} must be a non-empty list of strings")
+                    failed = True
         elif not declares_value(manifest, field):
             fail(name, f"skill.yaml missing {field}")
             failed = True

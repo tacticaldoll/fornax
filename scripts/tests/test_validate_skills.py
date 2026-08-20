@@ -384,6 +384,14 @@ class ValidateSkillTests(unittest.TestCase):
             "scalar": "triggers: not-a-list\n",
             "flow list": "triggers: []\n",
             "one empty item": "triggers:\n  - \n",
+            # A nested mapping declares no list at the key's own level. The reader
+            # used to attribute the nested item to the key, so this shape passed.
+            "nested mapping": "triggers:\n  examples:\n    - user asks\n",
+            "nested list after a real item": (
+                f"triggers:\n  - user asks for {NAME}\n  examples:\n    - user asks\n"
+            ),
+            "mixed indentation": f"triggers:\n  - user asks for {NAME}\n    - deeper\n",
+            "tab indentation": "triggers:\n\t- user asks\n",
         }.items():
             with self.subTest(label=label), TemporaryDirectory() as tmp:
                 text = MANIFEST.replace(block, variant)

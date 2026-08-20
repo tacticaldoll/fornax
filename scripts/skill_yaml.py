@@ -16,7 +16,31 @@ beneath it, which is how an empty entrypoint once reported itself as
 
 from __future__ import annotations
 
+import enum
 import re
+from dataclasses import dataclass
+
+
+class Shape(enum.Enum):
+    """What reading one key established.
+
+    ``UNREAD`` is the state this module used to lack. A key declared in a shape a
+    reader does not handle is not the same fact as a key nobody declared, and
+    collapsing the two let a caller treat "declared as something else" as "absent"
+    — silently, because there was no value to report and no way to say why.
+    """
+
+    ABSENT = "absent"
+    READ = "read"
+    UNREAD = "unread"
+
+
+@dataclass(frozen=True)
+class ListRead:
+    """Items a key declares as a block list, or why they were not read."""
+
+    shape: Shape
+    items: tuple[str, ...] = ()
 
 
 def declares_key(text: str, key: str) -> bool:
@@ -73,23 +97,63 @@ def get_yaml_mapping_value(content: str, parent_key: str, child_key: str) -> str
     return None
 
 
-def get_yaml_list(content: str, key: str) -> list[str]:
-    lines = content.splitlines()
+def get_yaml_list(content: str, key: str) -> ListRead:
+    """Read one key's block list, or say the key holds a shape this does not read.
+
+    A block list is every line under the key being a ``-`` item at one indentation
+    of spaces. Anything else — a nested mapping, items at mixed indentation, a
+    same-line scalar — is ``UNREAD`` rather than a shorter list, because attributing
+    a nested item to the key let a key that declares no list of its own satisfy a
+    rule that the schema states as "list of strings".
+
+    Indentation must be spaces: YAML forbids tabs for indentation, so a tab-indented
+    item is a shape this reader declines rather than one it silently accepts.
+    """
+    seen_key = False
     in_key = False
     items: list[str] = []
+    item_indent: str | None = None
+    unread = False
 
-    for line in lines:
+    for line in content.splitlines():
         if not line.strip() or line.lstrip().startswith("#"):
             continue
 
         if not line.startswith((" ", "\t")):
-            in_key = line.split(":", 1)[0].strip() == key
+            head, _, tail = line.partition(":")
+            in_key = head.strip() == key
+            if in_key:
+                if seen_key:
+                    # The key is declared twice; which list is meant is not readable.
+                    return ListRead(Shape.UNREAD, tuple(items))
+                seen_key = True
+                if tail.strip():
+                    unread = True
             continue
 
-        if in_key and line.lstrip().startswith("- "):
-            items.append(clean_yaml_scalar(line.lstrip()[2:]))
+        if not in_key:
+            continue
 
-    return items
+        stripped = line.lstrip()
+        indent = line[: len(line) - len(stripped)]
+
+        if "\t" in indent or not stripped.startswith("- "):
+            unread = True
+            continue
+
+        if item_indent is None:
+            item_indent = indent
+        elif indent != item_indent:
+            unread = True
+            continue
+
+        items.append(clean_yaml_scalar(stripped[2:]))
+
+    if not seen_key:
+        return ListRead(Shape.ABSENT)
+    if unread or item_indent is None:
+        return ListRead(Shape.UNREAD, tuple(items))
+    return ListRead(Shape.READ, tuple(items))
 
 
 def clean_yaml_scalar(value: str) -> str:

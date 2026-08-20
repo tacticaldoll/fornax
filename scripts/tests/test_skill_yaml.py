@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 from skill_yaml import (
+    Shape,
     clean_yaml_scalar,
     declares_key,
     declares_value,
@@ -87,23 +88,68 @@ class MappingTests(unittest.TestCase):
 
 class ListTests(unittest.TestCase):
     def test_a_block_list_reads_every_item_in_order(self) -> None:
+        read = get_yaml_list(MANIFEST, "triggers")
+
+        self.assertIs(read.shape, Shape.READ)
         self.assertEqual(
-            get_yaml_list(MANIFEST, "triggers"),
-            ["user asks for the example", "user asks for the other example"],
+            read.items,
+            ("user asks for the example", "user asks for the other example"),
         )
 
-    def test_an_absent_key_reads_as_no_items(self) -> None:
-        self.assertEqual(get_yaml_list(MANIFEST, "compatibility"), [])
+    def test_an_absent_key_is_absent_not_an_empty_list(self) -> None:
+        read = get_yaml_list(MANIFEST, "compatibility")
+
+        self.assertIs(read.shape, Shape.ABSENT)
+        self.assertEqual(read.items, ())
 
     def test_a_sibling_top_level_key_ends_the_list(self) -> None:
         text = "triggers:\n  - only item\nresources:\n  - not a trigger\n"
+        read = get_yaml_list(text, "triggers")
 
-        self.assertEqual(get_yaml_list(text, "triggers"), ["only item"])
+        self.assertIs(read.shape, Shape.READ)
+        self.assertEqual(read.items, ("only item",))
 
     def test_comments_and_blank_lines_are_skipped(self) -> None:
         text = "triggers:\n  # a comment\n\n  - only item\n"
+        read = get_yaml_list(text, "triggers")
 
-        self.assertEqual(get_yaml_list(text, "triggers"), ["only item"])
+        self.assertIs(read.shape, Shape.READ)
+        self.assertEqual(read.items, ("only item",))
+
+    def test_a_nested_mapping_is_unread_not_the_key_own_list(self) -> None:
+        """The defect this state exists for: a nested item satisfied "list of strings"."""
+        text = "triggers:\n  examples:\n    - phantom\n"
+        read = get_yaml_list(text, "triggers")
+
+        self.assertIs(read.shape, Shape.UNREAD)
+
+    def test_items_at_mixed_indentation_are_unread(self) -> None:
+        text = "triggers:\n  - two\n    - four\n"
+
+        self.assertIs(get_yaml_list(text, "triggers").shape, Shape.UNREAD)
+
+    def test_a_nested_list_after_a_real_item_does_not_join_it(self) -> None:
+        text = "triggers:\n  - real\n  nested:\n    - leaked\n"
+        read = get_yaml_list(text, "triggers")
+
+        self.assertIs(read.shape, Shape.UNREAD)
+        self.assertNotIn("leaked", read.items)
+
+    def test_a_same_line_scalar_is_not_a_list(self) -> None:
+        self.assertIs(get_yaml_list("triggers: one string\n", "triggers").shape, Shape.UNREAD)
+
+    def test_a_tab_indented_item_is_unread_because_yaml_forbids_tab_indentation(self) -> None:
+        self.assertIs(get_yaml_list("triggers:\n\t- tabbed\n", "triggers").shape, Shape.UNREAD)
+
+    def test_a_key_declared_twice_is_unread(self) -> None:
+        text = "triggers:\n  - first\ntriggers:\n  - second\n"
+
+        self.assertIs(get_yaml_list(text, "triggers").shape, Shape.UNREAD)
+
+    def test_an_empty_block_is_unread_rather_than_an_empty_list(self) -> None:
+        text = "triggers:\nentrypoint: SKILL.md\n"
+
+        self.assertIs(get_yaml_list(text, "triggers").shape, Shape.UNREAD)
 
 
 if __name__ == "__main__":
