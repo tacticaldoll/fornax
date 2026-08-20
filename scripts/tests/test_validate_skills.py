@@ -1182,7 +1182,7 @@ class InterfacePublisherTests(unittest.TestCase):
     mutation replacing the parameter with the literal passed the whole suite.
     """
 
-    def check(self, root: Path, publisher_id: str) -> tuple[bool, str]:
+    def check_publishers(self, root: Path, publisher_id: str) -> tuple[bool, str]:
         output = StringIO()
 
         with redirect_stdout(output):
@@ -1205,7 +1205,7 @@ class InterfacePublisherTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             self.write_sidecar(root, FOREIGN_PUBLISHER)
-            passed, output = self.check(root, PUBLISHER)
+            passed, output = self.check_publishers(root, PUBLISHER)
 
         self.assertFalse(passed)
         self.assertIn("publisher must match distribution.json", output)
@@ -1214,7 +1214,7 @@ class InterfacePublisherTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             self.write_sidecar(root, FOREIGN_PUBLISHER)
-            passed, output = self.check(root, FOREIGN_PUBLISHER)
+            passed, output = self.check_publishers(root, FOREIGN_PUBLISHER)
 
         self.assertTrue(passed, output)
 
@@ -1222,7 +1222,7 @@ class InterfacePublisherTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             self.write_sidecar(root, PUBLISHER)
-            passed, output = self.check(root, FOREIGN_PUBLISHER)
+            passed, output = self.check_publishers(root, FOREIGN_PUBLISHER)
 
         self.assertFalse(passed)
         self.assertIn("publisher must match distribution.json", output)
@@ -1236,7 +1236,9 @@ class InterfacePublisherTests(unittest.TestCase):
             output = StringIO()
             with redirect_stdout(output):
                 distribution = validate_skills.validate_distribution(root)
-            passed, sidecar_output = self.check(root / "skills", distribution.publisher_id)
+            passed, sidecar_output = self.check_publishers(
+                root / "skills", distribution.publisher_id
+            )
 
         self.assertTrue(distribution.passed, output.getvalue())
         self.assertEqual(distribution.publisher_id, FOREIGN_PUBLISHER)
