@@ -22,13 +22,17 @@ SKILL_MD = fixtures.skill_md(NAME)
 
 
 def check(skill_dir: Path, allow_template_placeholders: bool = False) -> tuple[bool, str]:
-    """Validate a skill, returning its result and whatever it printed."""
+    """Validate a skill, returning whether it *passed* and whatever it printed.
+
+    The checks report whether they failed; this seam inverts once so the assertions
+    below read as passed/failed without each restating the convention.
+    """
     output = StringIO()
 
     with redirect_stdout(output):
-        passed = validate_skills.validate_skill(skill_dir, allow_template_placeholders)
+        failed = validate_skills.validate_skill(skill_dir, allow_template_placeholders)
 
-    return passed, output.getvalue()
+    return not failed, output.getvalue()
 
 
 def check_skill(root: Path, **overrides: str) -> tuple[bool, str]:
@@ -1172,9 +1176,9 @@ class InterfacePublisherTests(unittest.TestCase):
         output = StringIO()
 
         with redirect_stdout(output):
-            passed = validate_skills.validate_interface_publishers(root, publisher_id)
+            failed = validate_skills.validate_interface_publishers(root, publisher_id)
 
-        return passed, output.getvalue()
+        return not failed, output.getvalue()
 
     def write_sidecar(self, root: Path, publisher: str) -> None:
         fixtures.write_skill(

@@ -6,6 +6,14 @@ the working directory, and the distribution and host-manifest checks read the
 working directory as the repository root — unlike skill_graph.py, which
 anchors itself to its own location.
 
+**Return convention.** Every check here returns whether it *failed*: True means at
+least one diagnostic was printed. Two of them used to return the opposite, so the
+`validate_` prefix carried both readings at once — and validate_skill returned a
+bare False for an early failure, the same literal its siblings use for "no failure".
+Every call site was correct, which is why closing the split was worth doing before a
+new check picked the wrong half. DistributionValidation stays a named result because
+it carries a second value, not to express this.
+
 Usage:
     .venv/bin/python scripts/validate_skills.py
     .venv/bin/python scripts/validate_skills.py --skills-path templates \
@@ -434,6 +442,7 @@ def validate_skill_document(
 
 
 def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
+    """Validate one skill folder, returning whether it failed."""
     name = skill_dir.name
     manifest_file = skill_dir / "skill.yaml"
     skill_file = skill_dir / "SKILL.md"
@@ -441,21 +450,21 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
 
     if not NAME_PATTERN.fullmatch(name):
         fail(name, "folder name must use lowercase letters, digits, and hyphens")
-        return False
+        return True
 
     if not skill_file.exists():
         fail(name, "missing SKILL.md")
-        return False
+        return True
 
     if not manifest_file.exists():
         fail(name, "missing skill.yaml")
-        return False
+        return True
 
     boundary = Boundary.at(skill_dir)
 
     manifest = read_skill_text(manifest_file, name, boundary)
     if manifest is None:
-        return False
+        return True
 
     manifest_failed, manifest_name, manifest_description = validate_skill_manifest(
         name, manifest, allow_template_placeholders, boundary
@@ -465,12 +474,12 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
 
     content = read_skill_text(skill_file, name, boundary)
     if content is None:
-        return False
+        return True
     frontmatter_match = FRONTMATTER_PATTERN.search(content)
 
     if not frontmatter_match:
         fail(name, "SKILL.md must start with YAML frontmatter")
-        return False
+        return True
 
     frontmatter = frontmatter_match.group(1)
     if validate_skill_document(
@@ -498,7 +507,7 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
         siblings, listing_error = child_directories(skill_dir.parent)
         if listing_error is not None:
             fail(name, f"sibling skills could not be listed: {listing_error}")
-            return False
+            return True
         known_skills = {sibling.name for sibling in siblings}
         markdown_files, markdown_failed = read_markdown_files(name, boundary)
         if markdown_failed:
@@ -513,11 +522,14 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
     if not skill_failed:
         print(printable(f"OK   {name}"))
 
-    return not skill_failed
+    return skill_failed
 
 
 def validate_interface_publishers(skills_path: Path, publisher_id: str) -> bool:
-    """Require this collection's sidecars to share its canonical publisher identity."""
+    """Require this collection's sidecars to share its canonical publisher identity.
+
+    Returns whether any sidecar failed, like every other check here.
+    """
     failed = False
     for sidecar in sorted(skills_path.glob(f"*/{INTERFACE_FILE}")):
         try:
@@ -527,7 +539,7 @@ def validate_interface_publishers(skills_path: Path, publisher_id: str) -> bool:
         if interface.publisher != publisher_id:
             fail(sidecar.parent.name, f"{INTERFACE_FILE} publisher must match distribution.json")
             failed = True
-    return not failed
+    return failed
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -563,10 +575,10 @@ def main(argv: list[str] | None = None) -> int:
     failed = not distribution.passed
 
     for skill_dir in skill_dirs:
-        if not validate_skill(skill_dir, args.allow_template_placeholders):
+        if validate_skill(skill_dir, args.allow_template_placeholders):
             failed = True
 
-    if distribution.publisher_id is not None and not validate_interface_publishers(
+    if distribution.publisher_id is not None and validate_interface_publishers(
         skills_path, distribution.publisher_id
     ):
         failed = True
