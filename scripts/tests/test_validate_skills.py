@@ -34,6 +34,88 @@ def check_skill(root: Path, **overrides: str) -> tuple[bool, str]:
     return check(fixtures.write_skill(root, NAME, **overrides))
 
 
+class SkillShapeTests(unittest.TestCase):
+    """The rules a skill folder must satisfy before any of its content is judged.
+
+    A mutation sweep found each guard below passing the suite when it was neutered:
+    the checks that read a manifest's values were fenced, the ones that decide the
+    folder is a skill at all were not.
+    """
+
+    def test_a_folder_name_that_is_not_hyphen_case_fails(self) -> None:
+        with TemporaryDirectory() as tmp:
+            skill_dir = fixtures.write_skill(Path(tmp), NAME)
+            renamed = skill_dir.parent / "Example_Skill"
+            skill_dir.rename(renamed)
+
+            passed, output = check(renamed)
+
+        self.assertFalse(passed)
+        self.assertIn("folder name must use lowercase letters, digits, and hyphens", output)
+
+    def test_a_folder_missing_either_required_file_fails(self) -> None:
+        cases = {"SKILL.md": "missing SKILL.md", "skill.yaml": "missing skill.yaml"}
+        for relative, message in cases.items():
+            with self.subTest(relative=relative), TemporaryDirectory() as tmp:
+                skill_dir = fixtures.write_skill(Path(tmp), NAME)
+                (skill_dir / relative).unlink()
+
+                passed, output = check(skill_dir)
+
+                self.assertFalse(passed)
+                self.assertIn(message, output)
+
+    def test_a_skill_document_without_frontmatter_fails(self) -> None:
+        with TemporaryDirectory() as tmp:
+            passed, output = check_skill(Path(tmp), skill_md_text="# no frontmatter\n")
+
+        self.assertFalse(passed)
+        self.assertIn("SKILL.md must start with YAML frontmatter", output)
+
+    def test_a_frontmatter_without_a_description_fails(self) -> None:
+        with TemporaryDirectory() as tmp:
+            passed, output = check_skill(
+                Path(tmp), skill_md_text=SKILL_MD.replace("description:", "summary:", 1)
+            )
+
+        self.assertFalse(passed)
+        self.assertIn("frontmatter missing description", output)
+
+    def test_a_name_that_disagrees_with_the_folder_or_its_sibling_fails(self) -> None:
+        cases = {
+            "manifest name": (
+                {"manifest_text": MANIFEST.replace(f"name: {NAME}", "name: other-skill", 1)},
+                f"skill.yaml name 'other-skill' must match folder name",
+            ),
+            "frontmatter name": (
+                {"skill_md_text": SKILL_MD.replace(f"name: {NAME}", "name: other-skill", 1)},
+                "SKILL.md frontmatter name 'other-skill' must match folder name",
+            ),
+        }
+        for label, (overrides, message) in cases.items():
+            with self.subTest(label=label), TemporaryDirectory() as tmp:
+                passed, output = check_skill(Path(tmp), **overrides)
+
+                self.assertFalse(passed)
+                self.assertIn(message, output)
+
+    def test_the_two_declared_names_must_agree_with_each_other(self) -> None:
+        # Under placeholder mode neither name is held to the folder, so this is the
+        # only rule left keeping the manifest and the document naming one skill.
+        with TemporaryDirectory() as tmp:
+            skill_dir = fixtures.write_skill(
+                Path(tmp),
+                NAME,
+                manifest_text=MANIFEST.replace(f"name: {NAME}", "name: one-skill", 1),
+                skill_md_text=SKILL_MD.replace(f"name: {NAME}", "name: other-skill", 1),
+            )
+
+            passed, output = check(skill_dir, allow_template_placeholders=True)
+
+        self.assertFalse(passed)
+        self.assertIn("skill.yaml name and SKILL.md frontmatter name must match", output)
+
+
 class ValidateSkillTests(unittest.TestCase):
     def test_invalid_utf8_inputs_fail_without_a_traceback(self) -> None:
         cases = ("skill.yaml", "SKILL.md", "references/guide.md")
@@ -680,6 +762,31 @@ class ValidateSkillTests(unittest.TestCase):
             )
 
         self.assertTrue(passed, output)
+
+    def test_a_producer_declaring_no_record_of_that_type_fails(self) -> None:
+        # The producer has a sidecar and it is valid; it just does not produce the
+        # record the Input line names. Neither of the neighbouring branches covered it.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_skill(
+                root,
+                "static-review",
+                interface_text=(
+                    f"publisher: {PUBLISHER}\nproduces:\n"
+                    f"  - {PUBLISHER}/disposition-record@1 text/markdown\n"
+                ),
+            )
+            text = SKILL_MD.replace(
+                "the thing this fixture consumes", "a `static-review` Review Record"
+            )
+            passed, output = check_skill(
+                root,
+                skill_md_text=text,
+                interface_text=f"publisher: {PUBLISHER}\nconsumes:\n  - {REVIEW_RECORD}\n",
+            )
+
+        self.assertFalse(passed)
+        self.assertIn("produces no review-record record", output)
 
     def test_explicit_record_input_rejects_multiple_majors_without_overlap(self) -> None:
         with TemporaryDirectory() as tmp:

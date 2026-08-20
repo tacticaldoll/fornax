@@ -77,6 +77,52 @@ class InterfaceParsing(unittest.TestCase):
                 with self.assertRaises(skill_interface.InterfaceError):
                     skill_interface.load(path)
 
+    def test_every_parser_rule_rejects_its_own_shape(self) -> None:
+        # A mutation sweep found each of these guards passing the suite when it was
+        # neutered: the record grammar was fenced, the document grammar was not.
+        cases = {
+            "list item with no list field": (
+                f"publisher: {PUBLISHER}\n  - {RECORD}\n",
+                "list item has no list field",
+            ),
+            "duplicate field": (
+                f"publisher: {PUBLISHER}\npublisher: {PUBLISHER}\nproduces:\n  - {RECORD}\n",
+                "duplicate publisher",
+            ),
+            "list field with a value": (
+                f"publisher: {PUBLISHER}\nproduces: {RECORD}\n",
+                "produces must be a block list",
+            ),
+            "empty publisher": (
+                f"publisher:\nproduces:\n  - {RECORD}\n",
+                "publisher must not be empty",
+            ),
+            "no record at all": (f"publisher: {PUBLISHER}\n", "declare at least one"),
+            "duplicate record": (
+                f"publisher: {PUBLISHER}\nproduces:\n  - {RECORD}\n  - {RECORD}\n",
+                "must not contain duplicates",
+            ),
+        }
+        for label, (text, message) in cases.items():
+            with self.subTest(label=label), TemporaryDirectory() as tmp:
+                path = Path(tmp) / skill_interface.INTERFACE_FILE
+                path.write_text(text, encoding="utf-8")
+
+                with self.assertRaisesRegex(skill_interface.InterfaceError, message):
+                    skill_interface.load(path)
+
+    def test_comments_and_blank_lines_are_skipped(self) -> None:
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / skill_interface.INTERFACE_FILE
+            path.write_text(
+                f"# a note\n\npublisher: {PUBLISHER}\nproduces:\n  # another\n  - {RECORD}\n",
+                encoding="utf-8",
+            )
+
+            interface = skill_interface.load(path, "producer")
+
+        self.assertEqual(str(interface.produces[0]), RECORD)
+
     def test_noncanonical_record_and_publisher_values_fail(self) -> None:
         cases = (
             declaration("produces", publisher=PUBLISHER.upper()),

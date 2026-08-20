@@ -90,6 +90,132 @@ class InvariantTests(unittest.TestCase):
         with self.assertRaisesRegex(development_knowns.KnownError, "calendar date"):
             load_text(text)
 
+    def test_comments_and_blank_lines_are_skipped(self) -> None:
+        text = ENTRY.replace("schema: 1\n", "# a note\n\nschema: 1\n")
+        self.assertNotEqual(text, ENTRY, "the fixture must actually change")
+
+        self.assertEqual(len(load_text(text)), 1)
+
+    def test_every_document_ordering_rule_is_enforced(self) -> None:
+        # Written out rather than edited from ENTRY: these are rules about where a
+        # line may appear, so the shape of the document is the fixture.
+        body = ENTRY.split("knowns:\n", 1)[1]
+        cases = {
+            "schema after knowns": (
+                f"schema: 1\nknowns:\n{body}schema: 1\n",
+                "schema must precede knowns",
+            ),
+            "knowns before schema": (f"knowns:\n{body}", "knowns must follow schema"),
+            "duplicate schema": (f"schema: 1\nschema: 1\nknowns:\n{body}", "duplicate schema"),
+            "duplicate knowns": (f"schema: 1\nknowns:\n{body}knowns:\n", "duplicate knowns"),
+            "knowns with a value": ("schema: 1\nknowns: one\n", "knowns must be a block list"),
+            "entry before knowns": (f"schema: 1\n{body}", "known entry appears before knowns"),
+            "field with no entry": (
+                "schema: 1\nknowns:\n    kind: constraint\n",
+                "known field has no entry",
+            ),
+            "missing knowns": ("schema: 1\n", "missing knowns"),
+        }
+        for label, (text, message) in cases.items():
+            with self.subTest(label=label):
+                with self.assertRaisesRegex(development_knowns.KnownError, message):
+                    load_text(text)
+
+    def test_a_list_field_given_a_same_line_value_is_refused(self) -> None:
+        text = ENTRY.replace("    evidence:\n", "    evidence: one thing\n")
+        self.assertNotEqual(text, ENTRY, "the fixture must actually change")
+
+        with self.assertRaisesRegex(development_knowns.KnownError, "must be a block list"):
+            load_text(text)
+
+    def test_every_treatment_refuses_the_work_states_it_cannot_carry(self) -> None:
+        cases = {
+            "remediate cannot be done": (
+                "treatment: remediate\n    repair: do the thing\n    work: done",
+                "remediate work cannot be done",
+            ),
+            "monitor authorizes nothing": (
+                "treatment: monitor\n    reconsider-when: the floor moves\n    work: backlog",
+                "monitor must not authorize work",
+            ),
+            "resolved work must be done": (
+                "treatment: resolved\n    verification: the gate fails without it\n"
+                "    work: backlog",
+                "resolved work must be done",
+            ),
+            "accept authorizes nothing": (
+                "treatment: accept\n    work: backlog",
+                "accept must not authorize work",
+            ),
+        }
+        for label, (replacement, message) in cases.items():
+            with self.subTest(label=label):
+                text = ENTRY.replace("treatment: accept", replacement)
+                self.assertNotEqual(text, ENTRY, "the fixture must actually change")
+
+                with self.assertRaisesRegex(development_knowns.KnownError, message):
+                    load_text(text)
+
+    def test_every_enumeration_and_shape_rejects_a_bad_value(self) -> None:
+        # A mutation sweep found each of these guards passing the suite when it was
+        # neutered: the treatment-specific invariants were fenced, the vocabularies
+        # and shapes they rest on were not.
+        cases = {
+            "schema value": ("schema: 1", "schema: 2", "schema must be 1"),
+            "id shape": (
+                "id: example-constraint",
+                "id: Example_Constraint",
+                "id must use lowercase hyphen-case",
+            ),
+            "kind vocabulary": ("kind: constraint", "kind: annoyance", "kind must be one of"),
+            "treatment vocabulary": (
+                "treatment: accept",
+                "treatment: ignore",
+                "treatment must be one of",
+            ),
+            "work vocabulary": (
+                "treatment: accept",
+                "treatment: remediate\n    repair: do the thing\n    work: someday",
+                "work must be one of",
+            ),
+            "date shape": ("updated: 2026-08-18", "updated: 18-08-2026", "updated must use"),
+            "missing required field": ("    kind: constraint\n", "", "missing kind"),
+            "empty evidence": (
+                "    evidence:\n      - python3.8 rejects list aliases in an assignment context.\n",
+                "    evidence:\n",
+                "evidence must contain at least one item",
+            ),
+        }
+        for label, (old, new, message) in cases.items():
+            with self.subTest(label=label):
+                text = ENTRY.replace(old, new)
+                self.assertNotEqual(text, ENTRY, "the fixture must actually change")
+
+                with self.assertRaisesRegex(development_knowns.KnownError, message):
+                    load_text(text)
+
+    def test_a_duplicate_field_and_a_stray_list_item_are_refused(self) -> None:
+        cases = {
+            "duplicate field": (
+                "    kind: constraint\n",
+                "    kind: constraint\n    kind: constraint\n",
+                "duplicate kind",
+            ),
+            "list item with no list field": (
+                "    rationale: The supported runtime rejects the proposed replacement.\n",
+                "    rationale: The supported runtime rejects the proposed replacement.\n"
+                "      - stray\n",
+                "list item has no list field",
+            ),
+        }
+        for label, (old, new, message) in cases.items():
+            with self.subTest(label=label):
+                text = ENTRY.replace(old, new)
+                self.assertNotEqual(text, ENTRY, "the fixture must actually change")
+
+                with self.assertRaisesRegex(development_knowns.KnownError, message):
+                    load_text(text)
+
     def test_remediate_requires_repair(self) -> None:
         text = ENTRY.replace("treatment: accept", "treatment: remediate")
 
