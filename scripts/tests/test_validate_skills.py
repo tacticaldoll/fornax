@@ -925,6 +925,16 @@ class ProjectedDescriptionTests(unittest.TestCase):
                 lambda data: data.__setitem__("skills_directory", "packs"),
                 "skills_directory must be skills",
             ),
+            # Belongs in this sweep now that the rule sits beside its siblings rather
+            # than inside the function scoped to host projections.
+            "description type": (
+                lambda data: data.__setitem__("description", 42),
+                "description must be a non-empty string",
+            ),
+            "description empty": (
+                lambda data: data.__setitem__("description", ""),
+                "description must be a non-empty string",
+            ),
         }
         for label, (mutate, message) in cases.items():
             with self.subTest(label=label), TemporaryDirectory() as tmp:

@@ -69,17 +69,18 @@ def described_paths(manifest: dict) -> list[tuple[str, str]]:
     return found
 
 
-def validate_projected_descriptions(root: Path, canonical: object) -> bool:
+def validate_projected_descriptions(root: Path, canonical: str) -> bool:
     """Require each host description to open with the canonical one.
 
     A prefix rather than an equality: a host may append to the canonical sentence
     — host-packaging.md calls these projections, and per-surface additions are
     legitimate — but may not replace it with a rewrite of its own.
-    """
-    if not isinstance(canonical, str) or not canonical:
-        print("FAIL distribution.json - description must be a non-empty string")
-        return True
 
+    The canonical value arrives already validated. Judging it here made the one
+    function scoped to projections the only place a distribution.json field defect
+    was reported, so a caller reading `FAIL distribution.json` was looking at the
+    projection loop for a rule that belongs beside name, version and publisher_id.
+    """
     failed = False
 
     for relative_path in HOST_DESCRIPTION_MANIFESTS:
@@ -120,6 +121,7 @@ def validate_distribution(root: Path) -> DistributionValidation:
     name = distribution.get("name")
     version = distribution.get("version")
     publisher_id = distribution.get("publisher_id")
+    description = distribution.get("description")
     skills_directory = distribution.get("skills_directory")
     if distribution.get("schema") != 1:
         print("FAIL distribution.json - schema must be 1")
@@ -129,6 +131,9 @@ def validate_distribution(root: Path) -> DistributionValidation:
         failed = True
     if not isinstance(version, str) or not VERSION_PATTERN.fullmatch(version):
         print("FAIL distribution.json - version must use semantic version format x.y.z")
+        failed = True
+    if not isinstance(description, str) or not description:
+        print("FAIL distribution.json - description must be a non-empty string")
         failed = True
     canonical_publisher: str | None = None
     if not isinstance(publisher_id, str):
@@ -167,8 +172,11 @@ def validate_distribution(root: Path) -> DistributionValidation:
             print(f"FAIL {relative_path} - version must match distribution.json")
             failed = True
 
-    if validate_projected_descriptions(root, distribution.get("description")):
-        failed = True
+    # Only when there is a canonical sentence to project. Without one the failure is
+    # already reported above, and every host would repeat it once more.
+    if isinstance(description, str) and description:
+        if validate_projected_descriptions(root, description):
+            failed = True
 
     if not failed:
         print(printable(f"OK   distribution {name} {version}"))
