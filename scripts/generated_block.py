@@ -87,7 +87,18 @@ def write(path: Path, text: str, root: Path) -> None:
 
 
 def span(text: str, markers: Markers) -> tuple[int, int]:
-    """The start/end offsets of the generated block, markers included."""
+    """The start/end offsets of the generated block, markers included.
+
+    Each marker must appear exactly once. A duplicated pair used to leave the
+    second copy untouched by --write and unnoticed by --check, which is the one
+    thing a generated block exists to prevent: it stayed stale in silence.
+    """
+    starts = text.count(markers.start)
+    ends = text.count(markers.end)
+    if not starts or not ends:
+        raise ValueError(f"{markers.name} markers not found")
+    if starts > 1 or ends > 1:
+        raise ValueError(f"{markers.name} markers must appear exactly once")
     start = text.index(markers.start)
     end = text.index(markers.end, start) + len(markers.end)
     return start, end
@@ -114,12 +125,23 @@ class Block:
 
         target = self.target
         shown = where(target, self.root)
+
+        # Rendered.text is documented as including its markers, and splicing a body
+        # that does not would delete them from the target — detectable only by the
+        # next --check, after the damage. A third consumer is foreseeable.
+        if not (
+            rendered.text.startswith(self.markers.start)
+            and rendered.text.endswith(self.markers.end)
+        ):
+            raise BlockError(f"{shown} - the rendered {self.label} is missing its own markers")
+
         current = read(target, self.root)
 
         try:
             start, end = span(current, self.markers)
-        except ValueError:
-            raise BlockError(f"{shown} - {self.markers.name} markers not found") from None
+        except ValueError as error:
+            reason = str(error) if str(error) else f"{self.markers.name} markers not found"
+            raise BlockError(f"{shown} - {reason}") from None
 
         if current[start:end] == rendered.text:
             detail = f" {rendered.detail}" if rendered.detail else ""

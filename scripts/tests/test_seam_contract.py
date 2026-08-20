@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from argparse import Namespace
 from contextlib import redirect_stdout
 from io import StringIO
 from pathlib import Path
@@ -201,6 +202,42 @@ class Staleness(unittest.TestCase):
 
             self.assertEqual(code, 0)
             self.assertIn("1 seam(s)", out)
+
+    def test_a_duplicated_marker_pair_fails_rather_than_leaving_one_stale(self):
+        # --write rewrote only the first pair and --check then passed, so the second
+        # copy stayed stale in silence — the one thing a generated block prevents.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_pair(root, "a `alpha-skill` Review Record.")
+            path = write_contract(root)
+            self.assertEqual(run(root, "--write")[0], 0)
+            body = path.read_text(encoding="utf-8")
+            block = body[body.index(seam_contract.MARKERS.start) :]
+            path.write_text(body + "\n" + block, encoding="utf-8")
+
+            for mode in ("--check", "--write"):
+                with self.subTest(mode=mode):
+                    code, out = run(root, mode)
+
+                    self.assertEqual(code, 1)
+                    self.assertIn("must appear exactly once", out)
+
+    def test_a_rendered_block_missing_its_markers_is_refused(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_pair(root, "a `alpha-skill` Review Record.")
+            write_contract(root)
+            block = generated_block.Block(
+                root, seam_contract.CONTRACT, seam_contract.MARKERS, "inventory"
+            )
+
+            with self.assertRaises(generated_block.BlockError) as raised:
+                block.sync(
+                    Namespace(write=True, check=False),
+                    generated_block.Rendered("no markers here"),
+                )
+
+        self.assertIn("missing its own markers", str(raised.exception))
 
     def test_missing_markers_fail(self):
         with TemporaryDirectory() as tmp:

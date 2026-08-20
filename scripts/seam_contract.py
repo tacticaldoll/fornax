@@ -30,7 +30,6 @@ from __future__ import annotations
 import argparse
 import re
 from pathlib import Path
-from typing import List, Tuple
 
 import generated_block
 from generated_block import BlockError, Markers, Rendered
@@ -57,8 +56,8 @@ OUTPUT_TEMPLATE = re.compile(
 HEADER_FIELD = re.compile(r"^\*\*([^*]+)\*\*\s*:", re.MULTILINE)
 SECTION = re.compile(r"^#{2,3} (.+)$", re.MULTILINE)
 
-RecordShape = List[Tuple[str, str]]
-Seam = Tuple[str, str, str, RecordShape]
+RecordShape = list[tuple[str, str]]
+Seam = tuple[str, str, str, RecordShape]
 
 
 class SeamError(BlockError):
