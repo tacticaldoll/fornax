@@ -1173,7 +1173,17 @@ class EntryPointTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             fixtures.write_distribution(root)
-            fixtures.write_skill(root / "skills", NAME)
+            # With a sidecar, so the publisher stage compares one rather than walking
+            # an empty glob — otherwise the name claims a stage this never exercises.
+            fixtures.write_skill(
+                root / "skills",
+                NAME,
+                interface_text=(
+                    f"publisher: {PUBLISHER}\n"
+                    "produces:\n"
+                    f"  - {PUBLISHER}/example-record@1 text/markdown\n"
+                ),
+            )
             code, output = self.run_main(root)
 
         self.assertEqual(code, 0, output)
@@ -1182,6 +1192,30 @@ class EntryPointTests(unittest.TestCase):
         # code passed whether or not the root was honoured, because cwd during a suite
         # run is a valid repository too.
         self.assertIn("OK   distribution fixture 1.2.3", output)
+
+    def test_a_mismatched_sidecar_publisher_fails_the_entry_point(self) -> None:
+        """Observes the publisher stage through main, not just past it.
+
+        The passing case above carries a matching sidecar so the stage does work, but
+        a matching one cannot show whether the stage ran: removing main's call to it
+        left the suite green. This case is what fails when the call goes.
+        """
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_distribution(root)
+            fixtures.write_skill(
+                root / "skills",
+                NAME,
+                interface_text=(
+                    f"publisher: {FOREIGN_PUBLISHER}\n"
+                    "produces:\n"
+                    f"  - {FOREIGN_PUBLISHER}/example-record@1 text/markdown\n"
+                ),
+            )
+            code, output = self.run_main(root)
+
+        self.assertEqual(code, 1)
+        self.assertIn("publisher must match distribution.json", output)
 
     def test_a_failure_is_reported_from_the_root_it_was_given(self) -> None:
         with TemporaryDirectory() as tmp:
