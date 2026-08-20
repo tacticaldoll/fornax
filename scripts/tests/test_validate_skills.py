@@ -360,6 +360,21 @@ class ValidateSkillTests(unittest.TestCase):
         self.assertNotIn(chr(13), output)
         self.assertIn("\\x1b[2Kquiet", output)
 
+    def test_a_crafted_manifest_cannot_reverse_the_report(self) -> None:
+        # An escape sequence rewrites a line; a right-to-left override reverses how the
+        # rest of it renders. Same class, different Unicode category, so it needs its
+        # own end-to-end guard.
+        forge = "SKILL.md" + chr(0x202E) + "dm.LLIKS ton"
+        with TemporaryDirectory() as tmp:
+            text = MANIFEST.replace("entrypoint: SKILL.md", f"entrypoint: {forge}")
+            skill_dir = fixtures.write_skill(Path(tmp), NAME, manifest_text=text)
+
+            passed, output = check(skill_dir)
+
+        self.assertFalse(passed)
+        self.assertNotIn(chr(0x202E), output)
+        self.assertIn("SKILL.md\\u202edm.LLIKS ton", output)
+
     def test_triggers_must_be_a_non_empty_list_of_strings(self) -> None:
         # The required-field check proved only that the key existed, so every shape
         # below satisfied it while the schema calls triggers a list of strings.
