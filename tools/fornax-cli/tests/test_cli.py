@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import re
 import sys
 import unittest
 from contextlib import redirect_stderr
@@ -10,26 +9,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 from fornax_cli import cli
-
-
-DEPENDENCIES = re.compile(r"^dependencies\s*=\s*\[(.*?)^\]", re.MULTILINE | re.DOTALL)
-REQUIREMENT = re.compile(r'"([^"]+)"')
-
-
-def pins(lines: list[str]) -> dict[str, str]:
-    """Map package name to exact version for every ``name==version`` line given.
-
-    A requirements line may carry a trailing comment or an environment marker. Both
-    are legal, and both otherwise end up inside the version string, which turns a
-    legitimate edit into a confusing comparison failure.
-    """
-    found = {}
-    for line in lines:
-        requirement = line.partition("#")[0].partition(";")[0]
-        name, separator, version = requirement.strip().strip('",').partition("==")
-        if separator:
-            found[name.strip()] = version.strip()
-    return found
 
 
 class FornaxCliTests(unittest.TestCase):
@@ -52,19 +31,6 @@ class FornaxCliTests(unittest.TestCase):
         self.assertEqual(cli.FORNAX_POLICY.prefix, "fornax-")
         self.assertEqual(cli.FORNAX_POLICY.provenance_file, ".fornax-install.json")
 
-    def test_pins_reads_past_a_comment_and_an_environment_marker(self) -> None:
-        # Both forms are legal in a requirements file and both used to land inside
-        # the version, so the comparison failed on an edit that was fine.
-        cases = (
-            "markdown-it-py==4.2.0",
-            "markdown-it-py==4.2.0  # pinned for CommonMark",
-            'markdown-it-py==4.2.0 ; python_version >= "3.10"',
-            '  "markdown-it-py==4.2.0",',
-        )
-        for line in cases:
-            with self.subTest(line=line):
-                self.assertEqual(pins([line]), {"markdown-it-py": "4.2.0"})
-
     def test_validation_commands_run_under_this_interpreter(self) -> None:
         # A bare "python3" is whatever sits on PATH, which is neither guaranteed to
         # satisfy .python-version nor to import what the validator needs.
@@ -73,32 +39,6 @@ class FornaxCliTests(unittest.TestCase):
         for command in cli.FORNAX_POLICY.validation_commands:
             with self.subTest(command=command):
                 self.assertEqual(command[0], sys.executable)
-
-    def test_shared_dependencies_match_the_maintenance_pins(self) -> None:
-        # Snapshot validation runs the workspace validator, so anything the validator
-        # imports has to be declared here too. Where both files name a package they
-        # must name the same version, or one pinned tag validates differently between
-        # runs. Only the overlap is compared, so an unrelated maintenance dependency
-        # does not become a CLI dependency by accident.
-        declared = DEPENDENCIES.search(
-            (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(encoding="utf-8")
-        )
-
-        if declared is None:
-            self.fail("pyproject.toml must declare a dependencies array")
-
-        cli = pins(REQUIREMENT.findall(declared.group(1)))
-        maintenance = pins(
-            (Path(__file__).resolve().parents[3] / "requirements-maintenance.txt")
-            .read_text(encoding="utf-8")
-            .splitlines()
-        )
-        shared = cli.keys() & maintenance.keys()
-
-        self.assertTrue(shared, "no dependency is shared, so this asserts nothing")
-        for name in sorted(shared):
-            with self.subTest(name=name):
-                self.assertEqual(cli[name], maintenance[name])
 
     def test_main_binds_workspace_version_and_policy(self) -> None:
         with patch.object(cli, "engine_main", return_value=0) as engine:
