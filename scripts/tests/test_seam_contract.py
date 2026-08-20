@@ -8,6 +8,7 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 import fixtures
+import generated_block
 import seam_contract
 
 PUBLISHER = "9d0f3c1a-7b2e-4e61-8d45-2a6f90c3b817"
@@ -79,7 +80,8 @@ def write_contract(root: Path, body: str | None = None) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
 
     if body is None:
-        body = f"{BEFORE}{seam_contract.START}\nstale\n{seam_contract.END}{AFTER}"
+        markers = seam_contract.MARKERS
+        body = f"{BEFORE}{markers.start}\nstale\n{markers.end}{AFTER}"
 
     path.write_text(body, encoding="utf-8")
     return path
@@ -95,12 +97,14 @@ def run(root: Path, *argv: str) -> tuple[int, str]:
 
 
 class SeamDiscovery(unittest.TestCase):
-    def test_invalid_utf8_is_a_seam_error(self):
+    def test_invalid_utf8_is_a_block_error(self):
+        # Reading is the shared protocol's job now, so its error type is too. SeamError
+        # stays a subclass for what is genuinely a fact about the corpus.
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / "SKILL.md"
             path.write_bytes(b"# invalid \xff\n")
 
-            with self.assertRaisesRegex(seam_contract.SeamError, "must use UTF-8"):
+            with self.assertRaisesRegex(generated_block.BlockError, "must use UTF-8"):
                 seam_contract.read(path)
 
     def test_render_uses_one_blank_line_between_seams(self):
@@ -110,7 +114,7 @@ class SeamDiscovery(unittest.TestCase):
                 ("beta-skill", "alpha-skill", "Review Record v1 (text/markdown)", shape),
                 ("gamma-skill", "alpha-skill", "Review Record v1 (text/markdown)", shape),
             ]
-        )
+        ).text
 
         self.assertNotIn("\n\n\n", block)
         self.assertIn("| `Source` | field |\n\n### `alpha-skill` → `gamma-skill`", block)

@@ -24,7 +24,8 @@ def build_repo(root: Path, readme_body: str | None = None) -> None:
         fixtures.write_skill(root / "skills", name, family=family, handoff=handoff)
 
     if readme_body is None:
-        readme_body = f"{BEFORE}{skill_graph.START}\nstale\n{skill_graph.END}{AFTER}"
+        markers = skill_graph.MARKERS
+        readme_body = f"{BEFORE}{markers.start}\nstale\n{markers.end}{AFTER}"
 
     (root / "README.md").write_text(readme_body, encoding="utf-8")
 
@@ -98,7 +99,7 @@ class CheckTests(unittest.TestCase):
             code, output = run(root, "--check")
 
         self.assertEqual(code, 1)
-        self.assertIn("skill maps are out of date", output)
+        self.assertIn("skill maps block is out of date", output)
         self.assertIn("--write", output)
 
     def test_check_fails_when_an_edge_is_removed_by_hand(self) -> None:
