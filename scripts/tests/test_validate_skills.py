@@ -339,6 +339,27 @@ class ValidateSkillTests(unittest.TestCase):
                 self.assertFalse(passed)
                 self.assertIn(expected, output)
 
+    def test_a_crafted_manifest_cannot_forge_the_report(self) -> None:
+        # An escape sequence in a value rewrote the line it sat in, so a skill folder
+        # could bend its own FAIL toward looking like a pass. Asserted end to end
+        # rather than per sink, so it holds whichever sink prints.
+        #
+        # The carriage return half of that attack never reaches the value: read_text
+        # uses universal newlines, so a lone CR becomes a line break and the value
+        # ends there. Only the escape sequence needed escaping. printable covers CR
+        # too, and test_diagnostic_text asserts that directly.
+        forge = f"{chr(27)}[2Kquiet{chr(13)}OK   all good"
+        with TemporaryDirectory() as tmp:
+            text = MANIFEST.replace("entrypoint: SKILL.md", f"entrypoint: {forge}")
+            skill_dir = fixtures.write_skill(Path(tmp), NAME, manifest_text=text)
+
+            passed, output = check(skill_dir)
+
+        self.assertFalse(passed)
+        self.assertNotIn(chr(27), output)
+        self.assertNotIn(chr(13), output)
+        self.assertIn("\\x1b[2Kquiet", output)
+
     def test_triggers_must_be_a_non_empty_list_of_strings(self) -> None:
         # The required-field check proved only that the key existed, so every shape
         # below satisfied it while the schema calls triggers a list of strings.

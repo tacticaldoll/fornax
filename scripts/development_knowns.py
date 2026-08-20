@@ -24,6 +24,7 @@ from datetime import date
 from pathlib import Path
 
 from constrained_yaml import raw_scalar
+from diagnostic_text import printable
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -244,7 +245,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         knowns = load(ROOT / REGISTRY)
     except KnownError as error:
-        print(f"FAIL {REGISTRY} - {error}")
+        print(printable(f"FAIL {REGISTRY} - {error}"))
         return 1
     if args.check:
         print(f"OK   {REGISTRY} ({len(knowns)} known(s))")
@@ -253,7 +254,7 @@ def main(argv: list[str] | None = None) -> int:
     matches = select(knowns, args.list)
     for known in matches:
         suffix = f" [{known.scalar('work')}]" if known.scalar("work") else ""
-        print(f"{known.scalar('id')}{suffix}: {known.scalar('statement')}")
+        print(printable(f"{known.scalar('id')}{suffix}: {known.scalar('statement')}"))
     return 0
 
 

@@ -14,6 +14,8 @@ import re
 import sys
 from pathlib import Path
 
+from diagnostic_text import printable
+
 
 ROOT = Path(__file__).resolve().parent.parent
 PYTHON_VERSION = re.compile(r"^(\d+)\.(\d+)$")
@@ -71,7 +73,7 @@ def check(root: Path, running: tuple[int, int] = sys.version_info[:2]) -> list[s
 def main() -> int:
     errors = check(ROOT)
     for error in errors:
-        print(f"FAIL runtime contract - {error}")
+        print(printable(f"FAIL runtime contract - {error}"))
     if errors:
         return 1
     print("OK   maintenance runtime contract")

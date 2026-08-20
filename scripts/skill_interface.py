@@ -27,6 +27,7 @@ from pathlib import Path
 from uuid import UUID
 
 from constrained_yaml import raw_scalar
+from diagnostic_text import printable
 
 
 INTERFACE_FILE = "skill-interface.yaml"
@@ -213,12 +214,12 @@ def main(argv: list[str] | None = None) -> int:
         errors.extend(found_errors)
     if errors:
         for error in errors:
-            print(f"FAIL {error}", file=sys.stderr)
+            print(printable(f"FAIL {error}"), file=sys.stderr)
         return 1
     if args.list:
         unique = {(item.skill, item.source): item for item in interfaces}
         for interface in sorted(unique.values(), key=lambda item: (item.skill, item.source)):
-            print(f"{interface.skill} ({interface.source})")
+            print(printable(f"{interface.skill} ({interface.source})"))
             for record in interface.produces:
                 print(f"  produces: {record}")
             for record in interface.consumes:
@@ -227,12 +228,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         record = RecordIdentity.parse(args.recommend)
     except InterfaceError as error:
-        print(f"FAIL {error}", file=sys.stderr)
+        print(printable(f"FAIL {error}"), file=sys.stderr)
         return 2
     unique = {(item.skill, item.source): item for item in interfaces}
     matches = recommend(record, list(unique.values()), tuple(args.prefer))
     if len(matches) == 1:
-        print(f"recommended: {matches[0].skill}")
+        print(printable(f"recommended: {matches[0].skill}"))
     elif matches:
         print(
             "candidates: "

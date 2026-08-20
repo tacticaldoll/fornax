@@ -27,6 +27,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
+from diagnostic_text import printable
+
 
 class BlockError(Exception):
     """A failure to report as `FAIL <file> - <reason>` rather than a traceback."""
@@ -121,7 +123,7 @@ class Block:
 
         if current[start:end] == rendered.text:
             detail = f" {rendered.detail}" if rendered.detail else ""
-            print(f"OK   {shown} {self.label}{detail}")
+            print(printable(f"OK   {shown} {self.label}{detail}"))
             return 0
 
         if args.check:
@@ -131,7 +133,7 @@ class Block:
             )
 
         write(target, current[:start] + rendered.text + current[end:], self.root)
-        print(f"OK   rewrote the {self.label} in {shown}")
+        print(printable(f"OK   rewrote the {self.label} in {shown}"))
         return 0
 
 
@@ -152,5 +154,5 @@ def dispatch(
     try:
         return run(args)
     except BlockError as error:
-        print(f"FAIL {error}")
+        print(printable(f"FAIL {error}"))
         return 1

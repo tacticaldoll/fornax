@@ -8,6 +8,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from diagnostic_text import printable
 from host_paths import is_absolute_anywhere
 from markdown_links import iter_markdown_links, local_target
 from path_boundary import Boundary, Verdict, resolve_within
@@ -93,14 +94,14 @@ def main() -> int:
     try:
         errors = check(workspace_files(ROOT), ROOT)
     except (OSError, subprocess.CalledProcessError) as error:
-        print(f"FAIL text hygiene - {error}")
+        print(printable(f"FAIL text hygiene - {error}"))
         return 1
     for error in errors:
         try:
             shown = error.path.relative_to(ROOT)
         except ValueError:
             shown = error.path
-        print(f"FAIL {shown}: {error.message}")
+        print(printable(f"FAIL {shown}: {error.message}"))
     if errors:
         return 1
     print("OK   workspace text hygiene and local Markdown links")

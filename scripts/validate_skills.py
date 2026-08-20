@@ -22,6 +22,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from uuid import UUID
 
+from diagnostic_text import printable
 from host_paths import has_parent_segment_anywhere, is_absolute_anywhere
 from markdown_links import iter_markdown_links, local_target
 from path_boundary import Boundary, Verdict, resolve_within
@@ -102,7 +103,7 @@ def validate_projected_descriptions(root: Path, canonical: object) -> bool:
         manifest, error = read_json_object(path)
         if error is not None:
             if relative_path not in HOST_VERSION_MANIFESTS:
-                print(f"FAIL {relative_path} - {error}")
+                print(printable(f"FAIL {relative_path} - {error}"))
                 failed = True
             continue
         assert manifest is not None
@@ -127,7 +128,7 @@ def validate_distribution(root: Path) -> DistributionValidation:
     distribution_file = root / "distribution.json"
     distribution, error = read_json_object(distribution_file)
     if error is not None:
-        print(f"FAIL distribution.json - {error}")
+        print(printable(f"FAIL distribution.json - {error}"))
         return DistributionValidation(False, None)
     assert distribution is not None
 
@@ -171,7 +172,7 @@ def validate_distribution(root: Path) -> DistributionValidation:
         path = root / relative_path
         manifest, error = read_json_object(path)
         if error is not None:
-            print(f"FAIL {relative_path} - {error}")
+            print(printable(f"FAIL {relative_path} - {error}"))
             failed = True
             continue
         assert manifest is not None
@@ -186,7 +187,7 @@ def validate_distribution(root: Path) -> DistributionValidation:
         failed = True
 
     if not failed:
-        print(f"OK   distribution {name} {version}")
+        print(printable(f"OK   distribution {name} {version}"))
     return DistributionValidation(not failed, canonical_publisher)
 
 
@@ -268,7 +269,7 @@ def clean_yaml_scalar(value: str) -> str:
 
 
 def fail(skill_name: str, message: str) -> None:
-    print(f"FAIL {skill_name} - {message}")
+    print(printable(f"FAIL {skill_name} - {message}"))
 
 
 def read_skill_text(path: Path, name: str, boundary: Boundary) -> str | None:
@@ -702,7 +703,7 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
             skill_failed = True
 
     if not skill_failed:
-        print(f"OK   {name}")
+        print(printable(f"OK   {name}"))
 
     return not skill_failed
 
@@ -739,7 +740,7 @@ def main() -> int:
     skills_path = Path(args.skills_path)
 
     if not skills_path.exists():
-        print(f"Skills directory not found: {skills_path}", file=sys.stderr)
+        print(printable(f"Skills directory not found: {skills_path}"), file=sys.stderr)
         return 1
 
     distribution = validate_distribution(Path.cwd())
