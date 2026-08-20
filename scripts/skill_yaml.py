@@ -43,6 +43,14 @@ class ListRead:
     items: tuple[str, ...] = ()
 
 
+@dataclass(frozen=True)
+class ScalarRead:
+    """The scalar a key declares, or why it was not read."""
+
+    shape: Shape
+    value: str | None = None
+
+
 def declares_key(text: str, key: str) -> bool:
     """Whether one key appears at all, for a key whose value is the block beneath it."""
     return bool(re.search(rf"^{re.escape(key)}[^\S\n]*:", text, re.MULTILINE))
@@ -71,11 +79,17 @@ def get_top_level_yaml_value(content: str, key: str) -> str | None:
     return clean_yaml_scalar(match.group(1))
 
 
-def get_yaml_mapping_value(content: str, parent_key: str, child_key: str) -> str | None:
-    lines = content.splitlines()
+def get_yaml_mapping_value(content: str, parent_key: str, child_key: str) -> ScalarRead:
+    """Read one child scalar under a parent key, or say the child holds a block.
+
+    A child declared with no same-line scalar is ``UNREAD``, not absent. Returning
+    an empty string for it let a caller's ``if value`` treat "declared as a nested
+    block" as "never declared", so a resources key naming nothing was skipped in
+    silence while the schema calls the value a relative path.
+    """
     in_parent = False
 
-    for line in lines:
+    for line in content.splitlines():
         if not line.strip() or line.lstrip().startswith("#"):
             continue
 
@@ -92,9 +106,12 @@ def get_yaml_mapping_value(content: str, parent_key: str, child_key: str) -> str
             key, value = stripped.split(":", 1)
 
             if key.strip() == child_key:
-                return clean_yaml_scalar(value)
+                scalar = clean_yaml_scalar(value)
+                if not scalar:
+                    return ScalarRead(Shape.UNREAD)
+                return ScalarRead(Shape.READ, scalar)
 
-    return None
+    return ScalarRead(Shape.ABSENT)
 
 
 def get_yaml_list(content: str, key: str) -> ListRead:

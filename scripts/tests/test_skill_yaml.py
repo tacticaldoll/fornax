@@ -72,18 +72,40 @@ class ScalarTests(unittest.TestCase):
 
 class MappingTests(unittest.TestCase):
     def test_a_child_scalar_reads_through_its_parent(self) -> None:
-        self.assertEqual(get_yaml_mapping_value(MANIFEST, "resources", "references"), "references/")
+        read = get_yaml_mapping_value(MANIFEST, "resources", "references")
 
-    def test_an_absent_child_reads_as_none(self) -> None:
-        self.assertIsNone(get_yaml_mapping_value(MANIFEST, "resources", "assets"))
+        self.assertIs(read.shape, Shape.READ)
+        self.assertEqual(read.value, "references/")
 
-    def test_an_absent_parent_reads_as_none(self) -> None:
-        self.assertIsNone(get_yaml_mapping_value(MANIFEST, "compatibility", "hosts"))
+    def test_an_absent_child_is_absent(self) -> None:
+        read = get_yaml_mapping_value(MANIFEST, "resources", "assets")
+
+        self.assertIs(read.shape, Shape.ABSENT)
+        self.assertIsNone(read.value)
+
+    def test_an_absent_parent_is_absent(self) -> None:
+        self.assertIs(
+            get_yaml_mapping_value(MANIFEST, "compatibility", "hosts").shape, Shape.ABSENT
+        )
 
     def test_a_sibling_top_level_key_ends_the_parent(self) -> None:
         text = "resources:\n  references: references/\nentrypoint: SKILL.md\n"
 
-        self.assertIsNone(get_yaml_mapping_value(text, "resources", "entrypoint"))
+        self.assertIs(get_yaml_mapping_value(text, "resources", "entrypoint").shape, Shape.ABSENT)
+
+    def test_a_child_holding_a_nested_block_is_unread_not_absent(self) -> None:
+        """The defect this state exists for: a resources key naming nothing was skipped."""
+        text = "resources:\n  scripts:\n    path: helpers\n"
+        read = get_yaml_mapping_value(text, "resources", "scripts")
+
+        self.assertIs(read.shape, Shape.UNREAD)
+        self.assertIsNone(read.value)
+
+    def test_a_child_with_an_empty_value_is_unread(self) -> None:
+        self.assertIs(
+            get_yaml_mapping_value("resources:\n  scripts:\n", "resources", "scripts").shape,
+            Shape.UNREAD,
+        )
 
 
 class ListTests(unittest.TestCase):

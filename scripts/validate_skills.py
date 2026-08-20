@@ -354,10 +354,15 @@ def validate_skill_manifest(
         failed = True
 
     for resource_key in ("scripts", "references", "assets"):
-        resource_path = get_yaml_mapping_value(manifest, "resources", resource_key)
+        # Declared without a same-line path is not the same as never declared, and
+        # reading the first as the second skipped a malformed key in silence.
+        resource = get_yaml_mapping_value(manifest, "resources", resource_key)
 
-        if resource_path and validate_manifest_path(
-            f"resources.{resource_key}", resource_path, name, boundary, expect_directory=True
+        if resource.shape is Shape.UNREAD:
+            fail(name, f"resources.{resource_key} must name a path")
+            failed = True
+        elif resource.value and validate_manifest_path(
+            f"resources.{resource_key}", resource.value, name, boundary, expect_directory=True
         ):
             failed = True
 

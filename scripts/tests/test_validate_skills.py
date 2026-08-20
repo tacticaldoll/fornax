@@ -318,6 +318,22 @@ class ValidateSkillTests(unittest.TestCase):
         self.assertFalse(passed)
         self.assertIn("resources.scripts must name a directory: SKILL.md", output)
 
+    def test_a_resource_key_declared_without_a_path_fails(self) -> None:
+        # Declared without a same-line path read as never declared, so the reader
+        # returned an empty string and the caller's `if value` skipped it in silence.
+        for label, block in {
+            "nested block": "resources:\n  scripts:\n    path: helpers\n",
+            "empty value": "resources:\n  scripts:\n",
+        }.items():
+            with self.subTest(label=label), TemporaryDirectory() as tmp:
+                text = MANIFEST + block
+                skill_dir = fixtures.write_skill(Path(tmp), NAME, manifest_text=text)
+
+                passed, output = check(skill_dir)
+
+                self.assertFalse(passed)
+                self.assertIn("resources.scripts must name a path", output)
+
     def test_a_manifest_path_naming_nothing_is_reported_for_either_field(self) -> None:
         # The absent branch of the shared check, which neither field covered before.
         cases = {
