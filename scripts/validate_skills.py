@@ -2,9 +2,10 @@
 """Validate portable skill folders.
 
 Run from the repository root. `--skills-path` defaults to `skills` relative to
-the working directory, and the distribution and host-manifest checks read the
-working directory as the repository root — unlike skill_graph.py, which
-anchors itself to its own location.
+the working directory, and the distribution and host-manifest checks default to
+reading the working directory as the repository root — unlike skill_graph.py, which
+anchors itself to its own location. `main` accepts that root explicitly so the whole
+function is reachable without depending on where the process stands.
 
 **Return convention.** Every check here returns whether it *failed*: True means at
 least one diagnostic was printed. Two of them used to return the opposite, so the
@@ -555,7 +556,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, root: Path | None = None) -> int:
+    """Validate one skills directory against one repository root.
+
+    The root is a parameter because the argv seam alone left everything past the
+    distribution check unreachable: it read Path.cwd(), so a test could only
+    exercise the paths that return before it, and one that got further would
+    validate whatever repository the process happened to be standing in.
+    """
     args = parse_args(argv)
     skills_path = Path(args.skills_path)
 
@@ -571,7 +579,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    distribution = validate_distribution(Path.cwd())
+    distribution = validate_distribution(root if root is not None else Path.cwd())
     failed = not distribution.passed
 
     for skill_dir in skill_dirs:

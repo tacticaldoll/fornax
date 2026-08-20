@@ -1120,10 +1120,45 @@ class DirectoryListingTests(unittest.TestCase):
             not_a_directory.write_text("not a directory\n", encoding="utf-8")
             error = StringIO()
             with redirect_stderr(error):
-                code = validate_skills.main(["--skills-path", str(not_a_directory)])
+                code = validate_skills.main(
+                    ["--skills-path", str(not_a_directory)], root=Path(tmp)
+                )
 
         self.assertEqual(code, 1)
         self.assertIn("Skills directory could not be read", error.getvalue())
+
+    def test_a_well_formed_workspace_passes_through_the_whole_entry_point(self) -> None:
+        """The half the argv seam alone could not reach: everything past the guard.
+
+        Without an explicit root this validated whatever repository the process
+        happened to stand in, so only the early-return paths were testable.
+        """
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_distribution(root)
+            fixtures.write_skill(root / "skills", NAME)
+            output = StringIO()
+            with redirect_stdout(output):
+                code = validate_skills.main(["--skills-path", str(root / "skills")], root=root)
+
+        self.assertEqual(code, 0, output.getvalue())
+        self.assertIn("Skill validation passed.", output.getvalue())
+        # Names the fixture collection, not this repository's. Asserting only the
+        # exit code passed whether or not the root was honoured, because cwd during
+        # a suite run is a valid repository too.
+        self.assertIn("OK   distribution fixture 1.2.3", output.getvalue())
+
+    def test_the_entry_point_reports_a_failure_from_the_root_it_was_given(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_distribution(root, version="not-a-version")
+            fixtures.write_skill(root / "skills", NAME)
+            output = StringIO()
+            with redirect_stdout(output):
+                code = validate_skills.main(["--skills-path", str(root / "skills")], root=root)
+
+        self.assertEqual(code, 1)
+        self.assertIn("version must use semantic version format", output.getvalue())
 
     def test_an_unlistable_sibling_directory_is_reported_against_the_skill(self) -> None:
         with TemporaryDirectory() as tmp:
