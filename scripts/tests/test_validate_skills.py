@@ -790,6 +790,61 @@ class ProjectedDescriptionTests(unittest.TestCase):
         mutate(data)
         path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
+    def test_every_canonical_field_rule_rejects_a_bad_value(self) -> None:
+        # A mutation sweep found each of these guards passing the suite when it was
+        # neutered: the rules that keep distribution.json well formed had no fixture.
+        cases = {
+            "schema": (lambda data: data.__setitem__("schema", 2), "schema must be 1"),
+            "name": (
+                lambda data: data.__setitem__("name", "Fixture Collection"),
+                "name must use lowercase hyphen-case",
+            ),
+            "version": (
+                lambda data: data.__setitem__("version", "1.2"),
+                "version must use semantic version format",
+            ),
+            "publisher case": (
+                lambda data: data.__setitem__(
+                    "publisher_id", "9D0F3C1A-7B2E-4E61-8D45-2A6F90C3B817"
+                ),
+                "publisher_id must use canonical lowercase UUID form",
+            ),
+            "skills directory": (
+                lambda data: data.__setitem__("skills_directory", "packs"),
+                "skills_directory must be skills",
+            ),
+        }
+        for label, (mutate, message) in cases.items():
+            with self.subTest(label=label), TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                fixtures.write_distribution(root)
+                self.edit(root / "distribution.json", mutate)
+
+                passed, output = self.check_distribution(root)
+
+                self.assertFalse(passed)
+                self.assertIn(message, output)
+
+    def test_a_host_projection_that_disagrees_on_name_or_version_fails(self) -> None:
+        # The projections are what a host installs; agreement with the canonical
+        # manifest is the release contract, and neither half was fenced.
+        cases = {
+            "name": ("name", "renamed", "name must match distribution.json"),
+            "version": ("version", "9.9.9", "version must match distribution.json"),
+        }
+        for label, (field, value, message) in cases.items():
+            for relative in validate_skills.HOST_VERSION_MANIFESTS:
+                with self.subTest(label=label, relative=relative), TemporaryDirectory() as tmp:
+                    root = Path(tmp)
+                    fixtures.write_distribution(root)
+                    self.edit(root / relative, lambda data: data.__setitem__(field, value))
+
+                    passed, output = self.check_distribution(root)
+
+                    self.assertFalse(passed)
+                    self.assertIn(relative, output)
+                    self.assertIn(message, output)
+
     def test_invalid_utf8_distribution_inputs_fail_without_a_traceback(self) -> None:
         cases = (
             "distribution.json",
