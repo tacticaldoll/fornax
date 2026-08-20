@@ -202,6 +202,12 @@ class ListTests(unittest.TestCase):
         self.assertIs(read.shape, Shape.READ)
         self.assertEqual(read.items, ("a very long trigger that continues on the next line",))
 
+    def test_a_continuation_that_opens_a_mapping_is_unread(self) -> None:
+        """A plain scalar may not hold ": " on any line, so this is not a continuation."""
+        text = "triggers:\n  - a very long trigger\n    including: dates\n"
+
+        self.assertIs(get_yaml_list(text, "triggers").shape, Shape.UNREAD)
+
     def test_an_item_that_is_a_mapping_is_unread(self) -> None:
         """The schema calls triggers a list of strings, and `- name: x` is a mapping."""
         for text in (

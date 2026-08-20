@@ -210,8 +210,14 @@ def get_yaml_list(content: str, key: str) -> ListRead:
         # Not an item. Indented past the items, YAML folds this into the preceding
         # plain scalar, so refusing it would reject an ordinary multi-line trigger.
         # At or above their indentation it is a nested structure instead, and the
-        # key declares no list of its own.
-        if item_indent is not None and items and len(indent) > len(item_indent):
+        # key declares no list of its own. A plain scalar may not hold ": " on any
+        # of its lines, so a continuation that opens a mapping is not one.
+        if (
+            item_indent is not None
+            and items
+            and len(indent) > len(item_indent)
+            and not _declares_mapping(stripped)
+        ):
             items[-1] = f"{items[-1]} {clean_yaml_scalar(stripped)}"
             continue
 
