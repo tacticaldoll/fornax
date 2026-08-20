@@ -210,6 +210,30 @@ class TextHygiene(unittest.TestCase):
         self.assertEqual(len(errors), 1)
         self.assertIn("could not be resolved", errors[0].message)
 
+    def test_a_non_markdown_file_is_checked_for_a_newline_but_not_for_links(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            document = root / "notes.txt"
+            document.write_text("See [missing](gone.md).\n", encoding="utf-8")
+
+            self.assertEqual(check(document), [])
+
+    def test_an_empty_file_is_not_missing_a_newline(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            empty = root / "empty.md"
+            empty.write_bytes(b"")
+
+            self.assertEqual(check(empty), [])
+
+    def test_a_directory_in_the_file_list_is_skipped(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            folder = root / "references"
+            folder.mkdir()
+
+            self.assertEqual(check(folder), [])
+
     def test_a_markdown_file_holding_a_nul_is_reported_not_skipped(self) -> None:
         # Skipping it in silence hid every link in the file, while invalid UTF-8 in
         # the same position was reported.

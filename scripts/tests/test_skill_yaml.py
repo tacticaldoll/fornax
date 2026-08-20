@@ -229,6 +229,31 @@ class ListTests(unittest.TestCase):
                 self.assertEqual(read.items, (expected,))
 
 
+class MappingReaderShapeTests(unittest.TestCase):
+    """Shapes the mapping reader steps over rather than misreading."""
+
+    def test_comments_and_blank_lines_under_the_parent_are_skipped(self) -> None:
+        text = "resources:\n  # a note\n\n  scripts: helpers/\n"
+        read = get_yaml_mapping_value(text, "resources", "scripts")
+
+        self.assertIs(read.shape, Shape.READ)
+        self.assertEqual(read.value, "helpers/")
+
+    def test_an_indented_line_without_a_colon_is_not_a_child(self) -> None:
+        text = "resources:\n  stray\n  scripts: helpers/\n"
+        read = get_yaml_mapping_value(text, "resources", "scripts")
+
+        self.assertIs(read.shape, Shape.READ)
+        self.assertEqual(read.value, "helpers/")
+
+    def test_a_key_carrying_both_a_scalar_and_items_is_unread(self) -> None:
+        # Without the same-line check the items alone would read as the key's list,
+        # so a document YAML rejects would come back as a value.
+        self.assertIs(
+            get_yaml_list("triggers: scalar\n  - a\n", "triggers").shape, Shape.UNREAD
+        )
+
+
 class ReaderContractTests(unittest.TestCase):
     """One assertion per reader that it does not substitute a reading of its own."""
 
