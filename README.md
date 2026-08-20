@@ -215,7 +215,7 @@ CLI command:
 
 ```sh
 pipx run \
-  --spec "git+https://github.com/tacticaldoll/fornax.git@v0.3.1#subdirectory=tools/fornax-cli" \
+  --spec "git+https://github.com/tacticaldoll/fornax.git@v0.4.0#subdirectory=tools/fornax-cli" \
   fornax deploy --all
 ```
 
