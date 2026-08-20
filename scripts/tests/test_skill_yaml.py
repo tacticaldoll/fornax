@@ -120,6 +120,13 @@ class MappingTests(unittest.TestCase):
             Shape.UNREAD,
         )
 
+    def test_a_child_declared_twice_is_unread_as_the_list_reader_answers_it(self) -> None:
+        text = "resources:\n  scripts: first/\n  scripts: second/\n"
+        read = get_yaml_mapping_value(text, "resources", "scripts")
+
+        self.assertIs(read.shape, Shape.UNREAD)
+        self.assertIsNone(read.value)
+
 
 class ListTests(unittest.TestCase):
     def test_a_block_list_reads_every_item_in_order(self) -> None:
@@ -185,6 +192,35 @@ class ListTests(unittest.TestCase):
         text = "triggers:\nentrypoint: SKILL.md\n"
 
         self.assertIs(get_yaml_list(text, "triggers").shape, Shape.UNREAD)
+
+    def test_a_continuation_line_folds_into_its_item(self) -> None:
+        """A multi-line plain scalar is ordinary YAML; refusing it would reject a
+        manifest the ecosystem accepts."""
+        text = "triggers:\n  - a very long trigger that\n    continues on the next line\n"
+        read = get_yaml_list(text, "triggers")
+
+        self.assertIs(read.shape, Shape.READ)
+        self.assertEqual(read.items, ("a very long trigger that continues on the next line",))
+
+    def test_an_item_that_is_a_mapping_is_unread(self) -> None:
+        """The schema calls triggers a list of strings, and `- name: x` is a mapping."""
+        for text in (
+            "triggers:\n  - name: x\n  - name: y\n",
+            "triggers:\n  - trailing:\n",
+        ):
+            with self.subTest(text=text):
+                self.assertIs(get_yaml_list(text, "triggers").shape, Shape.UNREAD)
+
+    def test_a_colon_that_does_not_open_a_mapping_keeps_the_item_a_string(self) -> None:
+        for text, expected in (
+            ("triggers:\n  - user asks for a 1:1 summary\n", "user asks for a 1:1 summary"),
+            ('triggers:\n  - "user asks: summarize"\n', "user asks: summarize"),
+        ):
+            with self.subTest(text=text):
+                read = get_yaml_list(text, "triggers")
+
+                self.assertIs(read.shape, Shape.READ)
+                self.assertEqual(read.items, (expected,))
 
 
 class ReaderContractTests(unittest.TestCase):

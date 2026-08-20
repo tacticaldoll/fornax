@@ -105,6 +105,7 @@ def get_yaml_mapping_value(content: str, parent_key: str, child_key: str) -> Sca
     silence while the schema calls the value a relative path.
     """
     in_parent = False
+    found: ScalarRead | None = None
 
     for line in content.splitlines():
         if not line.strip() or line.lstrip().startswith("#"):
@@ -123,12 +124,30 @@ def get_yaml_mapping_value(content: str, parent_key: str, child_key: str) -> Sca
             key, value = stripped.split(":", 1)
 
             if key.strip() == child_key:
-                scalar = clean_yaml_scalar(value)
-                if not scalar:
+                if found is not None:
+                    # Declared twice under one parent; which value is meant is not
+                    # readable. The list reader answers a repeated key the same way.
                     return ScalarRead(Shape.UNREAD)
-                return ScalarRead(Shape.READ, scalar)
+                scalar = clean_yaml_scalar(value)
+                found = ScalarRead(Shape.READ, scalar) if scalar else ScalarRead(Shape.UNREAD)
 
-    return ScalarRead(Shape.ABSENT)
+    if found is None:
+        return ScalarRead(Shape.ABSENT)
+
+    return found
+
+
+def _declares_mapping(item: str) -> bool:
+    """Whether a list item's own text makes it a mapping rather than a string.
+
+    ``- name: x`` is a mapping in YAML while the schema calls triggers a list of
+    strings, so the item is a shape this reader declines. A colon not followed by
+    space or end of line keeps a plain scalar plain — ``1:1`` is text — and a
+    quoted item is a scalar however many colons it holds.
+    """
+    if item[:1] in "'\"":
+        return False
+    return bool(re.search(r":(\s|$)", item))
 
 
 def get_yaml_list(content: str, key: str) -> ListRead:
@@ -171,17 +190,32 @@ def get_yaml_list(content: str, key: str) -> ListRead:
         stripped = line.lstrip()
         indent = line[: len(line) - len(stripped)]
 
-        if "\t" in indent or not stripped.startswith("- "):
+        if "\t" in indent:
             unread = True
             continue
 
-        if item_indent is None:
-            item_indent = indent
-        elif indent != item_indent:
-            unread = True
+        if stripped.startswith("- "):
+            if item_indent is None:
+                item_indent = indent
+            elif indent != item_indent:
+                unread = True
+                continue
+            item = stripped[2:].strip()
+            if _declares_mapping(item):
+                unread = True
+                continue
+            items.append(clean_yaml_scalar(item))
             continue
 
-        items.append(clean_yaml_scalar(stripped[2:]))
+        # Not an item. Indented past the items, YAML folds this into the preceding
+        # plain scalar, so refusing it would reject an ordinary multi-line trigger.
+        # At or above their indentation it is a nested structure instead, and the
+        # key declares no list of its own.
+        if item_indent is not None and items and len(indent) > len(item_indent):
+            items[-1] = f"{items[-1]} {clean_yaml_scalar(stripped)}"
+            continue
+
+        unread = True
 
     if not seen_key:
         return ListRead(Shape.ABSENT)
