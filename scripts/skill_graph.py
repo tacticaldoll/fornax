@@ -69,11 +69,11 @@ def load(skills_dir: Path):
             # FAMILIES, so anything else dropped it from every chart and still exited
             # 0 — the one outcome a generated block exists to prevent, and invisible
             # to `--check` because the committed block agreed about the absence.
-            states = (
+            declaration = (
                 "declares no readable family" if declared is None else f"declares {declared!r}"
             )
             raise BlockError(
-                f"skills/{name}/skill.yaml - family must be {listed(FAMILIES)}; {states}"
+                f"skills/{name}/skill.yaml - family must be {listed(FAMILIES)}; {declaration}"
             )
         family[name] = declared
 
