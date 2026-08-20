@@ -464,6 +464,15 @@ Prefer lightweight tests that match the risk of the change.
   `work` state. After review, triage, spike, test, or experiment verifies such a condition, suggest a
   project-centered registry update automatically, but do not write it or execute its repair without
   explicit user authorization. See `docs/development-knowns.md`.
+- **Read a dated evidence log by its headings, never by grep alone.** An evidence file records what
+  was true at a revision, so a count, a verdict, or a standing claim is quotable only together with
+  the dated section it sits under. The last section in such a file is the oldest kept, not the
+  current one. A sentence written in the present tense inside a superseded section is still
+  superseded — the section heading governs, not the grammar. This is what "evidence, not the project
+  statement" means in practice: a superseded blocker was quoted from
+  `scripts/tests/scenarios/triage-findings/README.md` as live, and reached a review verdict, a
+  triage cause, and a registry entry before anyone checked which heading it lived under. When you
+  supersede a claim, mark it where it is written, not only in the heading above it.
 - Regenerate the README skill maps with `.venv/bin/python scripts/skill_graph.py --write` after changing a
   skill's `family` or its handoff targets; `--check` fails when the committed block is stale.
 - Regenerate the record inventory with `.venv/bin/python scripts/seam_contract.py --write` after changing the
@@ -511,6 +520,14 @@ Keep scripts deterministic, portable, and easy to audit.
 - Use the Python standard library by default. A maintenance dependency is allowed only when it
   materially reduces complexity; pin it and every transitive dependency in
   `requirements-maintenance.txt`, and keep CI and the local hook on that same environment.
+- **When a module takes ownership of a behaviour, enumerate every existing implementation of it.**
+  Extracting a shared owner is only half the change; the other half is finding the copies it now
+  answers for and either routing them through it or recording why one stays outside. `skill_model.py`
+  does this for `NAME_PATTERN` — it names the three spellings the repository uses and says that
+  unifying them changes what validates, so the divergence is a decision rather than a cleanup. Every
+  participant left outside a new owner without that record has been a defect: a private manifest
+  reader in `skill_graph.py`, an unguarded directory listing in `validate_skills.py`, and two return
+  polarities under one `validate_` prefix.
 - Use another scripting language only when the host toolchain requires it or the user explicitly
   asks for it.
 - Document script dependencies near the script or in the skill's `SKILL.md`.

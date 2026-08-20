@@ -281,6 +281,13 @@ numbers that must then be discarded; the harness limitation below is unchanged.
 
 ## Superseded evidence (2026-08-14)
 
+**Every claim in this section was closed on 2026-08-17.** It is kept for the reasoning, not for its
+counts, and it is last in the file only because it is oldest — not because it is current. Nothing
+here states live project state; the closures are in `Controlled evidence (2026-08-17)` and
+`Earlier guided-only evidence (2026-08-17)` above. Quote a count from this file only together with
+the dated heading it sits under.
+
+
 Both tables below scored three Record integrity mismatches. The fixture plants a **fourth** — `Calibration:
 Gates 1-7` against a Gate Index recording gates 6 and 7 as never opened — which no run was ever
 scored on and which had no check row until the audit table gained one. Treat every integrity count
@@ -297,7 +304,8 @@ responses identify `undetermined` and then duplicate the same prior finding into
 of scope, or Recurring. A likelier cause was naming: `undetermined` had no section of its own and was
 filed under `Out of scope this round`, a title asserting the very membership that is undetermined.
 Prior scope resolution's four slots now map one-to-one onto four sections, `Undetermined` among them.
-Untested at that revision. The clean control and one-slot lifecycle behavior remain release blockers.
+Untested at that revision. Both were then closed on 2026-08-17: the control arm ran in a clean
+workspace outside any checkout, and one-slot lifecycle measured 5/5.
 
 A follow-up prototype replaced the three lifecycle sections with one mandatory Prior lifecycle
 ledger. In five focused fresh-context runs, 0/5 produced the ledger from the current and prior
@@ -308,5 +316,10 @@ does not control the behavior.
 Two candidate wording hardenings were then tested and rejected rather than committed. Their best
 five-response result was 4/5 for the Kind gap and complete integrity audit, while prior membership
 remained `undetermined` in 0/5 responses. Adding more prose had stopped changing the controlling
-behavior. A no-guidance control has not been run because this workspace exposes the skill to every
-available subagent. These two facts are release blockers, not skipped checks.
+behavior. A no-guidance control had not been run at that revision, because this workspace exposes
+the skill to every available subagent.
+
+Both were release blockers when written and **both closed on 2026-08-17**. The control ran with both
+arms in clean workspaces outside any Fornax checkout, and `undetermined` measures 5/5 there — the
+0/5 above belongs to the two rejected wording candidates, not to the committed skill. Neither is
+open, and neither gated any release.
