@@ -174,4 +174,18 @@ def get_yaml_list(content: str, key: str) -> ListRead:
 
 
 def clean_yaml_scalar(value: str) -> str:
-    return value.strip().strip("'").strip('"')
+    """One scalar with surrounding space and at most one matched quote pair removed.
+
+    Trimming quote *characters* could not tell a quoted scalar from a plain one that
+    happens to end in a quote, so ``Use when the user asks "why"`` came back without
+    its closing quote, and mismatched or repeated quotes came back as though they had
+    been paired. Exactly one matched pair is removed; anything else is returned as
+    declared, so a malformed manifest fails on its own content rather than on this
+    reader's guess about it.
+    """
+    scalar = value.strip()
+
+    if len(scalar) >= 2 and scalar[0] in "'\"" and scalar[-1] == scalar[0]:
+        return scalar[1:-1]
+
+    return scalar

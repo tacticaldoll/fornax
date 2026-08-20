@@ -65,6 +65,19 @@ class ScalarTests(unittest.TestCase):
             ("'quoted'", "quoted"),
             ("  spaced  ", "spaced"),
             ("plain", "plain"),
+            ('""', ""),
+        ):
+            with self.subTest(value=value):
+                self.assertEqual(clean_yaml_scalar(value), expected)
+
+    def test_only_one_pair_is_removed_and_only_when_it_matches(self) -> None:
+        """Trimming characters lost the closing quote of a plain scalar that ends in one."""
+        for value, expected in (
+            ('Use when the user asks "why"', 'Use when the user asks "why"'),
+            ("\"mismatched'", "\"mismatched'"),
+            ("''''value''''", "'''value'''"),
+            ('He said "go" now', 'He said "go" now'),
+            ('"', '"'),
         ):
             with self.subTest(value=value):
                 self.assertEqual(clean_yaml_scalar(value), expected)
