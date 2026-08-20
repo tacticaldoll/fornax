@@ -6,6 +6,13 @@ the README skill maps present them, mapped to their display titles — so a fami
 cannot be added without also giving it a title. `STATUSES` is the single
 definition of the allowed `status` values, in lifecycle order.
 
+`NAME_PATTERN` is the shape a skill folder and the collection both take. Note that
+the repository spells this rule three ways — `^[a-z0-9-]+$` here,
+`^[a-z0-9]+(?:-[a-z0-9]+)*$` in development_knowns.py, and the same inline in
+skill_interface.py's record pattern — and the first admits a leading, trailing or
+doubled hyphen that the others reject. Unifying them changes what validates, so it is
+a decision, not a cleanup.
+
 `HANDOFF` is the single definition of how a skill writes a handoff, so the
 validator and the map generator agree on what counts as one. Cross-skill record
 interfaces are structural declarations read by ``skill_interface.py``, not prose
@@ -20,6 +27,8 @@ sibling scripts in this directory. Standard library only.
 from __future__ import annotations
 
 import re
+
+NAME_PATTERN = re.compile(r"^[a-z0-9-]+$")
 
 HANDOFF = re.compile(
     r"\b(?:hand off to|handoff to|point to|route to)\s+`([a-z0-9-]+)`",

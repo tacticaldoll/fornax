@@ -27,10 +27,9 @@ from host_paths import has_parent_segment_anywhere, is_absolute_anywhere
 from markdown_links import iter_markdown_links, local_target
 from path_boundary import Boundary, Verdict, resolve_within
 from skill_interface import INTERFACE_FILE, InterfaceError, load as load_interface
-from skill_model import FAMILIES, HANDOFF, STATUSES, listed
+from skill_model import FAMILIES, HANDOFF, NAME_PATTERN, STATUSES, listed
 
 
-NAME_PATTERN = re.compile(r"^[a-z0-9-]+$")
 VERSION_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
 FRONTMATTER_PATTERN = re.compile(r"^---\s*\r?\n(.*?)\r?\n---", re.DOTALL)
 INPUT_LINE_PATTERN = re.compile(r"^\*\*Input\*\*[^\S\n]*:[^\S\n]*([^\n]+)$", re.MULTILINE)
