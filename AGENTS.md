@@ -206,6 +206,12 @@ least one representative command or document why it could not be run.
 
 Before release:
 
+- **Review what the tag will carry, not only the skills.** The Review stage above is scoped to a
+  skill; the validation machinery, its test suite, and the generators go inside the release tag as
+  well. A release has already shipped four unreviewed script commits — the gate, Ruff, and CI were
+  green, which is not the same as reviewed. State in the final report which commits in the release
+  range received a review pass and which did not, so skipping one is a visible decision rather than
+  an omission.
 - If the change ships now, bump the collection version and the host manifests together (see
   Versioning).
 - Use the required commit style and scope.
