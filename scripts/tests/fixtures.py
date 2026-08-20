@@ -19,6 +19,11 @@ DESCRIPTION = (
     "rather than doing the other thing."
 )
 
+# A fixture default, not the identity under test. A suite that needs the publisher to
+# mean something asks for its own — hardcoding one here let a check that ignored the
+# collection's declared identity pass every test that used this fixture.
+PUBLISHER_ID = "9d0f3c1a-7b2e-4e61-8d45-2a6f90c3b817"
+
 
 def manifest(name: str, family: str = "implementation") -> str:
     return (
@@ -53,6 +58,7 @@ def write_distribution(
     description: str = "Portable skills that do the thing, rather than the other thing.",
     version: str = "1.2.3",
     name: str = "fixture",
+    publisher_id: str = PUBLISHER_ID,
 ) -> None:
     """A canonical distribution plus the host manifests that project it."""
     (root / "distribution.json").write_text(
@@ -60,7 +66,7 @@ def write_distribution(
             {
                 "schema": 1,
                 "name": name,
-                "publisher_id": "9d0f3c1a-7b2e-4e61-8d45-2a6f90c3b817",
+                "publisher_id": publisher_id,
                 "display_name": "Fixture",
                 "description": description,
                 "version": version,

@@ -1113,25 +1113,73 @@ class SkillModelTests(unittest.TestCase):
 
 
 class InterfacePublisherTests(unittest.TestCase):
+    """The rule is that a sidecar matches *its own* collection's declared publisher.
+
+    Every case below names a collection identity explicitly, and one of them names a
+    collection that is not this one. Passing the production UUID as the argument under
+    test could not distinguish this rule from a check hardcoded against that UUID: a
+    mutation replacing the parameter with the literal passed the whole suite.
+    """
+
+    def check(self, root: Path, publisher_id: str) -> tuple[bool, str]:
+        output = StringIO()
+
+        with redirect_stdout(output):
+            passed = validate_skills.validate_interface_publishers(root, publisher_id)
+
+        return passed, output.getvalue()
+
+    def write_sidecar(self, root: Path, publisher: str) -> None:
+        fixtures.write_skill(
+            root,
+            NAME,
+            interface_text=(
+                f"publisher: {publisher}\n"
+                "produces:\n"
+                f"  - {publisher}/example-record@1 text/markdown\n"
+            ),
+        )
+
     def test_a_sidecar_from_another_publisher_fails_collection_validation(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
-            foreign = "c52ebc66-c01e-49af-9ed6-818ee4bc49f1"
-            fixtures.write_skill(
-                root,
-                NAME,
-                interface_text=(
-                    f"publisher: {foreign}\n"
-                    "produces:\n"
-                    f"  - {foreign}/example-record@1 text/markdown\n"
-                ),
-            )
-            output = StringIO()
-            with redirect_stdout(output):
-                passed = validate_skills.validate_interface_publishers(root, PUBLISHER)
+            self.write_sidecar(root, FOREIGN_PUBLISHER)
+            passed, output = self.check(root, PUBLISHER)
 
         self.assertFalse(passed)
-        self.assertIn("publisher must match distribution.json", output.getvalue())
+        self.assertIn("publisher must match distribution.json", output)
+
+    def test_a_sidecar_matching_a_collection_that_is_not_this_one_passes(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_sidecar(root, FOREIGN_PUBLISHER)
+            passed, output = self.check(root, FOREIGN_PUBLISHER)
+
+        self.assertTrue(passed, output)
+
+    def test_this_collections_publisher_fails_a_collection_that_is_not_this_one(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_sidecar(root, PUBLISHER)
+            passed, output = self.check(root, FOREIGN_PUBLISHER)
+
+        self.assertFalse(passed)
+        self.assertIn("publisher must match distribution.json", output)
+
+    def test_the_declared_collection_identity_reaches_the_sidecar_check(self) -> None:
+        """What main() wires: distribution.json's publisher_id, not a constant."""
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_distribution(root, publisher_id=FOREIGN_PUBLISHER)
+            self.write_sidecar(root / "skills", FOREIGN_PUBLISHER)
+            output = StringIO()
+            with redirect_stdout(output):
+                distribution = validate_skills.validate_distribution(root)
+            passed, sidecar_output = self.check(root / "skills", distribution.publisher_id)
+
+        self.assertTrue(distribution.passed, output.getvalue())
+        self.assertEqual(distribution.publisher_id, FOREIGN_PUBLISHER)
+        self.assertTrue(passed, sidecar_output)
 
 
 if __name__ == "__main__":
