@@ -261,8 +261,10 @@ ladder caused is distinguishable from one the gate simply did not answer. Name e
 only its category — a row answering `parameter` for a unit holding two dependencies of different
 origin has lost which is which. `none` is an answer in either column, and so is `not determinable
 from the reviewed scope` — when a unit's signature or construction site lies outside the reviewed
-input, record that rather than assigning an origin it cannot read. Rows are not findings — a
-violation also gets a Gate 5 row below.]
+input, record that rather than assigning an origin it cannot read. A violation also gets a Gate 5 row
+below.]
+
+Rows in this section are not findings.
 
 | # | Unit | Its job (one clause) | Handed in | Reached directly |
 |---|---|---|---|---|
