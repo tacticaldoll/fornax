@@ -30,7 +30,8 @@ Check:
 - Functions describe their action.
 - Boolean names read as assertions.
 - One concept uses one word consistently.
-- Abbreviations are domain-standard.
+- Abbreviations are domain-standard — against the vocabulary the project's own docs, types, or
+  glossary use; when the scope carries none, say so and judge only consistency within the scope.
 
 Failure meaning: the code cannot be understood without author narration.
 
@@ -43,7 +44,9 @@ Check:
 - Boundary inputs are handled.
 - Invalid state fails fast.
 - Resources are cleaned up.
-- Critical paths have enough structured observability.
+- Critical paths have enough structured observability — enough against the level the project's
+  existing critical paths set; when the scope shows no comparable path, say so and judge only whether
+  a failure here would be diagnosable from what is emitted.
 
 Failure meaning: the code may work only on the happy path.
 
@@ -106,7 +109,9 @@ Check:
 - Business rules are encapsulated in semantic helpers.
 - Logic matches the stated requirement or spec (read it; see above).
 - Domain edge cases are considered.
-- Existing patterns are followed.
+- Existing patterns are followed — against the patterns the review scope contains, plus any the
+  project declares (a style guide, the module this change parallels); when the comparable code lies
+  outside the scope, say so and judge only what the scope shows.
 - API or state transitions have migration paths when needed.
 
 Failure meaning: the code is clean and structured but wrong.
@@ -116,7 +121,9 @@ Failure meaning: the code is clean and structured but wrong.
 Check:
 
 - Repeated logic is extracted when the shared concept is real.
-- New patterns converge with existing patterns.
+- New patterns converge with existing patterns — against the other copies the review scope
+  contains, plus any convention the project declares; when the other copies lie outside the scope,
+  say so and judge only what the scope shows.
 - Composition is preferred over brittle inheritance or copy-paste.
 - Future duplication risk is considered.
 
