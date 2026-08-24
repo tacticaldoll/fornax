@@ -256,11 +256,11 @@ would have carried. Report regardless of gate status.]
 
 [REQUIRED whenever Gate 5 opened: one row per unit that gate opened, findings or not. An empty table
 claims Gate 5 opened no unit; state that rather than omitting the table. Name the in-scope units this
-gate did not open and why, in the vocabulary of Phase 3's coverage sets — blocked by a lower gate,
-outside the calibration, kept `triage-only` by Phase 2, or `unread` with the reason it was never
-opened — so an omission the ladder or the calibration caused is distinguishable from one the gate
-simply did not answer. Name each dependency, not
-only its category — a row answering `parameter` for a unit holding two dependencies of different
+gate did not open and why, each reason on its own axis — the Gate Index value where the ladder closed
+it (blocked by a lower gate), the Phase 2 routing where a Yellow unit's failed checks targeted a
+lower gate, or the Phase 3 coverage set where the unit received no gates at all (`triage-only`,
+`unread`) — so an omission the ladder, the triage routing, or the coverage caused is distinguishable
+from one the gate simply did not answer. Name each dependency, not only its category — a row answering `parameter` for a unit holding two dependencies of different
 origin has lost which is which. `none` is an answer in either column, and so is `not determinable
 from the reviewed scope` — when a unit's signature or construction site lies outside the reviewed
 input, record that rather than assigning an origin it cannot read. A violation also gets a Gate 5 row
