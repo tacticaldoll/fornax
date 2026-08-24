@@ -29,6 +29,11 @@ not counted against the record's stated total — a Review Record's `Findings` f
 exclusions. Such a section is still evidence: read it for a cause, and record a mismatch between it
 and the findings as Record integrity rather than as a finding of its own.
 
+When a section's finding status is not declared at all, that is `not claimed` — not a claim that its
+rows are findings. Neither flatten nor count them, and record the absent declaration for Record
+integrity. This state is the concession to records this repository did not produce: `static-review`
+requires the declaration from its own producer, so a Review Record it wrote never reaches it.
+
 A Structural Causes row naming no finding is itself one. It states what is wrong and the unit that
 carries it, which is all Phase 1 needs to key it; the review reported it as a cause because the gate
 that would have carried it never opened, not because it is a lesser kind of thing. A row that does
