@@ -119,7 +119,8 @@ Failure meaning: the code is clean and structured but wrong.
 
 Check:
 
-- Repeated logic is extracted when the shared concept is real.
+- Repeated logic is extracted when the shared concept is real — against the other sites the review
+  scope contains, plus any the project declares; one site alone is not yet a concept.
 - New patterns converge with existing patterns — against the other copies the review scope
   contains, plus any convention the project declares.
 - Composition is preferred over brittle inheritance or copy-paste.
@@ -131,10 +132,13 @@ Failure meaning: the code is correct but creates another copy of the same idea.
 
 Check:
 
-- User-controlled parameters are classified by risk.
-- Authentication and authorization are both enforced where relevant.
+- User-controlled parameters are classified by risk — by the sinks the scope shows each parameter
+  reaching (a query, a shell, a path, a template), not by a taxonomy outside it.
+- Authentication and authorization are both enforced where relevant — relevant against the policy
+  the project declares (an authz matrix, a middleware convention, a documented public surface).
 - Sensitive data is not exposed in logs, errors, URLs, or responses.
 - Injection surfaces are parameterized or isolated.
-- No custom crypto, hardcoded secrets, weak randomness, or unjustified unsafe code.
+- No custom crypto, hardcoded secrets, weak randomness, or unjustified unsafe code — justified
+  against the convention the project declares for it (a required safety comment, an allowlist).
 
 Failure meaning: the code may pass all earlier gates but is still unsafe.
