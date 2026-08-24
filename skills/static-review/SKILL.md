@@ -61,7 +61,7 @@ Triage checks:
 | 1 | Dead code | Gate 1 | Commented-out code, unused imports, debug output |
 | 2 | Naming clarity | Gate 2 | Public names are vague or misleading |
 | 3 | Nesting depth | Gate 4 | Nesting deeper than 3 levels |
-| 4 | Function length | Gate 4 | Functions are long enough to hide multiple responsibilities |
+| 4 | Function length | Gate 4 | Functions are long enough that their flow cannot be followed by reading |
 | 5 | Error swallowing | Gate 3 | Empty catch/except or ignored failure |
 | 6 | Domain mixing | Gate 5 | I/O and business logic mixed in one unit |
 | 7 | Raw field assembly | Gate 6 | Complex conditions lack semantic helpers |

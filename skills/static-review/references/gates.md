@@ -52,7 +52,8 @@ Failure meaning: the code may work only on the happy path.
 Check:
 
 - Nesting is justified.
-- Functions are not doing multiple jobs.
+- Sequential phases inside one function read as one flow. Whether the function owns more than one
+  job is Gate 5's question, answered there per unit.
 - Loops have explicit termination.
 - Complex control flow can be understood by reading.
 
