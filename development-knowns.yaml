@@ -1,7 +1,7 @@
 schema: 1
 knowns:
-  - id: gate-wording-never-micro-tested
-    statement: No review gate wording has been verified by a micro-test against a no-guidance control.
+  - id: gate-wording-micro-test-unevidenced
+    statement: No checked-in evidence shows that review gate wording has been micro-tested against a no-guidance control.
     kind: risk
     treatment: accept
     rationale: The required ledger rests on the REQUIRED-slot form prescribed for an omitted element, not on a measurement that the wording changes agent behaviour.
@@ -10,7 +10,7 @@ knowns:
       - No fixture or scenario under scripts/tests exercises a gates.md wording change.
     declined-changes:
       - Read a passing workspace gate as evidence that a wording change binds agent behaviour.
-    reconsider-when: A review run reports a ledger that omits units the structural extraction covered.
+    reconsider-when: A micro-test result for review gate wording is checked in, or a review run reports a ledger that omits units the structural extraction covered.
     updated: 2026-08-24
   - id: gate5-ledger-omits-interface-usage
     statement: Gate 5 names call sites as its interface evidence while the ledger records no interface usage.
