@@ -3,11 +3,19 @@
 Use these gates for local, gate-based code review. Gates open in order. A failed lower gate blocks
 higher gates.
 
+A check that defers to a source outside itself — a project convention, a declared structure, the
+call sites of an interface — names where that source is found and what the report says when it is
+absent. A check that names no source is answered by whatever evidence is cheapest to reach, and the
+gate then reads as passed on the strength of the one sub-check that was easy. Gate 6 states this at
+length; every gate owes it.
+
 ## Gate 1: Formatting & Syntax Hygiene
 
 Check:
 
-- Formatting follows project convention.
+- Formatting follows project convention — locate the convention (a formatter or lint config, a style
+  section in the project's own guide) and judge against it; when none is found, say so in the report
+  and judge only what the code contradicts internally.
 - No dead code, commented-out code, unused imports, or unreachable branches.
 - No debug residue such as print statements or temporary logs.
 - Imports and file organization are coherent.
@@ -54,9 +62,15 @@ Failure meaning: the code may work, but readers cannot prove it.
 
 Check:
 
-- Domain layers are not mixed without justification.
-- Dependency direction is correct.
-- Public interfaces are minimal.
+- Domain layers are not mixed without justification — against the layering the project declares (its
+  module or package structure, a layering doc or ADR); when none is declared, read the layering the
+  structure implies and say in the report that it was inferred.
+- Dependency direction is correct — against the direction the project declares; when none is
+  declared, judge that stable code is not made to depend on volatile code, and say the direction was
+  inferred rather than declared.
+- Public interfaces are minimal — against the call sites the review scope contains. When an
+  interface's callers lie outside the scope, say so and judge only what the scope shows; an unused
+  member is not unnecessary on scope alone.
 
 One function has one job, and core logic is not unnecessarily hardwired to concrete infrastructure:
 these two are answered **per unit, from the structural extraction**, not by one verdict for the gate.
