@@ -17,6 +17,21 @@ Settled; reopen only with a reason, not by default.
 - **Skills read / plan / report; they do not edit or execute.** Output is refined context; execution
   is handed off. Skills work only with context that actually exists — they mark inference apart from
   fact, name what they did not check, and never fabricate.
+- **Self-contained skills; no coupling to a workflow or an installed tool.** A skill's instructions
+  presuppose no development workflow, no change-tracking artifact, and no externally installed tool.
+  An external source may be read when it happens to be there — a spec, a lint config, a host's
+  sub-agents — but every such read names where to look and what the report says when it is absent;
+  `static-review`'s Gate 6 is the reference shape, and `design-boundaries`, `plan-split`, and
+  `audit-governance` fall back the same way when a host offers no sub-agents. Stated because its
+  absence cost something: a review gate briefly carried a check needing a diff baseline — undefined
+  for three of the five inputs that skill accepts — and every workspace check passed it, because
+  there was nothing to appeal to.
+- **Judgments are language-neutral; a named language is example only.** A skill's criteria hold for
+  any language the reviewed code is written in. A concrete language may appear as illustration
+  (`unjustified unsafe code`, `cargo deny`) and that stays; what is excluded is a criterion that
+  cannot be applied without one language's vocabulary. Feedback arriving in one language's terms is
+  evidence about that codebase, not a statement about the criterion — the same separation the
+  development knowns decision makes.
 - **Task-descriptive slugs.** Slugs are task-descriptive (`plan-implementation`, `map-codebase`, …)
   because manual `/fornax:<slug>` invocation is the load-bearing path — auto-triggering by
   `description` proved unreliable, and native per-skill aliases are unsupported across hosts, so the

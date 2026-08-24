@@ -12,7 +12,9 @@ and naming rationale, and `PROJECT.md` for standing decisions and non-goals.
 - Treat `skill.yaml` as the portable discovery and compatibility manifest.
 - Keep skills host-neutral; host-specific packaging lives at the packaging layer, not per skill (see `docs/host-packaging.md`).
 - Keep scripts, references, and assets relative to the skill folder.
-- Avoid platform-specific hidden assumptions in core skill instructions.
+- Avoid hidden assumptions in core skill instructions — about the agent host, the programming
+  language, the development workflow, or an externally installed tool (see the standing decisions in
+  `PROJECT.md`).
 
 ## Skill Layout
 
