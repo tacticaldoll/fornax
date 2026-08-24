@@ -314,8 +314,8 @@ Fix-plan rules:
   Phase 4c adds no verdict flag: a reported finding whose cause sits at a blocked gate still names the
   cause, because a symptom reported without its cause is repaired in the wrong place.
 - Give concrete corrections; avoid vague suggestions such as "consider improving".
-- If all opened gates pass, the Gate Index is the report; when Gate 5 opened, include the
-  Responsibility & Dependency Ledger as well. Do not invent findings.
+- If all opened gates pass, the report is the Gate Index plus every section whose own
+  include-condition is met; do not invent findings.
 - Report coverage independently from correctness. `PASS` means the opened gates passed for the
   fully and partially gate-reviewed units; only `Coverage: complete` extends every calibrated gate
   to the full declared scope. Every review enumerates all four coverage sets, and each
