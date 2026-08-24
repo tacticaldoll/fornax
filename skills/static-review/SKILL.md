@@ -98,6 +98,10 @@ Record:
 - Obvious anomalies discovered during extraction.
 - Source of truth for Gate 6: locate the spec/governance doc to judge logic against, or note that
   none was found (gates.md Gate 6 lists where to look).
+- Responsibility and dependency origin, per unit: the unit's job in one clause, and for each
+  dependency whether it arrives as a parameter or an injected abstraction or is reached directly (a
+  global singleton, an environment variable, a concrete implementation constructed inline). Gate 5
+  judges from these rather than scanning import direction; the Ledger in Phase 5 is where they land.
 - Coverage inventory: place every in-scope unit in exactly one set — `gate-reviewed` when every
   calibrated gate was opened for it, `partially-gate-reviewed` when only a stated prefix of those
   gates was opened, `triage-only` when it received only Phase 2's rapid checks, or `unread` when it
@@ -200,7 +204,7 @@ Produce a report using this format:
 **Calibration**: Gates 1-[N] ([reason])
 **Triage**: [skipped | Red M / Yellow N / Green K]
 **Coverage**: [complete | partial] — gate-reviewed: [...]; partially-gate-reviewed: [unit (Gates 1-N), ...]; triage-only: [...]; unread: [...]
-**Findings**: [one number: every finding row below, gate sections and non-gated tracks alike — not the file counts in Triage]
+**Findings**: [one number: every finding row below, gate sections and non-gated tracks alike — not the file counts in Triage, and not the Ledger rows]
 **Verdict**: [PASS | FAIL at Gate N] [+ SECURITY-ALERT] [+ CONTRACT-VIOLATED] [+ CLAIM-REFUTED]
 **Not executed**: [static review only — tests / build / runtime not run]
 
@@ -247,6 +251,16 @@ would have carried. Report regardless of gate status.]
 | # | Finding | Cause (the thing to change) | Cause location | Gate that would carry it |
 |---|---|---|---|---|
 | 1 | the finding it explains \| — | stated as the change | `file:line` | Gate N (pass \| fail \| blocked \| not inspected) |
+
+### Responsibility & Dependency Ledger
+
+[REQUIRED whenever Gate 5 opened: one row per unit that gate opened, findings or not. An empty table
+claims Gate 5 opened no unit; state that rather than omitting the table. Rows are not findings — a
+violation also gets a Gate 5 row below.]
+
+| # | Unit | Its job (one clause) | Handed in | Reached directly |
+|---|---|---|---|---|
+| 1 | `file:unit` | one clause; needing "and" / "then" is a finding | parameter \| injected abstraction | global \| env var \| inline-constructed concrete type \| none |
 
 ### Gate N: [name]
 

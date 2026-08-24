@@ -65,6 +65,7 @@ table does.
 | `Against-Contract` | section |
 | `Claims Verified` | section |
 | `Structural Causes` | section |
+| `Responsibility & Dependency Ledger` | section |
 | `Gate N: [name]` | section |
 | `Structural Appendix` | section |
 
@@ -85,6 +86,7 @@ table does.
 | `Against-Contract` | section |
 | `Claims Verified` | section |
 | `Structural Causes` | section |
+| `Responsibility & Dependency Ledger` | section |
 | `Gate N: [name]` | section |
 | `Structural Appendix` | section |
 
