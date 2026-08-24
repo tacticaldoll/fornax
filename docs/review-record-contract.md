@@ -32,7 +32,7 @@ results and release blockers separately from this current field inventory.
 | `Findings` | Phase 5 header | Record integrity | reconciled against the rows the record contains; counts every finding row, not the `Triage` file counts and not the Ledger's rows |
 | Structural Causes | Phase 4c | Phase 0, Phase 1, Phase 2 | a row naming a finding is that finding's stated cause and is verified like any other; a row naming none is itself a finding, keyed by what it states and the unit that carries it |
 | Against-Contract, Claims Verified | Phase 4b | Phase 1 | the same defect can arrive here *and* as a gate finding |
-| Responsibility & Dependency Ledger | Phase 5, when Gate 5 opened | — no consumer reads it | required output the producer must show, not a seam element; its rows are not findings and Phase 0 does not flatten them |
+| Responsibility & Dependency Ledger | Phase 5, when Gate 5 opened | Phase 0, Record integrity | required output the producer must show rather than a claim crossing the seam; its rows are not findings, so Phase 0 does not flatten them and the count does not include them |
 
 ## Inventory
 
