@@ -34,7 +34,7 @@ Check:
 - Boolean names read as assertions.
 - One concept uses one word consistently.
 - Abbreviations are domain-standard — against the vocabulary the project's own docs, types, or
-  glossary use; when it declares none, say so and judge only consistency within the scope.
+  glossary use; when none is declared, say so and judge only consistency within the scope.
 
 Failure meaning: the code cannot be understood without author narration.
 
