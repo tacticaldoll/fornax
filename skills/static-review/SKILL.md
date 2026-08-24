@@ -255,12 +255,14 @@ would have carried. Report regardless of gate status.]
 ### Responsibility & Dependency Ledger
 
 [REQUIRED whenever Gate 5 opened: one row per unit that gate opened, findings or not. An empty table
-claims Gate 5 opened no unit; state that rather than omitting the table. Rows are not findings — a
+claims Gate 5 opened no unit; state that rather than omitting the table. Name each dependency, not
+only its category — a row answering `parameter` for a unit holding two dependencies of different
+origin has lost which is which. `none` is an answer in either column. Rows are not findings — a
 violation also gets a Gate 5 row below.]
 
 | # | Unit | Its job (one clause) | Handed in | Reached directly |
 |---|---|---|---|---|
-| 1 | `file:unit` | one clause; needing "and" / "then" is a finding | parameter \| injected abstraction | global \| env var \| inline-constructed concrete type \| none |
+| 1 | `file:unit` | one clause; needing "and" / "then" is a finding | `repository (parameter)`, `clock (injected abstraction)` \| none | `TOKEN (environment variable)`, `Registry (global)`, `PgPool (constructed inline)` \| none |
 
 ### Gate N: [name]
 
