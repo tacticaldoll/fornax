@@ -6,8 +6,10 @@ higher gates.
 A check that defers to a source outside itself — a project convention, a declared structure, the
 call sites of an interface — names where that source is found. When that source lies outside the
 review scope, or the project declares none, say so in the report and judge only what the scope
-shows; a check states its own fallback only where it differs from that. A check that names no source is answered by whatever evidence is cheapest to reach, and the
-gate then reads as passed on the strength of the one sub-check that was easy. Gate 6 states this at
+shows; a check states its own fallback only where it differs from that.
+
+A check that names no source is answered by whatever evidence is cheapest to reach, and the gate
+then reads as passed on the strength of the one sub-check that was easy. Gate 6 states this at
 length; every gate owes it.
 
 ## Gate 1: Formatting & Syntax Hygiene
