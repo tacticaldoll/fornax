@@ -10,7 +10,7 @@ knowns:
       - No fixture or scenario under scripts/tests exercises a gates.md wording change.
     declined-changes:
       - Read a passing workspace gate as evidence that a wording change binds agent behaviour.
-    reconsider-when: A micro-test result for review gate wording is checked in, or a review run reports a ledger that omits units the structural extraction covered.
+    reconsider-when: A micro-test result for review gate wording is checked in, or a review run reports a ledger that omits a unit Gate 5 opened, or omits units without recording that the gate was blocked or not opened for them.
     updated: 2026-08-24
   - id: gate5-ledger-omits-interface-usage
     statement: Gate 5 names call sites as its interface evidence while the ledger records no interface usage.

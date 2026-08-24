@@ -255,7 +255,9 @@ would have carried. Report regardless of gate status.]
 ### Responsibility & Dependency Ledger
 
 [REQUIRED whenever Gate 5 opened: one row per unit that gate opened, findings or not. An empty table
-claims Gate 5 opened no unit; state that rather than omitting the table. Name each dependency, not
+claims Gate 5 opened no unit; state that rather than omitting the table. Name the in-scope units this
+gate did not open and why — blocked by a lower gate, or outside the calibration — so an omission the
+ladder caused is distinguishable from one the gate simply did not answer. Name each dependency, not
 only its category — a row answering `parameter` for a unit holding two dependencies of different
 origin has lost which is which. `none` is an answer in either column, and so is `not determinable
 from the reviewed scope` — when a unit's signature or construction site lies outside the reviewed
