@@ -4,8 +4,9 @@ Use these gates for local, gate-based code review. Gates open in order. A failed
 higher gates.
 
 A check that defers to a source outside itself — a project convention, a declared structure, the
-call sites of an interface — names where that source is found and what the report says when it is
-absent. A check that names no source is answered by whatever evidence is cheapest to reach, and the
+call sites of an interface — names where that source is found. When that source lies outside the
+review scope, or the project declares none, say so in the report and judge only what the scope
+shows; a check states its own fallback only where it differs from that. A check that names no source is answered by whatever evidence is cheapest to reach, and the
 gate then reads as passed on the strength of the one sub-check that was easy. Gate 6 states this at
 length; every gate owes it.
 
@@ -31,7 +32,7 @@ Check:
 - Boolean names read as assertions.
 - One concept uses one word consistently.
 - Abbreviations are domain-standard — against the vocabulary the project's own docs, types, or
-  glossary use; when the scope carries none, say so and judge only consistency within the scope.
+  glossary use.
 
 Failure meaning: the code cannot be understood without author narration.
 
@@ -72,9 +73,8 @@ Check:
 - Dependency direction is correct — against the direction the project declares; when none is
   declared, judge that stable code is not made to depend on volatile code, and say the direction was
   inferred rather than declared.
-- Public interfaces are minimal — against the call sites the review scope contains. When an
-  interface's callers lie outside the scope, say so and judge only what the scope shows; an unused
-  member is not unnecessary on scope alone.
+- Public interfaces are minimal — against the call sites the review scope contains; an unused member
+  is not unnecessary on scope alone.
 
 One function has one job, and core logic is not unnecessarily hardwired to concrete infrastructure:
 these two are answered **per unit, from the structural extraction**, not by one verdict for the gate.
@@ -110,8 +110,7 @@ Check:
 - Logic matches the stated requirement or spec (read it; see above).
 - Domain edge cases are considered.
 - Existing patterns are followed — against the patterns the review scope contains, plus any the
-  project declares (a style guide, the module this change parallels); when the comparable code lies
-  outside the scope, say so and judge only what the scope shows.
+  project declares (a style guide, the module this change parallels).
 - API or state transitions have migration paths when needed.
 
 Failure meaning: the code is clean and structured but wrong.
@@ -122,8 +121,7 @@ Check:
 
 - Repeated logic is extracted when the shared concept is real.
 - New patterns converge with existing patterns — against the other copies the review scope
-  contains, plus any convention the project declares; when the other copies lie outside the scope,
-  say so and judge only what the scope shows.
+  contains, plus any convention the project declares.
 - Composition is preferred over brittle inheritance or copy-paste.
 - Future duplication risk is considered.
 
