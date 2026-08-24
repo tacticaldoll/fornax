@@ -1,5 +1,29 @@
 schema: 1
 knowns:
+  - id: gate-wording-never-micro-tested
+    statement: No review gate wording has been verified by a micro-test against a no-guidance control.
+    kind: risk
+    treatment: accept
+    rationale: The required ledger rests on the REQUIRED-slot form prescribed for an omitted element, not on a measurement that the wording changes agent behaviour.
+    evidence:
+      - skills/harden-skill/references/hardening.md prescribes micro-tests before trusting a wording change.
+      - No fixture or scenario under scripts/tests exercises a gates.md wording change.
+    declined-changes:
+      - Read a passing workspace gate as evidence that a wording change binds agent behaviour.
+    reconsider-when: A review run reports a ledger that omits units the structural extraction covered.
+    updated: 2026-08-24
+  - id: gate5-ledger-omits-interface-usage
+    statement: Gate 5 names call sites as its interface evidence while the ledger records no interface usage.
+    kind: debt
+    treatment: accept
+    rationale: The interface-segregation finding that asked for a ledger column carried no evidence separable from the responsibility and dependency mechanism.
+    evidence:
+      - skills/static-review/references/gates.md judges minimal interfaces against the call sites the scope contains.
+      - skills/static-review/SKILL.md renders the ledger with job and dependency-origin columns only.
+    declined-changes:
+      - Add an interface-usage column on evidence that could not be separated from the responsibility and dependency mechanism.
+    reconsider-when: An interface-segregation finding recurs after the ledger is in use.
+    updated: 2026-08-24
   - id: independently-runnable-link-checks
     statement: Component checks retain overlapping absolute Markdown link validation.
     kind: constraint
