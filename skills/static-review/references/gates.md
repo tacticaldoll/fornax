@@ -72,9 +72,10 @@ Check:
 - Domain layers are not mixed without justification — against the layering the project declares (its
   module or package structure, a layering doc or ADR); when none is declared, read the layering the
   structure implies and say in the report that it was inferred.
-- Dependency direction is correct — against the direction the project declares; when none is
-  declared, judge that stable code is not made to depend on volatile code, and say the direction was
-  inferred rather than declared.
+- Dependency direction is correct — against the direction the project declares in an ADR, a layering
+  doc, or the dependency edges its manifests already carry; when none is declared, judge that stable
+  code is not made to depend on volatile code, and say the direction was inferred rather than
+  declared.
 - Public interfaces are minimal — against the call sites the review scope contains; an unused member
   is not unnecessary on scope alone.
 
@@ -122,9 +123,9 @@ Failure meaning: the code is clean and structured but wrong.
 Check:
 
 - Repeated logic is extracted when the shared concept is real — against the other sites the review
-  scope contains, plus any the project declares; one site alone is not yet a concept.
+  scope contains, plus any the project's style guide or ADRs name; one site alone is not a concept.
 - New patterns converge with existing patterns — against the other copies the review scope
-  contains, plus any convention the project declares.
+  contains, plus any convention the project's style guide or ADRs declare.
 - Composition is preferred over brittle inheritance or copy-paste.
 - Future duplication risk is considered.
 
