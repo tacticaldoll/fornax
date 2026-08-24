@@ -180,6 +180,7 @@ returning next round, so a disposition without one has not actually been made.
 | Calibration / Gate Index | the gates the calibration declares | the gates the index records as opened | pass \| mismatch \| not claimed |
 | Finding count | stated count | current Review Record finding rows | pass \| mismatch \| not claimed |
 | Coverage | stated scope and coverage | four enumerated unit sets and the gates opened for each partial unit | pass \| mismatch \| not claimed |
+| Non-finding sections | the sections the `Findings` field excludes from the count | the row-bearing sections the record contains, and whether each declares its finding status | pass \| mismatch \| not claimed |
 
 [`not claimed` when the input carries no such claim at all — a record predating a field, or one from
 another producer, has nothing to reconcile and is neither consistent nor contradictory about it.
