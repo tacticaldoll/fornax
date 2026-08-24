@@ -257,12 +257,14 @@ would have carried. Report regardless of gate status.]
 [REQUIRED whenever Gate 5 opened: one row per unit that gate opened, findings or not. An empty table
 claims Gate 5 opened no unit; state that rather than omitting the table. Name each dependency, not
 only its category — a row answering `parameter` for a unit holding two dependencies of different
-origin has lost which is which. `none` is an answer in either column. Rows are not findings — a
+origin has lost which is which. `none` is an answer in either column, and so is `not determinable
+from the reviewed scope` — when a unit's signature or construction site lies outside the reviewed
+input, record that rather than assigning an origin it cannot read. Rows are not findings — a
 violation also gets a Gate 5 row below.]
 
 | # | Unit | Its job (one clause) | Handed in | Reached directly |
 |---|---|---|---|---|
-| 1 | `file:unit` | one clause; needing "and" / "then" is a finding | `repository (parameter)`, `clock (injected abstraction)` \| none | `TOKEN (environment variable)`, `Registry (global)`, `PgPool (constructed inline)` \| none |
+| 1 | `file:unit` | one clause; needing "and" / "then" is a finding | `repository (parameter)`, `clock (injected abstraction)` \| none \| not determinable from the reviewed scope | `TOKEN (environment variable)`, `Registry (global)`, `PgPool (constructed inline)` \| none \| not determinable from the reviewed scope |
 
 ### Gate N: [name]
 
