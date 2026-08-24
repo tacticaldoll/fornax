@@ -48,8 +48,8 @@ Check:
 - Invalid state fails fast.
 - Resources are cleaned up.
 - Critical paths have enough structured observability — enough against the level the project's
-  existing critical paths set; when the scope shows no comparable path, say so and judge only whether
-  a failure here would be diagnosable from what is emitted.
+  existing critical paths set; when the scope shows no comparable path, say so and judge only
+  whether a failure here would be diagnosable from what is emitted.
 
 Failure meaning: the code may work only on the happy path.
 
@@ -80,20 +80,20 @@ Check:
   is not unnecessary on scope alone.
 
 One function has one job, and core logic is not unnecessarily hardwired to concrete infrastructure:
-these two are answered **per unit, from the structural extraction**, not by one verdict for the gate.
-The extraction already records each unit's I/O and external side effects, its captured variables and
-hidden dependencies, and its domain distribution — that is the material this gate judges. A gate that
-does not read it is answered by the cheapest evidence in reach, an import-direction scan across
-modules, which reads as passed while no unit was opened.
+these two are answered **per unit, from the structural extraction**, not by one verdict for the
+gate. The extraction already records each unit's I/O and external side effects, its captured
+variables and hidden dependencies, and its domain distribution — that is the material this gate
+judges. A gate that does not read it is answered by the cheapest evidence in reach, an
+import-direction scan across modules, which reads as passed while no unit was opened.
 
 For every unit this gate opened, its answer is two clauses:
 
-- **The unit's job**, in one clause. A clause that needs "and" or "then" to hold is the finding — name
-  the split.
+- **The unit's job**, in one clause. A clause that needs "and" or "then" to hold is the finding —
+  name the split.
 - **Where each dependency comes from**: what the unit reaches directly — a global singleton, an
-  environment variable, a concrete implementation it constructs inline — apart from what arrives as a
-  parameter or an injected abstraction it was handed. A unit that both decides business behavior and
-  reaches concrete infrastructure in the same body is the finding.
+  environment variable, a concrete implementation it constructs inline — apart from what arrives as
+  a parameter or an injected abstraction it was handed. A unit that both decides business behavior
+  and reaches concrete infrastructure in the same body is the finding.
 
 Both clauses are this gate's required output for every unit it opened, findings or not.
 
