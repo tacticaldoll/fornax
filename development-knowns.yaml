@@ -1,6 +1,6 @@
 schema: 1
 knowns:
-  - id: gate-wording-micro-test-unevidenced
+  - id: gate-wording-never-micro-tested
     statement: No checked-in evidence shows that review gate wording has been micro-tested against a no-guidance control.
     kind: risk
     treatment: accept
