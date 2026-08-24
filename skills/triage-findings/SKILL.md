@@ -24,6 +24,11 @@ to classify and no bucket to mis-assign.
 Normalize the input into one flat list of findings, whatever shape it arrived in — a Review Record's
 gate tables, its non-gated tracks, a pasted list, or a file holding either.
 
+A section the producer declares carries no findings is not flattened into that list, and its rows are
+not counted against the record's stated total — a Review Record's `Findings` field names its own
+exclusions. Such a section is still evidence: read it for a cause, and record a mismatch between it
+and the findings as Record integrity rather than as a finding of its own.
+
 A Structural Causes row naming no finding is itself one. It states what is wrong and the unit that
 carries it, which is all Phase 1 needs to key it; the review reported it as a cause because the gate
 that would have carried it never opened, not because it is a lesser kind of thing. A row that does
