@@ -22,10 +22,11 @@ Settled; reopen only with a reason, not by default.
   An external source may be read when it happens to be there — a spec, a lint config, a host's
   sub-agents — but every such read names where to look and what the report says when it is absent;
   `static-review`'s Gate 6 is the reference shape, and `design-boundaries`, `plan-split`, and
-  `audit-governance` fall back the same way when a host offers no sub-agents. Stated because its
-  absence cost something: a review gate briefly carried a check needing a diff baseline — undefined
-  for three of the five inputs that skill accepts — and every workspace check passed it, because
-  there was nothing to appeal to.
+  `audit-governance` fall back the same way when the host offers no separate passes or reviewers.
+  Stated because its absence cost something: a review gate briefly carried a check needing a diff
+  baseline — undefined for the inputs that carry none, a pasted snippet or a file path, and
+  conditional for two more — and every workspace check passed it, because there was nothing to appeal
+  to.
 - **Judgments are language-neutral; a named language is example only.** A skill's criteria hold for
   any language the reviewed code is written in. A concrete language may appear as illustration
   (`unjustified unsafe code`, `cargo deny`) and that stays; what is excluded is a criterion that
