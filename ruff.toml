@@ -9,10 +9,23 @@
 # rules move between ruff releases, which is why CI pins one version; bumping it
 # is a deliberate act that may surface new findings.
 #
-# E, F and W only. Ruff's own default selection here also reports shebang
-# permissions, import sorting and `with` nesting — opinions this repository never
-# adopted, and ones that would have required editing the pinned CLI adapter just
-# to land the gate.
+# E, F and W, plus two rules about the suppression mechanism itself. Ruff's own
+# default selection here also reports shebang permissions, import sorting and `with`
+# nesting — opinions this repository never adopted, and ones that would have required
+# editing the pinned CLI adapter just to land the gate.
+#
+# PGH004 and RUF100 are here because a malformed directive silently disabled every
+# rule on its line and nothing failed. `# noqa: F401  (prose)` puts non-code text where
+# ruff expects codes, so ruff falls back to a blanket suppression and emits a warning —
+# and a warning does not fail `ruff check`. The line was 103 characters with E501
+# enabled, and E501 did not fire; a 116-character probe confirmed E501 was live.
+#
+# Neither rule closes that case, which was measured rather than assumed. PGH004 catches
+# a bare `# noqa` with no codes at all; RUF100 catches a directive suppressing nothing.
+# The malformed-suffix form passes both. They are here because they are the closest
+# available guard and cost nothing — no `# noqa` exists in the tree today — not because
+# the hole is closed. Closing it needs the warning to fail the run, which this pinned
+# ruff has no setting for.
 
 # Keep aligned mechanically with .python-version through scripts/runtime_contract.py.
 target-version = "py310"
@@ -20,4 +33,4 @@ line-length = 100
 
 [lint]
 preview = true
-select = ["E", "F", "W"]
+select = ["E", "F", "W", "PGH004", "RUF100"]

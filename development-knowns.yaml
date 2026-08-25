@@ -61,6 +61,18 @@ knowns:
       - Add an interface-usage column on evidence that could not be separated from the responsibility and dependency mechanism.
     reconsider-when: An interface-segregation finding recurs after the ledger is in use.
     updated: 2026-08-24
+  - id: malformed-noqa-suppresses-silently
+    statement: A noqa directive with non-code text after its code list suppresses every rule on that line, and the ruff warning it produces does not fail the run.
+    kind: defect
+    treatment: accept
+    rationale: The pinned ruff has no setting that turns its invalid-directive warning into a failure, and the two rules about the suppression mechanism both miss this form — measured, not assumed.
+    evidence:
+      - A 103-character line carrying such a directive passed while a 116-character probe confirmed E501 was live.
+      - PGH004 catches only a bare noqa with no codes; RUF100 catches only a directive suppressing nothing; the malformed-suffix form passes both.
+    declined-changes:
+      - Claim PGH004 closes the case, which a probe of the exact form disproves.
+    reconsider-when: A ruff release fails the run on an invalid directive, or a noqa is added to the tree.
+    updated: 2026-08-25
   - id: host-manifest-list-unguarded-additions
     statement: Nothing guards a host manifest the HOST_VERSION_MANIFESTS tuple does not name, so adding a host means editing that tuple.
     kind: debt
