@@ -153,7 +153,8 @@ When asked to create or update a skill:
 4. Create or update `skills/<skill-name>/SKILL.md`.
 5. Add only the resource directories that are useful for the request.
 6. Run repository validation before reporting completion.
-7. Review the change as the Testing Strategy section requires, before reporting completion.
+7. Commit the change, then review and settle it as the Testing Strategy section requires — the
+   review reads a range, so it cannot run before the commit exists.
 
 Validation command:
 
@@ -212,9 +213,9 @@ Before release:
 - **Review what the tag will carry, not only the skills.** The Review stage above is scoped to a
   skill; the validation machinery, its test suite, and the generators go inside the release tag as
   well. A release has already shipped four unreviewed script commits — the gate, Ruff, and CI were
-  green, which is not the same as reviewed. State in the final report which commits in the release
-  range received a review pass and which did not, so skipping one is a visible decision rather than
-  an omission.
+  green, which is not the same as reviewed. The obligation is the one stated in Testing Strategy;
+  what Release adds is the report line — state which commits in the release range received a review
+  pass and which did not, so skipping one is a visible decision rather than an omission.
 - If the change ships now, bump the collection version and the host manifests together (see
   Versioning).
 - Use the required commit style and scope.
@@ -479,8 +480,13 @@ Prefer lightweight tests that match the risk of the change.
   diff: a range that had been through three adversarial passes and a green gate returned eighteen
   findings on its first real review, one of them a regression whose own commit message called it a
   strengthening. This is the one step here no gate can enforce, because it needs a model rather
-  than a fast deterministic check — which is why it is stated once and pointed at from the
-  Authoring Workflow and from Release rather than restated in either.
+  than a fast deterministic check, so it is stated here and pointed at from the Authoring Workflow
+  and from Release rather than restated in either.
+- Settle what a review found with `triage-findings`, and keep the Disposition Record it produces
+  under `docs/dispositions/<range>.md` so the next round can be handed the prior one. Requiring the
+  review without requiring the disposition is how a cause returns: three rounds repaired findings
+  at their locations, and each round's repairs produced the next round's defects. One commit per
+  cause, not one per round.
 - Use `.venv/bin/python scripts/check_workspace.py` as the public local entry point; CI runs the
   same script in its pinned Python 3.10 environment, and the style and hook-syntax gates run inside
   it so a green local run and a green CI run mean the same thing. Two steps stay CI-only because
@@ -516,10 +522,9 @@ Prefer lightweight tests that match the risk of the change.
 - The OpenCode plugin is syntax-checked in CI with
   `node --input-type=module --check < .opencode/plugins/fornax.js`, install-free on the runner; the
   hook is parsed by `scripts/check_sources.py` inside the workspace gate. Feed the plugin through
-  stdin as a module — plain `node --check`
-  on a `.js` file parses it as CommonJS and silently passes anything containing `import`, so the
-  check would do nothing. The plugin is the one that fails silently in use: nothing else reads it,
-  so a syntax error would only surface for an OpenCode user.
+  stdin as a module — plain `node --check` on a `.js` file parses it as CommonJS and silently passes
+  anything containing `import`, so the check would do nothing. The plugin is the one that fails
+  silently in use: nothing else reads it, so a syntax error would only surface for an OpenCode user.
 - Python style is checked by `ruff check .` against `ruff.toml` — width 100, rules `E`/`F`/`W`
   with `preview` on, pinned to one ruff version so a release cannot fail an unrelated push. It is
   run by the workspace gate, so the pre-commit hook and CI reach the same answer. Never auto-apply
