@@ -144,17 +144,36 @@ def validate(entries: tuple[Evidence, ...]) -> None:
         if state == "superseded" and not entry.get("superseded-reason"):
             raise EvidenceError(f"{identifier}: superseded evidence requires a reason")
         record = entry.get("record")
-        if not record:
-            raise EvidenceError(f"{identifier}: record must name a path")
-        # A record at the top of the tree it declares makes its own parent the covering
-        # root, and every file beneath becomes accounted for by one entry. Refused here
-        # rather than guarded at the walk: the walk cannot tell that answer from a tree
-        # with nothing unaccounted, which is the reading that hides everything.
-        if Path(record).parent == SCENARIOS:
+        if not scenario_root(record):
             raise EvidenceError(
-                f"{identifier}: record must sit inside a scenario directory, not beside "
-                f"the registry — its parent would cover the whole tree"
+                f"{identifier}: record must sit inside a scenario directory under "
+                f"{SCENARIOS.as_posix()}, as a relative path with no parent segment — "
+                f"its parent becomes the root that accounts for files, and a parent "
+                f"outside or above a scenario accounts for the whole tree"
             )
+
+
+def scenario_root(record: str) -> Path | None:
+    """Return the scenario directory a record declares, or None when it declares none.
+
+    Stated as the shape a root may have rather than as the shapes to refuse. The list
+    of refusals was one entry long — a parent equal to SCENARIOS — while `.`, `scripts`
+    and `scripts/tests` all passed it and all cover the whole tree, and an absolute or
+    parent-relative path passed too. A positive rule has no such remainder.
+
+    A root is `SCENARIOS/<name>[/...]`: relative, no parent segment, and at least one
+    directory below the tree that holds it. The parent of the record is that root, and
+    it is what decides which files the entry accounts for.
+    """
+    if not record:
+        return None
+    path = Path(record)
+    if path.is_absolute() or ".." in path.parts:
+        return None
+    parent = path.parent
+    if parent == SCENARIOS or not parent.is_relative_to(SCENARIOS):
+        return None
+    return parent
 
 
 def section_text(text: str, heading: str) -> str | None:
@@ -200,7 +219,7 @@ def unaccounted_files(root: Path, registered: set[str]) -> list[str]:
     base = root / SCENARIOS
     if not base.is_dir():
         return []
-    roots = [root / Path(record).parent for record in registered]
+    roots = [root / found for found in map(scenario_root, registered) if found is not None]
     found = []
     for path in sorted(base.rglob("*")):
         if not path.is_file() or path == root / REGISTRY:

@@ -19,7 +19,7 @@ evidence:
     section: Gate 5: Responsibility
     fingerprint: {fingerprint}
     recorded: 2026-08-25
-    record: scenarios/sample/README.md
+    record: scripts/tests/scenarios/sample/README.md
 """
 
 DOCUMENT = """# Title
@@ -151,7 +151,7 @@ class DriftTests(unittest.TestCase):
         registry = (
             "schema: 1\nevidence:\n  - id: old\n    state: superseded\n"
             "    tests: doc.md\n    section: whole-file\n    recorded: 2026-08-17\n"
-            "    record: scenarios/old/README.md\n"
+            "    record: scripts/tests/scenarios/old/README.md\n"
             "    superseded-reason: the runs predate the current wording\n"
         )
         with TemporaryDirectory() as tmp:
@@ -188,13 +188,40 @@ class DriftTests(unittest.TestCase):
             self.assertIn("no registry entry", output)
             self.assertNotIn("scenarios/known - a checked-in", output)
 
+    def test_every_root_shape_outside_a_scenario_is_refused(self) -> None:
+        # The previous guard refused one shape — a parent equal to SCENARIOS — while
+        # `.`, `scripts` and `scripts/tests` all passed it and all cover the whole tree,
+        # and an absolute or parent-relative path passed too. Stated positively there is
+        # no remainder to enumerate.
+        outside = (
+            "PROJECT.md",
+            "scripts/x.md",
+            "scripts/tests/x.md",
+            "scripts/tests/scenarios/x.md",
+            "/abs/path.md",
+            "scripts/tests/scenarios/../../PROJECT.md",
+        )
+        for record in outside:
+            with self.subTest(record=record):
+                self.assertIsNone(evidence_currency.scenario_root(record))
+
+    def test_a_record_inside_a_scenario_names_its_directory(self) -> None:
+        for record, expected in (
+            ("scripts/tests/scenarios/a/README.md", "scripts/tests/scenarios/a"),
+            ("scripts/tests/scenarios/a/b/README.md", "scripts/tests/scenarios/a/b"),
+        ):
+            with self.subTest(record=record):
+                found = evidence_currency.scenario_root(record)
+                self.assertEqual(found.as_posix(), expected)
+
     def test_a_tree_covering_record_cannot_silence_the_walk(self) -> None:
-        # One entry whose record sits beside the registry makes SCENARIOS itself the
-        # covering root, so every unaccounted file becomes accounted for. Refused at
+        # One entry whose record sits beside the registry would make SCENARIOS itself
+        # the covering root, so every unaccounted file becomes accounted for. Refused at
         # validate rather than guarded at the walk, which cannot tell that answer from
-        # a clean tree.
+        # a clean tree. The shape rule that refuses it is `scenario_root`, which the
+        # walk uses too, so neither can admit a root the other rejects.
         registry = CURRENT.format(fingerprint="abc123").replace(
-            "record: scenarios/sample/README.md",
+            "record: scripts/tests/scenarios/sample/README.md",
             "record: scripts/tests/scenarios/evidence.yaml",
         )
         with TemporaryDirectory() as tmp:
@@ -204,13 +231,13 @@ class DriftTests(unittest.TestCase):
             with self.assertRaises(evidence_currency.EvidenceError) as caught:
                 evidence_currency.validate(evidence_currency.load(root / "evidence.yaml"))
 
-            self.assertIn("would cover the whole tree", str(caught.exception))
+            self.assertIn("must sit inside a scenario directory", str(caught.exception))
 
     def test_a_record_that_is_not_there_fails_the_standalone_check(self) -> None:
         # The unittest suite already asserted this; the documented command did not, so
         # `--check` passed on a claim pointing at a deleted result.
         registry = CURRENT.format(fingerprint="placeholder").replace(
-            "record: scenarios/sample/README.md", "record: scenarios/gone/README.md"
+            "scenarios/sample/README.md", "scenarios/gone/README.md"
         )
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -221,7 +248,7 @@ class DriftTests(unittest.TestCase):
             failed, output = run_check(root)
 
             self.assertTrue(failed)
-            self.assertIn("its record scenarios/gone/README.md is not there", output)
+            self.assertIn("its record scripts/tests/scenarios/gone/README.md is not there", output)
 
     def test_a_scenario_whose_record_is_not_a_readme_is_still_seen(self) -> None:
         # Deriving from the README filename would have left this invisible, which is
@@ -325,10 +352,10 @@ class ModelTests(unittest.TestCase):
             ),
             "record covering the whole tree": (
                 base.replace(
-                    "record: scenarios/sample/README.md",
+                    "record: scripts/tests/scenarios/sample/README.md",
                     "record: scripts/tests/scenarios/evidence.yaml",
                 ),
-                "would cover the whole tree",
+                "must sit inside a scenario directory",
             ),
             "superseded without reason": (
                 base.replace("state: current", "state: superseded"),
