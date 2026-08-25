@@ -135,6 +135,39 @@ class DriftTests(unittest.TestCase):
             self.assertIn("SUPERSEDED old", output)
             self.assertIn("predate the current wording", output)
 
+    def test_an_unregistered_scenario_fails(self) -> None:
+        # The maintained-list hole this check was built to avoid: a scenario nobody
+        # registered would otherwise be invisible rather than unverified.
+        registry = (
+            "schema: 1\nevidence:\n  - id: old\n    state: superseded\n"
+            "    tests: doc.md\n    section: whole-file\n    recorded: 2026-08-17\n"
+            "    record: scripts/tests/scenarios/known/README.md\n"
+            "    superseded-reason: the runs predate the current wording\n"
+        )
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write(root, registry)
+            for name in ("known", "orphan"):
+                scenario = root / "scripts" / "tests" / "scenarios" / name
+                scenario.mkdir(parents=True, exist_ok=True)
+                (scenario / "README.md").write_text("# scenario\n", encoding="utf-8")
+
+            failed, output = run_check(root)
+
+            self.assertTrue(failed)
+            self.assertIn("scenarios/orphan/README.md", output)
+            self.assertIn("no registry entry", output)
+            self.assertNotIn("scenarios/known/README.md - a checked-in", output)
+
+    def test_every_checked_in_scenario_is_registered(self) -> None:
+        entries = evidence_currency.load(evidence_currency.ROOT / evidence_currency.REGISTRY)
+        registered = {entry.get("record") for entry in entries}
+
+        found = evidence_currency.scenario_directories(evidence_currency.ROOT)
+
+        self.assertTrue(found)
+        self.assertEqual(sorted(set(found) - registered), [])
+
 
 class ModelTests(unittest.TestCase):
     def parse(self, registry: str) -> None:

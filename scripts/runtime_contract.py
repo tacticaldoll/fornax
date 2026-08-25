@@ -118,11 +118,10 @@ def check(
             elif found != pinned:
                 errors.append(f"{name} is pinned at {pinned} but {found} is installed; {SETUP}")
 
-    # An absent workflow is nothing to reconcile rather than a disagreement — the same
-    # answer seam_contract gives to zero seams. What must not pass quietly is a workflow
-    # that is present and names a different release.
-    workflow_path = root / WORKFLOW
-    workflow_text = _read(workflow_path, errors) if workflow_path.is_file() else None
+    # Absence is a failure, not a clean answer. Zero seams is legitimate — a repository
+    # may genuinely have none — but PROJECT.md calls this repo "enforced by CI", so a
+    # missing workflow contradicts a standing decision rather than describing a state.
+    workflow_text = _read(root / WORKFLOW, errors)
     if workflow_text is not None and requirements_text is not None:
         declared = pins(requirements_text)
         for name, pinned in sorted(set(WORKFLOW_PIN.findall(workflow_text))):

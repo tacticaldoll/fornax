@@ -16,6 +16,9 @@ def satisfied(name: str) -> str | None:
 
 class RuntimeContractTests(unittest.TestCase):
     def write_contract(self, root: Path, python_version: str, ruff_version: str) -> None:
+        workflow = root / ".github" / "workflows" / "validate.yml"
+        workflow.parent.mkdir(parents=True, exist_ok=True)
+        workflow.write_text("        run: echo build\n", encoding="utf-8")
         (root / ".python-version").write_text(python_version + "\n", encoding="utf-8")
         (root / "ruff.toml").write_text(
             f'target-version = "{ruff_version}"\n', encoding="utf-8"
@@ -147,13 +150,18 @@ class WorkflowPinTests(unittest.TestCase):
     def check(self, root: Path) -> list[str]:
         return runtime_contract.check(root, running=(3, 10), installed=lambda name: "1.2.3")
 
-    def test_an_absent_workflow_is_nothing_to_reconcile(self) -> None:
-        # Zero declarations is a clean answer, not a disagreement.
+    def test_an_absent_workflow_fails_rather_than_reading_as_clean(self) -> None:
+        # Zero seams is legitimate; zero CI is not, in a repository PROJECT.md calls
+        # enforced by CI. Borrowing the clean-on-absence answer here would let deleting
+        # the workflow pass every gate.
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             self.workspace(root, None)
 
-            self.assertEqual(self.check(root), [])
+            errors = self.check(root)
+
+            self.assertEqual(len(errors), 1, errors)
+            self.assertIn("validate.yml", errors[0])
 
     def test_a_workflow_pin_matching_the_requirements_passes(self) -> None:
         with TemporaryDirectory() as tmp:

@@ -14,8 +14,10 @@ there now. Drift is then a failure with a name instead of a caveat someone has t
 remember to read.
 
 An entry is `current` and its fingerprint must match, or `superseded` and must say
-why. A missing entry is neither: nothing here discovers scenarios, so this registry
-records the claims that were made, not the ones that could have been.
+why. The set that must be registered is derived from the scenario directories on
+disk rather than maintained here, so a scenario nobody registered is a failure
+instead of an absence — the same reason the install-pin check reads the workspace
+rather than a list.
 
 Standard library only.
 
@@ -38,6 +40,7 @@ from diagnostic_text import printable
 
 ROOT = Path(__file__).resolve().parent.parent
 REGISTRY = Path("scripts/tests/scenarios/evidence.yaml")
+SCENARIOS = Path("scripts/tests/scenarios")
 
 ENTRY_START = re.compile(r"^  - id:\s+(.+?)\s*$")
 ENTRY_FIELD = re.compile(r"^    ([a-z][a-z0-9-]*):(?:\s+(.*?))?\s*$")
@@ -176,9 +179,30 @@ def fingerprint(root: Path, tests: str, heading: str) -> str | None:
     return hashlib.sha256(found.encode("utf-8")).hexdigest()[:16]
 
 
+def scenario_directories(root: Path) -> list[str]:
+    """Every checked-in scenario, as the registry would name its record."""
+    base = root / SCENARIOS
+    if not base.is_dir():
+        return []
+    found = []
+    for path in sorted(base.rglob("README.md")):
+        found.append(path.relative_to(root).as_posix())
+    return found
+
+
 def check(root: Path, entries: tuple[Evidence, ...]) -> bool:
     """Report each entry as current, superseded, or drifted. True when any drifted."""
     failed = False
+    registered = {entry.get("record") for entry in entries}
+    for record in scenario_directories(root):
+        if record not in registered:
+            print(
+                printable(
+                    f"FAIL {record} - a checked-in scenario with no registry entry; "
+                    f"record what wording it measured, or delete it"
+                )
+            )
+            failed = True
     for entry in entries:
         identifier = entry.get("id")
         if entry.get("state") == "superseded":

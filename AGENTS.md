@@ -473,11 +473,12 @@ Prefer lightweight tests that match the risk of the change.
 
 - Run repository validation for every change.
 - Use `.venv/bin/python scripts/check_workspace.py` as the public local entry point; CI runs the
-  same script in its pinned Python 3.10 environment, and the style gate runs inside it so a green
-  local run and a green CI run mean the same thing. CI additionally parses the non-Python sources
-  and exercises the deployment CLI against an installed engine — steps that need tools the
-  maintenance environment does not declare, so they stay CI-only by design rather than by omission.
-  Keep component checks independently runnable for focused diagnostics.
+  same script in its pinned Python 3.10 environment, and the style and hook-syntax gates run inside
+  it so a green local run and a green CI run mean the same thing. Two steps stay CI-only because
+  they need what the maintenance environment does not declare: the JavaScript plugin needs `node`,
+  and the deployment CLI tests need the engine installed. That is the whole of the difference —
+  state it here when it moves, because a local gate that quietly checks less is how a rejected push
+  gets its first surprise. Keep component checks independently runnable for focused diagnostics.
 - Run `.venv/bin/python scripts/development_knowns.py --check` through the workspace gate. Record only
   non-obvious current conditions that affect development judgment; external review language is
   evidence, not the project statement, and a treatment never authorizes work without an explicit
