@@ -107,10 +107,33 @@ def workflow_pins(text: str) -> list[tuple[str, str]]:
 
 
 def logical_commands(text: str) -> list[str]:
-    """Join backslash-continued lines, so one shell command is one string."""
+    """Return one string per command the workflow runs, however it is written.
+
+    Two joins, because two layers wrap the command. YAML folds a `>` scalar's lines
+    into one before the shell ever sees them, so `pip install` and its requirement can
+    sit on separate physical lines with no backslash at all — which a backslash joiner
+    read as two commands and matched in neither. The shell then continues a line with a
+    trailing backslash.
+
+    A folded block is joined by indentation: the lines more indented than the key
+    introducing it belong to it. A literal `|` block keeps its newlines, so its lines
+    stay separate commands and only the backslash join applies to them.
+    """
     commands: list[str] = []
     pending = ""
+    folding: int | None = None
     for line in text.splitlines():
+        indent = len(line) - len(line.lstrip())
+        if folding is not None:
+            if line.strip() and indent > folding:
+                pending += line.strip() + " "
+                continue
+            commands.append(pending.rstrip())
+            pending, folding = "", None
+        if re.search(r":\s*>[-+]?\s*$", line):
+            folding = indent
+            pending = ""
+            continue
         stripped = line.rstrip()
         if stripped.endswith("\\"):
             pending += stripped[:-1] + " "
@@ -118,7 +141,7 @@ def logical_commands(text: str) -> list[str]:
         commands.append(pending + line)
         pending = ""
     if pending:
-        commands.append(pending)
+        commands.append(pending.rstrip())
     return commands
 
 

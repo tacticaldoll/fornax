@@ -192,6 +192,7 @@ class WorkflowPinTests(unittest.TestCase):
             "        run: pip install other==2.0.0 tool==9.9.9\n",
             "        run: pip3 install tool==9.9.9\n",
             "        run: |\n          pip install \\\\\n            tool==9.9.9\n",
+            "        run: >\n          pip install\n          tool==9.9.9\n",
             "        run: |\n          pip install \\\\\n"
             "            --upgrade \\\\\n            tool==9.9.9\n",
         )
@@ -212,6 +213,7 @@ class WorkflowPinTests(unittest.TestCase):
             "        run: echo tool==9.9.9\n",
             "        run: pip download tool==9.9.9\n",
             "        run: echo \\\\\n          tool==9.9.9\n",
+            "        run: >\n          echo\n          tool==9.9.9\n",
         ):
             with self.subTest(line=line.strip()), TemporaryDirectory() as tmp:
                 root = Path(tmp)
