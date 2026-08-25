@@ -127,23 +127,23 @@ def validate_projected_descriptions(root: Path, canonical: str) -> bool:
     return failed
 
 
-def install_pin_pattern(repository: str) -> re.Pattern[str]:
-    """Match a documented install ref that already names a release tag.
+def install_ref_pattern(repository: str) -> re.Pattern[str]:
+    """Match a documented install ref and capture the whole ref, not a prefix of it.
 
-    The version must end where the tag ends, modelled as the alphabet a version is
-    written in rather than as a list of what may follow it. Two list forms failed here
-    first: excluding `[\\w.-]` let `+build.5` through because `+` was missing, and then
-    enumerating the permitted terminators missed `;`, `|` and `>`, so a stale pin
-    followed by a shell separator went unread entirely.
+    Fourth form of this boundary, and the first that does not try to prove where
+    something ends. Excluding `[\\w.-]` missed `+`. Permitting a punctuation set missed
+    `;`, `|` and `>`. Modelling SemVer's alphabet missed `_` and `/` — because the thing
+    being matched is a Git ref, and a ref admits characters a version does not, so
+    proving the version ended proved nothing about the ref.
 
-    SemVer closes the question the lists could not. A version continues through
-    alphanumerics, `.`, `-` and `+` — prerelease and build metadata included — and ends
-    at anything else. That set is defined by the grammar being matched, so it does not
-    have to anticipate what a document puts next: a quote, a `#` fragment, a shell
-    separator, and end of line are all simply outside it.
+    A whole token compared for equality cannot be one character short. The delimiter set
+    is still a list, and still open in principle — but it now bounds only *where the
+    token stops*, and a wrong guess there makes the token longer and therefore unequal,
+    which is reported. Under the previous forms a wrong guess made the match silently
+    absent, which was not. The failure mode moved from missing to noisy.
     """
     return re.compile(
-        re.escape(repository) + r"\.git[@#]v(\d+\.\d+\.\d+)(?![0-9A-Za-z.+-])"
+        re.escape(repository) + r"\.git[@#](v[^\s\"'`#,)\]|;&><]+)"
     )
 
 
@@ -171,7 +171,8 @@ def validate_install_pins(root: Path, repository: str, version: str) -> bool:
     was described as only a gain. It was not.
     """
     failed = False
-    pattern = install_pin_pattern(repository)
+    pattern = install_ref_pattern(repository)
+    expected = f"v{version}"
     carrying: set[str] = set()
 
     paths, error = listed(root)
@@ -186,13 +187,13 @@ def validate_install_pins(root: Path, repository: str, version: str) -> bool:
             text = path.read_text(encoding="utf-8")
         except (OSError, UnicodeError):
             continue  # text hygiene owns unreadable files and reports them there
-        pinned = pattern.findall(text)
-        if not pinned:
+        refs = pattern.findall(text)
+        if not refs:
             continue
         relative_path = path.relative_to(root).as_posix()
         carrying.add(relative_path)
-        for stale in sorted(set(pinned) - {version}):
-            print(f"FAIL {relative_path} - install pin v{stale} must match distribution.json")
+        for stale in sorted(set(refs) - {expected}):
+            print(f"FAIL {relative_path} - install ref {stale} must be {expected}")
             failed = True
 
     for relative_path in PINNED_INSTALL_DOCS:
