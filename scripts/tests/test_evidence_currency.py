@@ -252,8 +252,15 @@ class DriftTests(unittest.TestCase):
 
         found = evidence_currency.unaccounted_files(evidence_currency.ROOT, registered)
 
-        self.assertTrue(registered)
         self.assertEqual(found, [])
+
+    def test_the_walk_sees_the_real_tree_at_all(self) -> None:
+        # The negative control the clean assertion above needs. Asserting an empty result
+        # says nothing about whether anything was walked, and its previous anchor —
+        # that the registry is non-empty — was about the YAML rather than the walk.
+        found = evidence_currency.unaccounted_files(evidence_currency.ROOT, set())
+
+        self.assertTrue(found, "the scenario tree carries files and none were seen")
 
 
 class ModelTests(unittest.TestCase):
