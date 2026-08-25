@@ -970,7 +970,7 @@ class ProjectedDescriptionTests(unittest.TestCase):
             "version": ("version", "9.9.9", "version must match distribution.json"),
         }
         for label, (field, value, message) in cases.items():
-            for relative in validate_skills.HOST_VERSION_MANIFESTS:
+            for relative in distribution_manifest.HOST_VERSION_MANIFESTS:
                 with self.subTest(label=label, relative=relative), TemporaryDirectory() as tmp:
                     root = Path(tmp)
                     fixtures.write_distribution(root)

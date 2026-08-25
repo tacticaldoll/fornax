@@ -31,8 +31,6 @@ from pathlib import Path
 from diagnostic_text import printable
 from distribution_manifest import validate_distribution
 
-# Re-exported so scripts/tests/fixtures.py keeps reaching it here while code moves.
-from distribution_manifest import HOST_VERSION_MANIFESTS, PINNED_INSTALL_DOCS  # noqa: F401
 from host_paths import has_parent_segment_anywhere, is_absolute_anywhere
 from markdown_links import iter_markdown_links, local_target
 from path_boundary import Boundary, Verdict, resolve_within

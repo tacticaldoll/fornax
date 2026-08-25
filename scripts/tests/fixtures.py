@@ -14,7 +14,6 @@ import subprocess
 from pathlib import Path
 
 import distribution_manifest
-import validate_skills
 
 DESCRIPTION = (
     "Use when an agent needs the thing this fixture stands for; does the thing, "
@@ -118,7 +117,7 @@ def write_distribution(
         encoding="utf-8",
     )
 
-    for relative in validate_skills.HOST_VERSION_MANIFESTS:
+    for relative in distribution_manifest.HOST_VERSION_MANIFESTS:
         path = root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
