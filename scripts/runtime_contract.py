@@ -42,6 +42,7 @@ RUFF_TARGET = re.compile(r'^target-version\s*=\s*"([^"]+)"\s*$', re.MULTILINE)
 REQUIREMENTS = Path("requirements-maintenance.txt")
 WORKFLOW = Path(".github/workflows/validate.yml")
 WORKFLOW_PIN = re.compile(r"(?<![\w.-])([A-Za-z0-9][A-Za-z0-9._-]*)==([A-Za-z0-9][^\s\"',;]*)")
+INSTALL_LINE = re.compile(r"(?<![\w-])pip(?:3)?\s+install(?![\w-])")
 PIN = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)==([^\s;#]+)")
 SETUP = "run the maintenance environment setup from README.md"
 
@@ -76,6 +77,28 @@ def _read(path: Path, errors: list[str]) -> str | None:
     except OSError as error:
         errors.append(f"{path.name} could not be read: {error}")
     return None
+
+
+def workflow_pins(text: str) -> list[tuple[str, str]]:
+    """Every exact pin the workflow actually installs, wherever on its line it sits.
+
+    Two failures bound this. Anchoring the whole match on `pip install ` read only the
+    first package and only one spelling, so `--upgrade`, a quoted spec, and a second
+    package all passed unread. Dropping the anchor entirely read raw YAML, so a comment
+    or an `echo` became an install.
+
+    So the line decides whether it installs and the token decides what: a line carrying
+    a pip install invocation contributes every `name==version` on it, and a line that
+    does not contributes none. A comment is not an install line — the `#` ends it before
+    the invocation, and a commented-out install is not one either.
+    """
+    found: list[tuple[str, str]] = []
+    for line in text.splitlines():
+        executable = line.split("#", 1)[0]
+        if not INSTALL_LINE.search(executable):
+            continue
+        found.extend(WORKFLOW_PIN.findall(executable))
+    return found
 
 
 def check(
@@ -129,7 +152,7 @@ def check(
     workflow_text = _read(root / WORKFLOW, errors)
     if workflow_text is not None and requirements_text is not None:
         declared = pins(requirements_text)
-        for name, pinned in sorted(set(WORKFLOW_PIN.findall(workflow_text))):
+        for name, pinned in sorted(set(workflow_pins(workflow_text))):
             if name not in declared:
                 errors.append(
                     f"{WORKFLOW.name} installs {name}=={pinned}, which "

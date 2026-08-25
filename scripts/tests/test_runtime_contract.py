@@ -190,6 +190,7 @@ class WorkflowPinTests(unittest.TestCase):
             "        run: pip install --upgrade tool==9.9.9\n",
             '        run: pip install "tool==9.9.9"\n',
             "        run: pip install other==2.0.0 tool==9.9.9\n",
+            "        run: pip3 install tool==9.9.9\n",
         )
         for workflow in spellings:
             with self.subTest(workflow=workflow.strip()), TemporaryDirectory() as tmp:
@@ -199,6 +200,20 @@ class WorkflowPinTests(unittest.TestCase):
                 errors = self.check(root)
 
                 self.assertTrue(any("tool==9.9.9" in error for error in errors), errors)
+
+    def test_text_that_is_not_an_install_is_not_a_pin(self) -> None:
+        # The control the prefix-free rewrite lacked. Dropping the command anchor read
+        # raw YAML, so a comment and an echo became installs.
+        for line in (
+            "        # example: tool==9.9.9\n",
+            "        run: echo tool==9.9.9\n",
+            "        run: pip download tool==9.9.9\n",
+        ):
+            with self.subTest(line=line.strip()), TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                self.workspace(root, line)
+
+                self.assertEqual(self.check(root), [])
 
     def test_a_requirements_file_reference_is_not_a_pin(self) -> None:
         with TemporaryDirectory() as tmp:
