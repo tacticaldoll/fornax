@@ -44,6 +44,26 @@ uvx \
 permanent `fornax` command. They execute the same tagged package as the persistent
 installation; there is no second deployment implementation.
 
+## Deploy from a checkout
+
+Inside a clone, build the command from the workspace instead of naming a version. Run
+this from the repository root:
+
+```sh
+uvx --from ./tools/fornax-cli fornax deploy --all
+```
+
+The version is not omitted here, it is derived: `pyproject.toml` reads it out of
+`distribution.json`, so the command deploys whatever release this workspace declares.
+Prefer it inside a clone — the pinned commands above exist for installing without one,
+and every release has to rewrite them.
+
+This is not a local-source deployment, and the formal release contract below applies to
+it unchanged. The checkout supplies one thing, the release number; the content still
+comes from `refs/tags/v<version>` on the Fornax remote. An uncommitted bump in
+`distribution.json` therefore names a tag that does not resolve, and the run stops
+before a host is touched rather than shipping a working tree.
+
 ## Commands
 
 ```sh
@@ -82,8 +102,10 @@ Installed skills are managed copies with `.fornax-install.json`; none link to a 
 
 ## Development
 
-Development may use the engine and wrapper directly, but it is intentionally outside
-the formal `fornax` command contract:
+Development may import the engine and wrapper directly, bypassing the packaged command.
+That is what sits intentionally outside the formal `fornax` command contract — not
+`uvx --from ./tools/fornax-cli` above, which builds the package and runs the same
+pipeline as every other entry point:
 
 ```sh
 PYTHONPATH=/path/to/agent-skill-deployer:tools/fornax-cli \

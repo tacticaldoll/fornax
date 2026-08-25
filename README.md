@@ -219,9 +219,16 @@ pipx run \
   fornax deploy --all
 ```
 
-Persistent `pipx` installation and the equivalent `uvx` command are documented in
-[`tools/fornax-cli`](tools/fornax-cli/). Both execute the same formal release pipeline; neither
-accepts a local source checkout.
+From a clone, build the command from the workspace instead and let the release number come from
+`distribution.json`, so no version is typed at all:
+
+```sh
+uvx --from ./tools/fornax-cli fornax deploy --all
+```
+
+Persistent `pipx` installation and the equivalent `uvx` commands are documented in
+[`tools/fornax-cli`](tools/fornax-cli/). Every entry point executes the same formal release
+pipeline and deploys the canonical remote tag; none of them deploys a local source checkout.
 
 - **Claude Code** — install as a plugin (`.claude-plugin/`); skills appear as `/fornax:<skill>`.
 - **Codex / Cursor** — install as a plugin (`.codex-plugin/`, `.cursor-plugin/`).
