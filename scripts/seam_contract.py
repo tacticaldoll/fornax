@@ -33,6 +33,7 @@ from pathlib import Path
 
 import generated_block
 from generated_block import BlockError, Markers, Rendered
+from markdown_links import heading_texts
 from skill_interface import (
     INTERFACE_FILE,
     InterfaceError,
@@ -54,7 +55,6 @@ OUTPUT_TEMPLATE = re.compile(
     re.MULTILINE | re.DOTALL,
 )
 HEADER_FIELD = re.compile(r"^\*\*([^*]+)\*\*\s*:", re.MULTILINE)
-SECTION = re.compile(r"^#{2,3} (.+)$", re.MULTILINE)
 
 RecordShape = list[tuple[str, str]]
 Seam = tuple[str, str, str, RecordShape]
@@ -98,7 +98,7 @@ def elements(skill_md: str, record: RecordIdentity) -> RecordShape:
     template = templates[key][0]
 
     return [(name.strip(), "field") for name in HEADER_FIELD.findall(template)] + [
-        (name.strip(), "section") for name in SECTION.findall(template)
+        (name, "section") for name in heading_texts(template)
     ]
 
 

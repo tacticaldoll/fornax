@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 import fixtures
 import generated_block
+import markdown_links
 import seam_contract
 
 PUBLISHER = fixtures.PUBLISHER_ID
@@ -170,6 +171,21 @@ class SeamDiscovery(unittest.TestCase):
 
             self.assertEqual(code, 0)
             self.assertIn("0 seam(s)", out)
+
+
+class TemplateHeadingTests(unittest.TestCase):
+    def test_a_heading_inside_a_fenced_block_is_not_an_element(self) -> None:
+        # `^#{2,3} (.+)$` counted one, so a template carrying a fenced example would
+        # have the example's headings inventoried as the record's own — the same defect
+        # the evidence fingerprint had, in a sibling module.
+        template = (
+            "## Review Record\n\n### Gate Index\n\n```text\n### Not A Section\n```\n\n"
+            "### Real Tail\n"
+        )
+
+        found = markdown_links.heading_texts(template)
+
+        self.assertEqual(found, ["Review Record", "Gate Index", "Real Tail"])
 
 
 class Staleness(unittest.TestCase):
