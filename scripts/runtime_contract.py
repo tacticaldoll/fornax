@@ -13,17 +13,16 @@ floor and then validates the workspace with a parser the pins do not name — th
 passes while checking something else. So the installed version of every pin is
 compared too.
 
-The workflow used to install its own style pin rather than reading the requirements
-file, so the two could name different releases while both looked deliberate. That
-duplicate is gone: the gate the workflow runs installs from the requirements file and
-checks style inside itself. Every `name==version` token the workflow
-carries inline is compared against the requirements file anyway — derived from the
-token rather than from one command spelling, because anchoring on `pip install `
-missed `--upgrade`, a quoted spec, and every package after the first on one line. Zero
-of them is the intended state and a clean answer, and the comparison is what keeps a
-reintroduced one from passing quietly. A VCS ref is out of scope: the workflow installs the deployment
-engine as `agent-skill-deployer @ git+…@v0.1.2`, which the requirements file does not
-declare and this does not read, so that pin is guarded by nothing here.
+The workflow used to install its own style pin rather than reading the requirements file, so the two
+could name different releases while both looked deliberate. That duplicate is gone: the gate the
+workflow runs installs from the requirements file and checks style inside itself. Every
+`name==version` token the workflow carries inline is compared against the requirements file anyway —
+derived from the token rather than from one command spelling, because anchoring on `pip install `
+missed `--upgrade`, a quoted spec, and every package after the first on one line. Zero of them is
+the intended state and a clean answer, and the comparison is what keeps a reintroduced one from
+passing quietly. A VCS ref is out of scope: the workflow installs the deployment engine as
+`agent-skill-deployer @ git+…@v0.1.2`, which the requirements file does not declare and this does
+not read, so that pin is guarded by nothing here.
 """
 
 from __future__ import annotations
