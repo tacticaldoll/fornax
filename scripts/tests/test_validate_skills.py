@@ -983,36 +983,51 @@ class ProjectedDescriptionTests(unittest.TestCase):
     def test_a_documented_install_pin_that_disagrees_on_version_fails(self) -> None:
         # A release bumped every manifest and left a pin on the previous tag, and the
         # whole workspace stayed green: the commands a reader copies had no guard.
-        for relative in validate_skills.PINNED_INSTALL_DOCS:
-            with self.subTest(relative=relative), TemporaryDirectory() as tmp:
-                root = Path(tmp)
-                fixtures.write_distribution(root)
-                path = root / relative
-                path.write_text(
-                    path.read_text(encoding="utf-8").replace("@v1.2.3", "@v0.9.9"),
-                    encoding="utf-8",
-                )
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_distribution(root)
+            pin = root / "INSTALL.md"
+            pin.write_text(
+                pin.read_text(encoding="utf-8").replace("@v1.2.3", "@v0.9.9"),
+                encoding="utf-8",
+            )
 
-                passed, output = self.check_distribution(root)
+            passed, output = self.check_distribution(root)
 
-                self.assertFalse(passed)
-                self.assertIn(relative, output)
-                self.assertIn("install pin v0.9.9 must match distribution.json", output)
+            self.assertFalse(passed)
+            self.assertIn("INSTALL.md", output)
+            self.assertIn("install pin v0.9.9 must match distribution.json", output)
 
-    def test_a_pinned_doc_that_carries_no_pin_fails(self) -> None:
-        # The declared list goes stale by a pin site moving out of a file still named
-        # here, so an empty doc must not read as agreement.
-        for relative in validate_skills.PINNED_INSTALL_DOCS:
-            with self.subTest(relative=relative), TemporaryDirectory() as tmp:
-                root = Path(tmp)
-                fixtures.write_distribution(root)
-                (root / relative).write_text("No install command here.\n", encoding="utf-8")
+    def test_a_pin_in_an_unregistered_file_is_judged_too(self) -> None:
+        # The point of deriving the file list: a pin nobody thought to register is
+        # exactly the one a maintained list would have missed.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_distribution(root)
+            nested = root / "docs" / "quickstart.md"
+            nested.parent.mkdir(parents=True, exist_ok=True)
+            nested.write_text(
+                "pipx install git+https://example.invalid/fixture.git@v0.0.1\n",
+                encoding="utf-8",
+            )
 
-                passed, output = self.check_distribution(root)
+            passed, output = self.check_distribution(root)
 
-                self.assertFalse(passed)
-                self.assertIn(relative, output)
-                self.assertIn("must carry an install pin naming the release tag", output)
+            self.assertFalse(passed)
+            self.assertIn("docs/quickstart.md", output)
+            self.assertIn("install pin v0.0.1 must match distribution.json", output)
+
+    def test_a_workspace_with_no_pin_at_all_fails(self) -> None:
+        # An empty scan and a clean scan must not report the same thing.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_distribution(root)
+            (root / "INSTALL.md").unlink()
+
+            passed, output = self.check_distribution(root)
+
+            self.assertFalse(passed)
+            self.assertIn("no documented install pin names the release tag", output)
 
     def test_an_unpinned_install_ref_is_left_alone(self) -> None:
         # Tracking the default branch is a documented form, not a stale pin. Judging it
@@ -1020,12 +1035,8 @@ class ProjectedDescriptionTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             fixtures.write_distribution(root)
-            relative = validate_skills.PINNED_INSTALL_DOCS[0]
-            path = root / relative
-            path.write_text(
-                path.read_text(encoding="utf-8")
-                + "\nOr track the default branch:\n\n"
-                + "```sh\npipx install git+https://example.invalid/fixture.git\n```\n",
+            (root / "TRACK.md").write_text(
+                "pipx install git+https://example.invalid/fixture.git\n",
                 encoding="utf-8",
             )
 

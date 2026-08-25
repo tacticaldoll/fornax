@@ -21,6 +21,7 @@ from uuid import UUID
 
 from diagnostic_text import printable
 from skill_model import NAME_PATTERN
+from workspace_files import workspace_files
 
 
 VERSION_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
@@ -34,13 +35,6 @@ HOST_VERSION_MANIFESTS = (
 
 
 HOST_DESCRIPTION_MANIFESTS = HOST_VERSION_MANIFESTS + (".claude-plugin/marketplace.json",)
-
-
-PINNED_INSTALL_DOCS = (
-    ".opencode/INSTALL.md",
-    "README.md",
-    "tools/fornax-cli/README.md",
-)
 
 
 @dataclass(frozen=True)
@@ -123,41 +117,45 @@ def install_pin_pattern(repository: str) -> re.Pattern[str]:
 def validate_install_pins(root: Path, repository: str, version: str) -> bool:
     """Require every documented install pin to name the release being shipped.
 
-    The host manifests are checked above, but the commands a reader copies live in
-    Markdown, and nothing compared those to distribution.json: a release that bumped
-    every manifest and missed one pin shipped an install command that resolves to the
-    previous tag, with every workspace check still green.
+    The host manifests are checked above, but the commands a reader copies live
+    in Markdown, and nothing compared those to distribution.json: a release that
+    bumped every manifest and missed one pin shipped an install command that
+    resolves to the previous tag, with every workspace check still green.
 
-    An unpinned ref is the deliberate track-the-default-branch form and is left alone;
-    only a ref already carrying a version is judged. A declared doc carrying no pin at
-    all fails too, because this list is maintained rather than derived: the way it goes
-    stale is a pin site moving out of a file still named here, and silence would read
-    as agreement. A pin appearing in a file nobody registered stays uncovered.
+    The docs to read are derived from the workspace rather than listed here, so
+    a pin added to a file nobody thought to register is judged like the rest. An
+    unpinned ref is left alone: tracking the default branch is a documented form,
+    not a stale pin, and only a ref already carrying a version is a claim about
+    which release to install.
+
+    Finding no pin anywhere fails. Every documented install path names a tag, so
+    an empty result means the scan stopped matching what the docs actually say,
+    and a check that inspected nothing must not report what one that inspected
+    everything reports.
     """
     failed = False
     pattern = install_pin_pattern(repository)
+    found_any = False
 
-    for relative_path in PINNED_INSTALL_DOCS:
-        path = root / relative_path
+    for path in sorted(workspace_files(root)):
+        if path.suffix != ".md" or not path.is_file():
+            continue
         try:
             text = path.read_text(encoding="utf-8")
-        except UnicodeError:
-            print(printable(f"FAIL {relative_path} - must use UTF-8"))
-            failed = True
-            continue
-        except OSError as error:
-            print(printable(f"FAIL {relative_path} - {error}"))
-            failed = True
-            continue
-
+        except (OSError, UnicodeError):
+            continue  # text hygiene owns unreadable files and reports them there
         pinned = pattern.findall(text)
         if not pinned:
-            print(f"FAIL {relative_path} - must carry an install pin naming the release tag")
-            failed = True
             continue
-        for found in sorted(set(pinned) - {version}):
-            print(f"FAIL {relative_path} - install pin v{found} must match distribution.json")
+        found_any = True
+        relative_path = path.relative_to(root).as_posix()
+        for stale in sorted(set(pinned) - {version}):
+            print(f"FAIL {relative_path} - install pin v{stale} must match distribution.json")
             failed = True
+
+    if not found_any:
+        print("FAIL distribution.json - no documented install pin names the release tag")
+        failed = True
 
     return failed
 
