@@ -23,6 +23,7 @@ STEPS = (
     ("skill maps", "scripts/skill_graph.py", "--check"),
     ("record seams", "scripts/seam_contract.py", "--check"),
     ("development knowns", "scripts/development_knowns.py", "--check"),
+    ("evidence currency", "scripts/evidence_currency.py", "--check"),
     ("text hygiene", "scripts/check_text.py"),
     (
         "validation tests",

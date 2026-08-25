@@ -1,0 +1,16 @@
+schema: 1
+evidence:
+  - id: static-review-gate5-ledger
+    state: current
+    tests: skills/static-review/references/gates.md
+    section: Gate 5: Responsibility & Boundaries
+    fingerprint: ddcde3c8d42d2124
+    recorded: 2026-08-25
+    record: scripts/tests/scenarios/static-review/gate5-ledger/README.md
+  - id: triage-findings-fresh-context
+    state: superseded
+    tests: skills/triage-findings/SKILL.md
+    section: whole-file
+    recorded: 2026-08-17
+    record: scripts/tests/scenarios/triage-findings/README.md
+    superseded-reason: the recorded runs predate the current wording, which docs/review-record-contract.md already says in prose and nothing enforced
