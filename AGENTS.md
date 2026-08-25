@@ -527,6 +527,14 @@ Prefer lightweight tests that match the risk of the change.
   took three forms: excluding `[\w.-]` missed `+`, then permitting a punctuation set missed `;`, `|`
   and `>`, and only the version's own alphabet needed no third revision. Two controls catch the
   instance; modelling the closed side is what stops the next one.
+- After repairing a defect, sweep the repository for the same class before calling it fixed. Not by
+  rereading the change — by enumerating the mechanism: every `re.compile`, every hand-written
+  grammar, every place the same question is answered, then checking each against the property the
+  repair established. Reviews report what they were pointed at. The install-ref boundary took four
+  forms across four rounds, and when the class was finally swept, two more matchers of the same
+  shape were sitting in files no round had opened: a second hand-written heading grammar in
+  `seam_contract`, and a terminator list for a declared version in `runtime_contract`. Both were
+  found by asking "what else is like this", which no review had been asked.
 - The OpenCode plugin is syntax-checked in CI with
   `node --input-type=module --check < .opencode/plugins/fornax.js`, install-free on the runner; the
   hook is parsed by `scripts/check_sources.py` inside the workspace gate. Feed the plugin through
