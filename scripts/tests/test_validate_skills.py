@@ -1047,12 +1047,13 @@ class ProjectedDescriptionTests(unittest.TestCase):
         try:
             with TemporaryDirectory() as tmp:
                 root = Path(tmp)
-                fixtures.write_distribution(root)
-                # The documents stay pinned on purpose. Unlinking them too satisfies the
-                # assertion through the scan finding nothing, so the test would pass with
-                # the registry guard deleted — which is what it exists to detect.
+                # The documents are written from the snapshot, so emptying the registry
+                # cannot also empty the tree. Without that the scan finds nothing and the
+                # assertion is satisfied by the branch this test exists to distinguish.
+                fixtures.write_distribution(root, install_docs=original)
 
                 passed, output = self.check_distribution(root)
+                self.assertTrue(all((root / r).is_file() for r in original), "fixture empty")
         finally:
             distribution_manifest.PINNED_INSTALL_DOCS = original
 

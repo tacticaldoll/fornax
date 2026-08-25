@@ -61,9 +61,20 @@ def write_worktree(root: Path) -> None:
         subprocess.run(["git", "init", "-q", str(root)], check=True)
 
 
-def write_install_docs(root: Path, version: str) -> None:
-    """Write one pinned install document per path the pin check requires to carry one."""
-    for relative in distribution_manifest.PINNED_INSTALL_DOCS:
+def write_install_docs(
+    root: Path, version: str, relatives: tuple[str, ...] | None = None
+) -> None:
+    """Write one pinned install document per path the pin check requires to carry one.
+
+    The paths are a parameter so a test can patch the registry the check reads without
+    also emptying the tree it reads it against. Deriving them from the constant under
+    test made the emptied-registry test pass through the route its own comment said it
+    had removed: zero documents written, `carrying` empty, and the guard the test exists
+    for deletable with the test still green.
+    """
+    for relative in (
+        relatives if relatives is not None else distribution_manifest.PINNED_INSTALL_DOCS
+    ):
         path = root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
@@ -80,6 +91,7 @@ def write_distribution(
     version: str = "1.2.3",
     name: str = "fixture",
     publisher_id: str = PUBLISHER_ID,
+    install_docs: tuple[str, ...] | None = None,
 ) -> None:
     """A canonical distribution plus the host manifests that project it.
 
@@ -116,7 +128,7 @@ def write_distribution(
         )
 
     write_worktree(root)
-    write_install_docs(root, version)
+    write_install_docs(root, version, install_docs)
 
     marketplace = root / ".claude-plugin" / "marketplace.json"
     marketplace.parent.mkdir(parents=True, exist_ok=True)
