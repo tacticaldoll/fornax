@@ -43,7 +43,7 @@ REQUIREMENTS = Path("requirements-maintenance.txt")
 WORKFLOW = Path(".github/workflows/validate.yml")
 WORKFLOW_PIN = re.compile(r"(?<![\w.-])([A-Za-z0-9][A-Za-z0-9._-]*)==([A-Za-z0-9][^\s\"',;]*)")
 INSTALL_LINE = re.compile(r"(?<![\w-])pip(?:3)?\s+install(?![\w-])")
-PIN = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)==([^\s;#]+)")
+PIN = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)==([0-9][0-9A-Za-z.!+*-]*)")
 SETUP = "run the maintenance environment setup from README.md"
 
 
@@ -53,6 +53,11 @@ def pins(text: str) -> dict[str, str]:
     A requirements line may carry a trailing comment or an environment marker, and a
     pyproject dependency arrives wrapped in quotes and a comma. All three are legal
     and all three otherwise end up inside the version string.
+
+    The version is bounded by its own alphabet rather than by a list of what may follow
+    it — `[^\\s;#]+` did not stop at `|` or `>`, so a malformed declaration produced
+    `0.16.1|x` and was then compared against an installed version as if it were one.
+    Same correction as the install ref: describe the closed side.
     """
     found: dict[str, str] = {}
     for line in text.splitlines():

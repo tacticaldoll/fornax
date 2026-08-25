@@ -137,6 +137,23 @@ class RuntimeContractTests(unittest.TestCase):
                 self.assertEqual(runtime_contract.pins(line), {"markdown-it-py": "4.2.0"})
 
 
+class DeclaredPinTests(unittest.TestCase):
+    def test_a_version_is_bounded_by_its_own_alphabet(self) -> None:
+        # `[^\\s;#]+` did not stop at `|` or `>`, so a malformed declaration produced
+        # `0.16.1|x` and was compared against an installed version as if it were one.
+        for line, expected in (
+            ("ruff==0.16.1", {"ruff": "0.16.1"}),
+            ("ruff==0.16.1  # comment", {"ruff": "0.16.1"}),
+            ('ruff==0.16.1; python_version>"3.9"', {"ruff": "0.16.1"}),
+            ('"markdown-it-py==4.2.0",', {"markdown-it-py": "4.2.0"}),
+            ("ruff==0.16.1|x", {"ruff": "0.16.1"}),
+            ("ruff==0.16.1>y", {"ruff": "0.16.1"}),
+            ("ruff==x.y.z", {}),
+        ):
+            with self.subTest(line=line):
+                self.assertEqual(runtime_contract.pins(line), expected)
+
+
 class WorkflowPinTests(unittest.TestCase):
     def workspace(self, root: Path, workflow: str | None) -> None:
         (root / ".python-version").write_text("3.10\n", encoding="utf-8")
