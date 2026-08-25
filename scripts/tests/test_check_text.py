@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import subprocess
 import unittest
 from os.path import commonpath
 from pathlib import Path
@@ -172,20 +171,6 @@ class TextHygiene(unittest.TestCase):
 
         self.assertEqual(errors[0].path, path)
         self.assertEqual(errors[0].message, "text file must end with a newline")
-
-    def test_workspace_files_include_cached_and_untracked_files(self) -> None:
-        with TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            subprocess.run(["git", "init", "-q", str(root)], check=True)
-            tracked = root / "tracked.md"
-            tracked.write_text("tracked\n", encoding="utf-8")
-            subprocess.run(["git", "-C", str(root), "add", tracked.name], check=True)
-            untracked = root / "untracked.md"
-            untracked.write_text("untracked\n", encoding="utf-8")
-
-            files = check_text.workspace_files(root)
-
-        self.assertEqual(set(files), {tracked, untracked})
 
     def test_valid_text_and_binary_files_pass(self) -> None:
         with TemporaryDirectory() as tmp:

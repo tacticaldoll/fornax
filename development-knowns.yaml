@@ -44,7 +44,7 @@ knowns:
     rationale: This is a coverage gap rather than staleness, and the two are repaired differently — no recorded signal measures behaviour the later wording changed, so a re-run would re-earn a fingerprint without testing anything new.
     evidence:
       - Closure by a partially-gate-reviewed unit listing the relevant gate was added 2026-08-18; the fixture only exercises a Coverage that never enumerates.
-      - The Non-finding sections integrity check was added 2026-08-24; neither review-record.md nor round-two-review.md contains a non-finding section.
+      - The Non-finding sections integrity check was added 2026-08-24; neither record carries a row-bearing non-finding section, so the check can only answer not claimed — review-record.md has a prose Structural Causes section and no table.
     declined-changes:
       - Re-run the recorded scenario to clear its superseded state, which would refresh a fingerprint without covering either branch.
     reconsider-when: A review reports either branch answered wrongly, or the fixtures gain a partial-coverage record and a non-finding section.
@@ -61,6 +61,18 @@ knowns:
       - Add an interface-usage column on evidence that could not be separated from the responsibility and dependency mechanism.
     reconsider-when: An interface-segregation finding recurs after the ledger is in use.
     updated: 2026-08-24
+  - id: host-manifest-list-unguarded-additions
+    statement: Nothing guards a host manifest the HOST_VERSION_MANIFESTS tuple does not name, so adding a host means editing that tuple.
+    kind: debt
+    treatment: accept
+    rationale: Which JSON file is a host manifest has no reliable signal to derive from — the marketplace manifest is one and carries no version at all — so the list is the primary mechanism here, unlike the install pins where a versioned ref identifies itself.
+    evidence:
+      - scripts/distribution_manifest.py compares only the four paths the tuple names against distribution.json.
+      - Removing a path from the tuple and letting that file drift to another version passes every check.
+    declined-changes:
+      - Derive host manifests by scanning JSON for a version field, which would claim package manifests and miss the marketplace file.
+    reconsider-when: A fifth host is added, or a manifest drifts without the tuple naming it.
+    updated: 2026-08-25
   - id: independently-runnable-link-checks
     statement: Component checks retain overlapping absolute Markdown link validation.
     kind: constraint

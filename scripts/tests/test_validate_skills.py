@@ -988,7 +988,7 @@ class ProjectedDescriptionTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             fixtures.write_distribution(root)
-            relative = validate_skills.PINNED_INSTALL_DOCS[0]
+            relative = distribution_manifest.PINNED_INSTALL_DOCS[0]
             pin = root / relative
             pin.write_text(
                 pin.read_text(encoding="utf-8").replace("@v1.2.3", "@v0.9.9"),
@@ -1024,7 +1024,7 @@ class ProjectedDescriptionTests(unittest.TestCase):
         # The direction derivation cannot see: an unpinned ref is a documented form,
         # so no rule over the text alone separates "deliberately unpinned" from
         # "lost its pin". Replacing the list with the scan traded this guarantee away.
-        for relative in validate_skills.PINNED_INSTALL_DOCS:
+        for relative in distribution_manifest.PINNED_INSTALL_DOCS:
             with self.subTest(relative=relative), TemporaryDirectory() as tmp:
                 root = Path(tmp)
                 fixtures.write_distribution(root)
@@ -1048,8 +1048,9 @@ class ProjectedDescriptionTests(unittest.TestCase):
             with TemporaryDirectory() as tmp:
                 root = Path(tmp)
                 fixtures.write_distribution(root)
-                for relative in original:
-                    (root / relative).unlink()
+                # The documents stay pinned on purpose. Unlinking them too satisfies the
+                # assertion through the scan finding nothing, so the test would pass with
+                # the registry guard deleted — which is what it exists to detect.
 
                 passed, output = self.check_distribution(root)
         finally:

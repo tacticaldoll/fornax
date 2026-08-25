@@ -179,36 +179,35 @@ def fingerprint(root: Path, tests: str, heading: str) -> str | None:
     return hashlib.sha256(found.encode("utf-8")).hexdigest()[:16]
 
 
-def scenario_directories(root: Path) -> list[str]:
-    """Every checked-in scenario, named by the directory that holds it.
+def unregistered_scenarios(root: Path, registered: set[str]) -> list[str]:
+    """Name every directory carrying files that no registered record accounts for.
 
-    Derived from the tree rather than from a record filename: a scenario whose
-    record is not called README.md would otherwise be invisible, which is the
-    hole this derivation exists to close, one filename further out.
+    Which directory is a scenario root cannot be derived: a root and a grouping level
+    both hold subdirectories that hold files, and only the registry knows which is
+    which. So the registry declares the roots and this derives the other direction —
+    anything with files that no declared root contains. That is the split the install
+    pin check settled on for the same reason, and the pairing each half needs: a list
+    alone misses what nobody registered, a derivation alone cannot name a root.
 
-    A scenario is the outermost directory that carries a file of its own. Requiring
-    Markdown would read a name property again — the hole this derivation closed, one
-    file extension further out — so any file counts.
-    Anything below it — fixtures, per-round scores, nested record sets — is that
-    scenario's material, not a second scenario, which is why the walk stops
-    descending once it has claimed a root. That admits both layouts in use here:
-    a scenario directly under scenarios/, and one grouped beneath a skill name.
+    Only the outermost uncovered directory is reported. Its children are the same
+    omission said again.
     """
     base = root / SCENARIOS
     if not base.is_dir():
         return []
-    found: list[str] = []
-    claimed: list[Path] = []
+    roots = [root / Path(record).parent for record in registered]
+    found: list[Path] = []
     for path in sorted(base.rglob("*")):
         if not path.is_dir():
             continue
-        if any(path.is_relative_to(root_path) for root_path in claimed):
-            continue
         if not any(child.is_file() for child in path.iterdir()):
             continue
-        claimed.append(path)
-        found.append(path.relative_to(root).as_posix())
-    return found
+        if any(path == claimed or path.is_relative_to(claimed) for claimed in roots):
+            continue
+        if any(path.is_relative_to(outer) for outer in found):
+            continue
+        found.append(path)
+    return [path.relative_to(root).as_posix() for path in found]
 
 
 def check(root: Path, entries: tuple[Evidence, ...]) -> bool:
@@ -226,16 +225,14 @@ def check(root: Path, entries: tuple[Evidence, ...]) -> bool:
             failed = True
 
     registered = {entry.get("record") for entry in entries}
-    covered = {str(Path(record).parent) for record in registered}
-    for directory in scenario_directories(root):
-        if directory not in covered:
-            print(
-                printable(
-                    f"FAIL {directory} - a checked-in scenario with no registry entry; "
-                    f"record what wording it measured, or delete it"
-                )
+    for directory in unregistered_scenarios(root, registered):
+        print(
+            printable(
+                f"FAIL {directory} - a checked-in scenario with no registry entry; "
+                f"record what wording it measured, or delete it"
             )
-            failed = True
+        )
+        failed = True
     for entry in entries:
         identifier = entry.get("id")
         if entry.get("state") == "superseded":

@@ -153,11 +153,7 @@ When asked to create or update a skill:
 4. Create or update `skills/<skill-name>/SKILL.md`.
 5. Add only the resource directories that are useful for the request.
 6. Run repository validation before reporting completion.
-7. Review the change with `static-review` before reporting completion — fresh context, the full
-   Against-Contract track, against the range rather than the working tree. The workspace gate is
-   not that, and neither is rereading the diff: a range that had been through three adversarial
-   passes and a green gate returned eighteen findings on its first real review, one of them a
-   regression whose own commit message called it a strengthening.
+7. Review the change as the Testing Strategy section requires, before reporting completion.
 
 Validation command:
 
@@ -477,6 +473,14 @@ Use this checklist for new skills and meaningful updates:
 Prefer lightweight tests that match the risk of the change.
 
 - Run repository validation for every change.
+- Review every change with `static-review` before reporting completion — any change, not only a
+  skill — after committing it, so the review reads a range rather than a working tree. Fresh
+  context, and the full Against-Contract track. The gate is not that and neither is rereading the
+  diff: a range that had been through three adversarial passes and a green gate returned eighteen
+  findings on its first real review, one of them a regression whose own commit message called it a
+  strengthening. This is the one step here no gate can enforce, because it needs a model rather
+  than a fast deterministic check — which is why it is stated once and pointed at from the
+  Authoring Workflow and from Release rather than restated in either.
 - Use `.venv/bin/python scripts/check_workspace.py` as the public local entry point; CI runs the
   same script in its pinned Python 3.10 environment, and the style and hook-syntax gates run inside
   it so a green local run and a green CI run mean the same thing. Two steps stay CI-only because
@@ -509,9 +513,10 @@ Prefer lightweight tests that match the risk of the change.
   `PYTHONPATH=scripts .venv/bin/python -m unittest discover -s scripts/tests`. Check the fixture actually
   fails when the rule is removed; a suite that passes either way proves nothing. The
   `tools/fornax-cli` suite is one of the two CI-only steps named above.
-- The two non-Python sources are syntax-checked in CI, install-free on the runner: the OpenCode
-  plugin with `node --input-type=module --check < .opencode/plugins/fornax.js` and the hook with
-  `bash -n .githooks/pre-commit`. Feed the plugin through stdin as a module — plain `node --check`
+- The OpenCode plugin is syntax-checked in CI with
+  `node --input-type=module --check < .opencode/plugins/fornax.js`, install-free on the runner; the
+  hook is parsed by `scripts/check_sources.py` inside the workspace gate. Feed the plugin through
+  stdin as a module — plain `node --check`
   on a `.js` file parses it as CommonJS and silently passes anything containing `import`, so the
   check would do nothing. The plugin is the one that fails silently in use: nothing else reads it,
   so a syntax error would only surface for an OpenCode user.

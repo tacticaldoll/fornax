@@ -13,6 +13,7 @@ import json
 import subprocess
 from pathlib import Path
 
+import distribution_manifest
 import validate_skills
 
 DESCRIPTION = (
@@ -62,7 +63,7 @@ def write_worktree(root: Path) -> None:
 
 def write_install_docs(root: Path, version: str) -> None:
     """Write one pinned install document per path the pin check requires to carry one."""
-    for relative in validate_skills.PINNED_INSTALL_DOCS:
+    for relative in distribution_manifest.PINNED_INSTALL_DOCS:
         path = root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(

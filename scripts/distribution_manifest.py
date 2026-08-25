@@ -26,11 +26,15 @@ from workspace_files import listed
 
 VERSION_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
 
-# Maintained, not derived, and deliberately so. Which JSON file is a host manifest has
-# no reliable signal to derive from — `.claude-plugin/marketplace.json` is one and carries
-# no version at all — whereas a versioned install ref is self-identifying, which is why the
-# pin scan below derives and this does not. The direction a list cannot guard is covered
-# the same way there: a registered file that disappears is reported by read_json_object.
+# Maintained, not derived, and deliberately so: which JSON file is a host manifest has no
+# reliable signal to derive from — `.claude-plugin/marketplace.json` is one and carries no
+# version at all — whereas a versioned install ref identifies itself, which is why the pin
+# scan below derives and this does not.
+#
+# The cost is unguarded and stated rather than explained away: nothing catches a host
+# manifest this tuple does not name, so adding a host means editing here. read_json_object
+# covers a registered file that disappears, which is the direction the list already covers,
+# not this one. Registered as `host-manifest-list-unguarded-additions`.
 HOST_VERSION_MANIFESTS = (
     ".claude-plugin/plugin.json",
     ".codex-plugin/plugin.json",
@@ -181,10 +185,10 @@ def validate_install_pins(root: Path, repository: str, version: str) -> bool:
             print(f"FAIL {relative_path} - a registered install doc carrying no pin")
             failed = True
 
-    # Only when nothing is registered: with a non-empty list the rows above say it
-    # better, one per document. This fires when the list itself was emptied, so
-    # deleting the registry cannot buy a clean answer.
-    if not PINNED_INSTALL_DOCS and not carrying:
+    # An emptied registry is a failure whatever the scan found. Conjoining "and the
+    # scan found nothing" made this unreachable in a tree whose documents still carry
+    # pins — which is every real tree, and the state the comment claimed to cover.
+    if not PINNED_INSTALL_DOCS:
         print("FAIL distribution.json - no documented install pin names the release tag")
         failed = True
 

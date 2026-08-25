@@ -10,7 +10,7 @@ from diagnostic_text import printable
 from host_paths import is_absolute_anywhere
 from markdown_links import iter_markdown_links, local_target
 from path_boundary import Boundary, Verdict, resolve_within
-from workspace_files import listed, workspace_files  # noqa: F401  (re-export: the suite reads it here)
+from workspace_files import listed
 
 
 ROOT = Path(__file__).resolve().parent.parent

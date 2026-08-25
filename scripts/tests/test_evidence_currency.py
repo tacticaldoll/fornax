@@ -201,9 +201,9 @@ class DriftTests(unittest.TestCase):
             self.assertTrue(failed)
             self.assertIn("scenarios/odd", output)
 
-    def test_material_inside_a_scenario_is_not_a_second_scenario(self) -> None:
-        # Fixtures and per-round scores sit below a record; claiming each as its own
-        # scenario would demand a registry entry for every subdirectory.
+    def test_material_inside_a_registered_scenario_is_not_reported(self) -> None:
+        # Fixtures and per-round scores sit below a declared root; only the registry
+        # knows a root from a grouping level, so it declares and this derives the rest.
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             scenario = root / "scripts" / "tests" / "scenarios" / "one"
@@ -211,29 +211,47 @@ class DriftTests(unittest.TestCase):
             (scenario / "README.md").write_text("# one\n", encoding="utf-8")
             (scenario / "fixture" / "records" / "case.md").write_text("# case\n", encoding="utf-8")
 
-            found = evidence_currency.scenario_directories(root)
+            found = evidence_currency.unregistered_scenarios(
+                root, {"scripts/tests/scenarios/one/README.md"}
+            )
 
-            self.assertEqual(found, ["scripts/tests/scenarios/one"])
+            self.assertEqual(found, [])
 
-    def test_a_grouping_directory_is_not_itself_a_scenario(self) -> None:
+    def test_a_stray_file_beside_registered_scenarios_is_reported(self) -> None:
+        # The grouping level a naive "outermost directory with files" rule claimed,
+        # stopping the scenarios under it from being enumerated at all.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            group = root / "scripts" / "tests" / "scenarios" / "skill"
+            (group / "case").mkdir(parents=True, exist_ok=True)
+            (group / "case" / "README.md").write_text("# case\n", encoding="utf-8")
+            (group / "notes.md").write_text("# stray\n", encoding="utf-8")
+
+            found = evidence_currency.unregistered_scenarios(
+                root, {"scripts/tests/scenarios/skill/case/README.md"}
+            )
+
+            self.assertEqual(found, ["scripts/tests/scenarios/skill"])
+
+    def test_only_the_outermost_uncovered_directory_is_reported(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             nested = root / "scripts" / "tests" / "scenarios" / "skill" / "case"
             nested.mkdir(parents=True, exist_ok=True)
             (nested / "README.md").write_text("# case\n", encoding="utf-8")
 
-            found = evidence_currency.scenario_directories(root)
+            found = evidence_currency.unregistered_scenarios(root, set())
 
             self.assertEqual(found, ["scripts/tests/scenarios/skill/case"])
 
     def test_every_checked_in_scenario_is_registered(self) -> None:
         entries = evidence_currency.load(evidence_currency.ROOT / evidence_currency.REGISTRY)
-        covered = {str(Path(entry.get("record")).parent) for entry in entries}
+        registered = {entry.get("record") for entry in entries}
 
-        found = evidence_currency.scenario_directories(evidence_currency.ROOT)
+        found = evidence_currency.unregistered_scenarios(evidence_currency.ROOT, registered)
 
-        self.assertTrue(found)
-        self.assertEqual(sorted(set(found) - covered), [])
+        self.assertTrue(registered)
+        self.assertEqual(found, [])
 
 
 class ModelTests(unittest.TestCase):
