@@ -155,18 +155,60 @@ class DriftTests(unittest.TestCase):
             failed, output = run_check(root)
 
             self.assertTrue(failed)
-            self.assertIn("scenarios/orphan/README.md", output)
+            self.assertIn("scenarios/orphan", output)
             self.assertIn("no registry entry", output)
-            self.assertNotIn("scenarios/known/README.md - a checked-in", output)
+            self.assertNotIn("scenarios/known - a checked-in", output)
+
+    def test_a_scenario_whose_record_is_not_a_readme_is_still_seen(self) -> None:
+        # Deriving from the README filename would have left this invisible, which is
+        # the maintained-list hole one filename further out.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write(root, CURRENT.format(fingerprint="placeholder"))
+            actual = evidence_currency.fingerprint(root, "doc.md", "Gate 5: Responsibility")
+            write(root, CURRENT.format(fingerprint=actual))
+            odd = root / "scripts" / "tests" / "scenarios" / "odd"
+            odd.mkdir(parents=True, exist_ok=True)
+            (odd / "notes.md").write_text("# notes\n", encoding="utf-8")
+
+            failed, output = run_check(root)
+
+            self.assertTrue(failed)
+            self.assertIn("scenarios/odd", output)
+
+    def test_material_inside_a_scenario_is_not_a_second_scenario(self) -> None:
+        # Fixtures and per-round scores sit below a record; claiming each as its own
+        # scenario would demand a registry entry for every subdirectory.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            scenario = root / "scripts" / "tests" / "scenarios" / "one"
+            (scenario / "fixture" / "records").mkdir(parents=True, exist_ok=True)
+            (scenario / "README.md").write_text("# one\n", encoding="utf-8")
+            (scenario / "fixture" / "records" / "case.md").write_text("# case\n", encoding="utf-8")
+
+            found = evidence_currency.scenario_directories(root)
+
+            self.assertEqual(found, ["scripts/tests/scenarios/one"])
+
+    def test_a_grouping_directory_is_not_itself_a_scenario(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            nested = root / "scripts" / "tests" / "scenarios" / "skill" / "case"
+            nested.mkdir(parents=True, exist_ok=True)
+            (nested / "README.md").write_text("# case\n", encoding="utf-8")
+
+            found = evidence_currency.scenario_directories(root)
+
+            self.assertEqual(found, ["scripts/tests/scenarios/skill/case"])
 
     def test_every_checked_in_scenario_is_registered(self) -> None:
         entries = evidence_currency.load(evidence_currency.ROOT / evidence_currency.REGISTRY)
-        registered = {entry.get("record") for entry in entries}
+        covered = {str(Path(entry.get("record")).parent) for entry in entries}
 
         found = evidence_currency.scenario_directories(evidence_currency.ROOT)
 
         self.assertTrue(found)
-        self.assertEqual(sorted(set(found) - registered), [])
+        self.assertEqual(sorted(set(found) - covered), [])
 
 
 class ModelTests(unittest.TestCase):

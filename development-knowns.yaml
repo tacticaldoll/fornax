@@ -12,7 +12,7 @@ knowns:
     verification: scripts/distribution_manifest.py reads every tracked Markdown file for a versioned install ref and requires it to match distribution.json; the rollback that used to pass now fails, as does a pin in a file that was never registered.
     updated: 2026-08-25
   - id: gate-wording-micro-test-unevidenced
-    statement: Review gate wording is micro-tested; the Gate 5 wording binds without the report template it ships beside.
+    statement: Review gate wording shipped for two releases with no measurement that it changed agent behaviour.
     kind: risk
     treatment: resolved
     rationale: Three arms settle it: the prior wording answered no unit per unit, the corrected wording did so with the table and equally without it, so the wording carries the obligation and the table carries the shape.

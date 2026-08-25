@@ -180,12 +180,31 @@ def fingerprint(root: Path, tests: str, heading: str) -> str | None:
 
 
 def scenario_directories(root: Path) -> list[str]:
-    """Every checked-in scenario, as the registry would name its record."""
+    """Every checked-in scenario, named by the directory that holds it.
+
+    Derived from the tree rather than from a record filename: a scenario whose
+    record is not called README.md would otherwise be invisible, which is the
+    hole this derivation exists to close, one filename further out.
+
+    A scenario is the outermost directory that carries Markdown of its own.
+    Anything below it — fixtures, per-round scores, nested record sets — is that
+    scenario's material, not a second scenario, which is why the walk stops
+    descending once it has claimed a root. That admits both layouts in use here:
+    a scenario directly under scenarios/, and one grouped beneath a skill name.
+    """
     base = root / SCENARIOS
     if not base.is_dir():
         return []
-    found = []
-    for path in sorted(base.rglob("README.md")):
+    found: list[str] = []
+    claimed: list[Path] = []
+    for path in sorted(base.rglob("*")):
+        if not path.is_dir():
+            continue
+        if any(path.is_relative_to(root_path) for root_path in claimed):
+            continue
+        if not any(child.suffix == ".md" for child in path.iterdir() if child.is_file()):
+            continue
+        claimed.append(path)
         found.append(path.relative_to(root).as_posix())
     return found
 
@@ -194,11 +213,12 @@ def check(root: Path, entries: tuple[Evidence, ...]) -> bool:
     """Report each entry as current, superseded, or drifted. True when any drifted."""
     failed = False
     registered = {entry.get("record") for entry in entries}
-    for record in scenario_directories(root):
-        if record not in registered:
+    covered = {str(Path(record).parent) for record in registered}
+    for directory in scenario_directories(root):
+        if directory not in covered:
             print(
                 printable(
-                    f"FAIL {record} - a checked-in scenario with no registry entry; "
+                    f"FAIL {directory} - a checked-in scenario with no registry entry; "
                     f"record what wording it measured, or delete it"
                 )
             )
