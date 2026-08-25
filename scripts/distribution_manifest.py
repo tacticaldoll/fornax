@@ -26,6 +26,11 @@ from workspace_files import listed
 
 VERSION_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
 
+# Maintained, not derived, and deliberately so. Which JSON file is a host manifest has
+# no reliable signal to derive from — `.claude-plugin/marketplace.json` is one and carries
+# no version at all — whereas a versioned install ref is self-identifying, which is why the
+# pin scan below derives and this does not. The direction a list cannot guard is covered
+# the same way there: a registered file that disappears is reported by read_json_object.
 HOST_VERSION_MANIFESTS = (
     ".claude-plugin/plugin.json",
     ".codex-plugin/plugin.json",

@@ -503,7 +503,7 @@ Prefer lightweight tests that match the risk of the change.
 - Cover a new or changed validation rule in `scripts/tests/`, run with
   `PYTHONPATH=scripts .venv/bin/python -m unittest discover -s scripts/tests`. Check the fixture actually
   fails when the rule is removed; a suite that passes either way proves nothing. The
-  `tools/fornax-cli` suite stays CI-only because it needs the deployment engine installed.
+  `tools/fornax-cli` suite is one of the two CI-only steps named above.
 - The two non-Python sources are syntax-checked in CI, install-free on the runner: the OpenCode
   plugin with `node --input-type=module --check < .opencode/plugins/fornax.js` and the hook with
   `bash -n .githooks/pre-commit`. Feed the plugin through stdin as a module — plain `node --check`
