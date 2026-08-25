@@ -61,6 +61,20 @@ knowns:
       - Add an interface-usage column on evidence that could not be separated from the responsibility and dependency mechanism.
     reconsider-when: An interface-segregation finding recurs after the ledger is in use.
     updated: 2026-08-24
+  - id: commit-partition-held-by-author-discipline
+    statement: Nothing in this repository observes how a change is partitioned across commits, so one reason per commit is held by author discipline alone.
+    kind: debt
+    treatment: accept
+    rationale: Every check reads tree state; the only git call in scripts is ls-files, and with no pull-request workflow there is no checkpoint before history exists. Commit partition is invisible to that class of mechanism by construction.
+    evidence:
+      - Three review rounds each landed one commit per round, and each round's repairs produced the next round's defects.
+      - A path-partition gate would have passed the commit that motivated it: d8ed52f touches AGENTS.md, development-knowns.yaml and scripts only, so every split-when rule is vacuously satisfied while six reasons sit inside one region.
+      - The same gate would refuse e514bbd, which spans templates and skills and is a shape the section explicitly blesses.
+    declined-changes:
+      - Encode the granularity rules as a path-partition check, which passes the motivating commit, refuses a blessed shape, and moves the enforcement floor PROJECT.md keeps at structure.
+      - Rewrite published history to split the commit, which no enforced claim requires.
+    reconsider-when: A review round after the one-commit-per-cause rule landed again puts multiple causes in one commit, which is the drift a gate would then have evidence for.
+    updated: 2026-08-25
   - id: malformed-noqa-suppresses-silently
     statement: A noqa directive with non-code text after its code list suppresses every rule on that line, and the ruff warning it produces does not fail the run.
     kind: defect
