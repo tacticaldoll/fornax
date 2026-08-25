@@ -25,6 +25,30 @@ knowns:
       - Run an arm with no gates.md at all, which would measure an invented gate rather than this one.
     verification: scripts/evidence_currency.py --check ties this result to the exact Gate 5 text it measured and fails when that text moves.
     updated: 2026-08-25
+  - id: evidence-entry-model-splits-by-hand
+    statement: A result measured against two documents is registered as two evidence entries only because a maintainer remembers to split it.
+    kind: debt
+    treatment: accept
+    rationale: The entry model carries one tests and section pair, and what a record measured is stated in its prose; requiring the split would mean parsing that prose, which is more fragile than the omission it would catch.
+    evidence:
+      - scripts/evidence_currency.py declares one tests field and one section field per entry.
+      - The gate5-ledger record measured gates.md and the Ledger spec together and was registered against only the first until a review found it.
+    declined-changes:
+      - Parse a record's What was measured prose to derive the documents it should be registered against.
+    reconsider-when: A third record is registered against fewer documents than its own prose names.
+    updated: 2026-08-25
+  - id: triage-findings-fixture-misses-new-branches
+    statement: The triage-findings scenario cannot exercise two branches added after its recorded runs, because its fixtures contain neither.
+    kind: debt
+    treatment: accept
+    rationale: This is a coverage gap rather than staleness, and the two are repaired differently — no recorded signal measures behaviour the later wording changed, so a re-run would re-earn a fingerprint without testing anything new.
+    evidence:
+      - Closure by a partially-gate-reviewed unit listing the relevant gate was added 2026-08-18; the fixture only exercises a Coverage that never enumerates.
+      - The Non-finding sections integrity check was added 2026-08-24; neither review-record.md nor round-two-review.md contains a non-finding section.
+    declined-changes:
+      - Re-run the recorded scenario to clear its superseded state, which would refresh a fingerprint without covering either branch.
+    reconsider-when: A review reports either branch answered wrongly, or the fixtures gain a partial-coverage record and a non-finding section.
+    updated: 2026-08-25
   - id: gate5-ledger-omits-interface-usage
     statement: Gate 5 names call sites as its interface evidence while the ledger records no interface usage.
     kind: debt
