@@ -153,6 +153,11 @@ When asked to create or update a skill:
 4. Create or update `skills/<skill-name>/SKILL.md`.
 5. Add only the resource directories that are useful for the request.
 6. Run repository validation before reporting completion.
+7. Review the change with `static-review` before reporting completion — fresh context, the full
+   Against-Contract track, against the range rather than the working tree. The workspace gate is
+   not that, and neither is rereading the diff: a range that had been through three adversarial
+   passes and a green gate returned eighteen findings on its first real review, one of them a
+   regression whose own commit message called it a strengthening.
 
 Validation command:
 
