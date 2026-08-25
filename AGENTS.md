@@ -383,13 +383,6 @@ Examples:
 - Rewording a trigger so the skill activates in new situations is `feat` or `fix`, not `docs`.
 - Moving long examples from `SKILL.md` to `references/` without behavior change is `refactor`.
 
-### Change Grouping
-
-- Keep unrelated skills in separate commits.
-- Keep mechanical template or validation updates separate from skill content changes when possible.
-- Update `skill.yaml` and `SKILL.md` in the same commit when they describe the same behavioral change.
-- Include validation changes with the rule they enforce.
-
 ### Versioning
 
 The collection's release version lives in `distribution.json`; bump it on release and keep host
