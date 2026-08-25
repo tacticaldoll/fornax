@@ -407,8 +407,9 @@ collection and every host projection together in a separate `build(deploy)` rele
 Judge the increment by what changed for the people who install the collection:
 
 - Patch for wording fixes, metadata corrections, and non-behavioral clarifications.
-- Minor for new skills, new supported workflows, scripts, or references, and for a field added to
-  the shipped manifest schema.
+- Minor for new skills, new supported workflows, scripts, or references, for a change to a skill's
+  required output shape inside an unchanged record identity, and for a field added to the shipped
+  manifest schema.
 - Major for removed or renamed skills, trigger changes, removed behavior, incompatible script
   interfaces, and for a field removed or renamed in the shipped manifest schema.
 
