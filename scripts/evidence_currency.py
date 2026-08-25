@@ -39,6 +39,7 @@ from pathlib import Path
 from constrained_yaml import raw_scalar
 from diagnostic_text import printable
 from markdown_links import heading_section
+from path_boundary import Boundary, Verdict, resolve_within
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -145,7 +146,7 @@ def validate(entries: tuple[Evidence, ...]) -> None:
         if state == "superseded" and not entry.get("superseded-reason"):
             raise EvidenceError(f"{identifier}: superseded evidence requires a reason")
         tests = entry.get("tests")
-        if not inside_repository(tests):
+        if not spelled_inside(tests):
             raise EvidenceError(
                 f"{identifier}: tests must name a path inside the repository, relative "
                 f"and with no parent segment — the fingerprint is of a file this "
@@ -161,17 +162,34 @@ def validate(entries: tuple[Evidence, ...]) -> None:
             )
 
 
-def inside_repository(candidate: str) -> bool:
-    """Whether a path names something this repository ships.
+def spelled_inside(candidate: str) -> bool:
+    """Whether a path is *written* as something inside a repository.
 
-    The fingerprint is of a file the repository carries, so an absolute path or a parent
-    segment names something else. Only `record` was bounded when the root shape was
-    stated positively, which left `tests` free to read `/etc/hosts` or `../../outside`.
+    The entry model can judge spelling without a filesystem, which is what lets the
+    registry be validated against any root. An absolute path or a parent segment names
+    something outside whatever it resolves to, so both are refused here.
     """
     if not candidate:
         return False
     path = Path(candidate)
     return not path.is_absolute() and ".." not in path.parts
+
+
+def resolved_inside(candidate: str, root: Path) -> bool:
+    """Whether a path *resolves* to something inside `root`.
+
+    Spelling is not enough where the next act is to read the file: a
+    repository-relative symlink pointing at `/etc/hosts` is relative and has no parent
+    segment, so a lexical rule passed it and its target was fingerprinted.
+    `path_boundary` exists for this and states in its own contract that existence is
+    asked of the resolved target, which is what makes a symlink escape read as one.
+
+    Asked at the read rather than in `validate`, because resolution needs a root and the
+    entry model must stay judgeable without one.
+    """
+    if not spelled_inside(candidate):
+        return False
+    return resolve_within(root / Path(candidate), Boundary.at(root)).verdict is Verdict.INSIDE
 
 
 def scenario_root(record: str) -> Path | None:
@@ -211,7 +229,13 @@ def section_text(text: str, heading: str) -> str | None:
 
 
 def fingerprint(root: Path, tests: str, heading: str) -> str | None:
-    """Hash the text an entry claims to have measured, or None when it is gone."""
+    """Hash the text an entry claims to have measured, or None when it is gone.
+
+    The path is resolved against the root before reading, so a symlink escaping the
+    repository is `None` rather than a hash of whatever it points at.
+    """
+    if not resolved_inside(tests, root):
+        return None
     try:
         text = (root / tests).read_text(encoding="utf-8")
     except (OSError, UnicodeError):

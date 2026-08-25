@@ -214,15 +214,39 @@ class DriftTests(unittest.TestCase):
                 found = evidence_currency.scenario_root(record)
                 self.assertEqual(found.as_posix(), expected)
 
-    def test_a_tests_path_cannot_leave_the_repository(self) -> None:
+    def test_a_tests_path_cannot_leave_the_repository_by_spelling(self) -> None:
         # Only `record` was bounded when the root shape was stated positively, so the
         # fingerprint's own subject could name a file this repository does not ship.
         for candidate in ("/etc/hosts", "../../outside.md", "scripts/../PROJECT.md", ""):
             with self.subTest(candidate=candidate):
-                self.assertFalse(evidence_currency.inside_repository(candidate))
+                self.assertFalse(evidence_currency.spelled_inside(candidate))
 
-    def test_a_tests_path_inside_the_repository_is_accepted(self) -> None:
-        self.assertTrue(evidence_currency.inside_repository("skills/static-review/SKILL.md"))
+    def test_a_tests_path_spelled_inside_is_accepted(self) -> None:
+        self.assertTrue(evidence_currency.spelled_inside("skills/static-review/SKILL.md"))
+
+    def test_a_symlink_out_of_the_repository_is_not_fingerprinted(self) -> None:
+        # Spelling is not enough where the next act is to read: a relative symlink with
+        # no parent segment passed the lexical rule and its target was hashed.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            outside = Path(tmp).parent / f"{root.name}-outside.md"
+            outside.write_text("# outside\n", encoding="utf-8")
+            try:
+                (root / "escape.md").symlink_to(outside)
+
+                self.assertFalse(evidence_currency.resolved_inside("escape.md", root))
+                self.assertIsNone(evidence_currency.fingerprint(root, "escape.md", "whole-file"))
+            finally:
+                outside.unlink()
+
+    def test_a_symlink_inside_the_repository_is_fingerprinted(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "real.md").write_text("# real\n", encoding="utf-8")
+            (root / "link.md").symlink_to(Path("real.md"))
+
+            self.assertTrue(evidence_currency.resolved_inside("link.md", root))
+            self.assertIsNotNone(evidence_currency.fingerprint(root, "link.md", "whole-file"))
 
     def test_a_tree_covering_record_cannot_silence_the_walk(self) -> None:
         # One entry whose record sits beside the registry would make SCENARIOS itself
