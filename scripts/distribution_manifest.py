@@ -36,6 +36,13 @@ HOST_VERSION_MANIFESTS = (
 HOST_DESCRIPTION_MANIFESTS = HOST_VERSION_MANIFESTS + (".claude-plugin/marketplace.json",)
 
 
+PINNED_INSTALL_DOCS = (
+    ".opencode/INSTALL.md",
+    "README.md",
+    "tools/fornax-cli/README.md",
+)
+
+
 @dataclass(frozen=True)
 class DistributionValidation:
     passed: bool
@@ -108,6 +115,53 @@ def validate_projected_descriptions(root: Path, canonical: str) -> bool:
     return failed
 
 
+def install_pin_pattern(repository: str) -> re.Pattern[str]:
+    """Match a documented install ref that already names a release tag."""
+    return re.compile(re.escape(repository) + r"\.git[@#]v(\d+\.\d+\.\d+)")
+
+
+def validate_install_pins(root: Path, repository: str, version: str) -> bool:
+    """Require every documented install pin to name the release being shipped.
+
+    The host manifests are checked above, but the commands a reader copies live in
+    Markdown, and nothing compared those to distribution.json: a release that bumped
+    every manifest and missed one pin shipped an install command that resolves to the
+    previous tag, with every workspace check still green.
+
+    An unpinned ref is the deliberate track-the-default-branch form and is left alone;
+    only a ref already carrying a version is judged. A declared doc carrying no pin at
+    all fails too, because this list is maintained rather than derived: the way it goes
+    stale is a pin site moving out of a file still named here, and silence would read
+    as agreement. A pin appearing in a file nobody registered stays uncovered.
+    """
+    failed = False
+    pattern = install_pin_pattern(repository)
+
+    for relative_path in PINNED_INSTALL_DOCS:
+        path = root / relative_path
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeError:
+            print(printable(f"FAIL {relative_path} - must use UTF-8"))
+            failed = True
+            continue
+        except OSError as error:
+            print(printable(f"FAIL {relative_path} - {error}"))
+            failed = True
+            continue
+
+        pinned = pattern.findall(text)
+        if not pinned:
+            print(f"FAIL {relative_path} - must carry an install pin naming the release tag")
+            failed = True
+            continue
+        for found in sorted(set(pinned) - {version}):
+            print(f"FAIL {relative_path} - install pin v{found} must match distribution.json")
+            failed = True
+
+    return failed
+
+
 def validate_distribution(root: Path) -> DistributionValidation:
     """Validate canonical distribution metadata and host projections."""
     distribution_file = root / "distribution.json"
@@ -123,6 +177,7 @@ def validate_distribution(root: Path) -> DistributionValidation:
     publisher_id = distribution.get("publisher_id")
     description = distribution.get("description")
     skills_directory = distribution.get("skills_directory")
+    repository = distribution.get("repository")
     if distribution.get("schema") != 1:
         print("FAIL distribution.json - schema must be 1")
         failed = True
@@ -170,6 +225,15 @@ def validate_distribution(root: Path) -> DistributionValidation:
             failed = True
         if manifest.get("version") != version:
             print(f"FAIL {relative_path} - version must match distribution.json")
+            failed = True
+
+    # Only when there is a release to compare pins against. An unusable version is
+    # already reported above, and every pinned doc would repeat it once more.
+    if isinstance(version, str) and VERSION_PATTERN.fullmatch(version):
+        if not isinstance(repository, str) or not repository:
+            print("FAIL distribution.json - repository must be a non-empty string to check pins")
+            failed = True
+        elif validate_install_pins(root, repository, version):
             failed = True
 
     # Only when there is a canonical sentence to project. Without one the failure is

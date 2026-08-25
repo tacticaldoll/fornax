@@ -88,6 +88,16 @@ def write_distribution(
             encoding="utf-8",
         )
 
+    for relative in validate_skills.PINNED_INSTALL_DOCS:
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            "Install:\n\n```sh\n"
+            f"pipx install \"git+https://example.invalid/fixture.git@v{version}"
+            "#subdirectory=tools/cli\"\n```\n",
+            encoding="utf-8",
+        )
+
     marketplace = root / ".claude-plugin" / "marketplace.json"
     marketplace.parent.mkdir(parents=True, exist_ok=True)
     marketplace.write_text(
