@@ -239,6 +239,36 @@ class DriftTests(unittest.TestCase):
             finally:
                 outside.unlink()
 
+    def test_a_record_symlinked_out_of_the_tree_fails(self) -> None:
+        # Repair 1b named both path fields; only `tests` reached the shared boundary, so
+        # a record could be a lexically valid path resolving outside — `is_file()` says
+        # yes about the target.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            scenario = root / "scripts" / "tests" / "scenarios" / "a"
+            scenario.mkdir(parents=True)
+            outside = Path(tmp).parent / f"{root.name}-record.md"
+            outside.write_text("# outside\n", encoding="utf-8")
+            try:
+                (scenario / "README.md").symlink_to(outside)
+
+                self.assertTrue((scenario / "README.md").is_file())
+                registry = CURRENT.format(fingerprint="placeholder").replace(
+                    "scenarios/sample/README.md", "scenarios/a/README.md"
+                )
+                write(root, registry)
+                actual = evidence_currency.fingerprint(root, "doc.md", "Gate 5: Responsibility")
+                write(root, registry.replace("placeholder", actual))
+                (scenario / "README.md").unlink()
+                (scenario / "README.md").symlink_to(outside)
+
+                failed, output = run_check(root)
+
+                self.assertTrue(failed)
+                self.assertIn("is not a file inside", output)
+            finally:
+                outside.unlink()
+
     def test_a_symlink_inside_the_repository_is_fingerprinted(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -282,7 +312,7 @@ class DriftTests(unittest.TestCase):
             failed, output = run_check(root)
 
             self.assertTrue(failed)
-            self.assertIn("its record scripts/tests/scenarios/gone/README.md is not there", output)
+            self.assertIn("scripts/tests/scenarios/gone/README.md is not a file inside", output)
 
     def test_a_scenario_whose_record_is_not_a_readme_is_still_seen(self) -> None:
         # Deriving from the README filename would have left this invisible, which is

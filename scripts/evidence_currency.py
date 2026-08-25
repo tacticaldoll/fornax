@@ -280,11 +280,12 @@ def check(root: Path, entries: tuple[Evidence, ...]) -> bool:
     failed = False
     for entry in entries:
         record = entry.get("record")
-        if not (root / record).is_file():
+        if not resolved_inside(record, root) or not (root / record).is_file():
             print(
                 printable(
-                    f"FAIL {entry.get('id')} - its record {record} is not there; a claim "
-                    f"pointing at a deleted result is the defect one round later"
+                    f"FAIL {entry.get('id')} - its record {record} is not a file inside "
+                    f"this repository; a claim pointing at a deleted result, or at a "
+                    f"symlink out of the tree, is the defect one round later"
                 )
             )
             failed = True
