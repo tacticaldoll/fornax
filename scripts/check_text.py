@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import os
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -12,6 +11,7 @@ from diagnostic_text import printable
 from host_paths import is_absolute_anywhere
 from markdown_links import iter_markdown_links, local_target
 from path_boundary import Boundary, Verdict, resolve_within
+from workspace_files import workspace_files
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -21,16 +21,6 @@ ROOT = Path(__file__).resolve().parent.parent
 class Diagnostic:
     path: Path
     message: str
-
-
-def workspace_files(root: Path) -> list[Path]:
-    """Return cached and non-ignored untracked files in the workspace."""
-    result = subprocess.run(
-        ["git", "-C", str(root), "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
-        check=True,
-        capture_output=True,
-    )
-    return [root / os.fsdecode(path) for path in result.stdout.split(b"\0") if path]
 
 
 def check(files: list[Path], root: Path) -> list[Diagnostic]:
