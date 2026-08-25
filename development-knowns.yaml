@@ -1,5 +1,15 @@
 schema: 1
 knowns:
+  - id: markdown-install-pins-unguarded
+    statement: Documented install pins carried the release tag with nothing comparing them to distribution.json.
+    kind: defect
+    treatment: resolved
+    rationale: The host manifests were checked for agreement while the commands a reader copies were not, so a release could bump every manifest, miss a pin, and stay green.
+    evidence:
+      - A pin rolled back to an earlier tag in tools/fornax-cli/README.md left every workspace check passing.
+      - scripts/distribution_manifest.py compared only the four host manifests against distribution.json.
+    verification: scripts/distribution_manifest.py validates every pin in PINNED_INSTALL_DOCS against the canonical version, and the same rollback now fails validation.
+    updated: 2026-08-25
   - id: gate-wording-micro-test-unevidenced
     statement: No checked-in evidence shows that review gate wording has been micro-tested against a no-guidance control.
     kind: risk
