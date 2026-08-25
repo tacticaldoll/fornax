@@ -44,12 +44,15 @@ Settled; reopen only with a reason, not by default.
 - **`family` is a flat field** (`implementation | knowledge | decisions | meta`), the single source
   for README grouping and the generated skill maps. The object-vs-meta and operation-kind
   distinctions are real but are *not* encoded as fields — nothing consumes them.
-- **A record contract exists only where one skill's output is another skill's input.** Fourteen
-  skills define an output; one of them is read by two skills (`static-review` → `handle-feedback`
-  and `static-review` → `triage-findings`, `docs/review-record-contract.md`). The other thirteen
-  outputs have no contract because they have no consumer, not because one is missing — deliberate
-  asymmetry, not a gap. A real seam opts into matching `skill-interface.yaml` declarations, whose
-  stable identity is publisher UUID, record type, major version, and media type. The sidecar
+- **A record contract exists only where one skill's output is another skill's input.** Most skills
+  define an output; exactly one of those outputs is read by another skill (`static-review` →
+  `handle-feedback` and `static-review` → `triage-findings`, `docs/review-record-contract.md`). The
+  rest have no contract because they have no consumer, not because one is missing — deliberate
+  asymmetry, not a gap. "Exactly one" is derived from the `skill-interface.yaml` declarations and
+  held true by `seam_contract.py --check`, rather than by the two counts this decision used to carry
+  — those were kept by hand against a type distinction no field records, so nothing could say when
+  they drifted. A real seam opts into matching `skill-interface.yaml` declarations, whose stable
+  identity is publisher UUID, record type, major version, and media type. The sidecar
   supports local discovery and recommendation only; it carries no payload schema, eligibility rule,
   execution instruction, or authorization. The seam list is **derived from these declarations**
   rather than prose or a maintained list, so a second seam appears automatically and zero seams
