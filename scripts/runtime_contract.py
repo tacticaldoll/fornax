@@ -87,18 +87,39 @@ def workflow_pins(text: str) -> list[tuple[str, str]]:
     package all passed unread. Dropping the anchor entirely read raw YAML, so a comment
     or an `echo` became an install.
 
-    So the line decides whether it installs and the token decides what: a line carrying
-    a pip install invocation contributes every `name==version` on it, and a line that
-    does not contributes none. A comment is not an install line — the `#` ends it before
-    the invocation, and a commented-out install is not one either.
+    So the logical command decides whether it installs and the token decides what: a
+    command carrying a pip install invocation contributes every `name==version` in it,
+    and one that does not contributes none. A comment is not an install command — the
+    `#` ends it before the invocation, and a commented-out install is not one either.
+
+    Logical, not physical. A trailing backslash continues the command onto the next
+    line, which the ordinary way of writing a long pip invocation uses, and reading
+    physical lines missed the requirement entirely — the invocation on one line and the
+    pin on the next.
     """
     found: list[tuple[str, str]] = []
-    for line in text.splitlines():
-        executable = line.split("#", 1)[0]
+    for command in logical_commands(text):
+        executable = command.split("#", 1)[0]
         if not INSTALL_LINE.search(executable):
             continue
         found.extend(WORKFLOW_PIN.findall(executable))
     return found
+
+
+def logical_commands(text: str) -> list[str]:
+    """Join backslash-continued lines, so one shell command is one string."""
+    commands: list[str] = []
+    pending = ""
+    for line in text.splitlines():
+        stripped = line.rstrip()
+        if stripped.endswith("\\"):
+            pending += stripped[:-1] + " "
+            continue
+        commands.append(pending + line)
+        pending = ""
+    if pending:
+        commands.append(pending)
+    return commands
 
 
 def check(
