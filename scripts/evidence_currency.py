@@ -20,7 +20,8 @@ the other direction: every file under the scenario tree that no declared root
 accounts for. Each half guards what the other cannot, which is the split the
 install-pin check settled on for the same reason.
 
-Standard library only.
+Depends on `markdown_links` for CommonMark parsing, which brings `markdown-it-py`
+— pinned in requirements-maintenance.txt. Otherwise the standard library.
 
     .venv/bin/python scripts/evidence_currency.py --check
     .venv/bin/python scripts/evidence_currency.py --fingerprint <path> [heading]
@@ -143,6 +144,13 @@ def validate(entries: tuple[Evidence, ...]) -> None:
             raise EvidenceError(f"{identifier}: current evidence requires a fingerprint")
         if state == "superseded" and not entry.get("superseded-reason"):
             raise EvidenceError(f"{identifier}: superseded evidence requires a reason")
+        tests = entry.get("tests")
+        if not inside_repository(tests):
+            raise EvidenceError(
+                f"{identifier}: tests must name a path inside the repository, relative "
+                f"and with no parent segment — the fingerprint is of a file this "
+                f"repository ships, and only record was bounded"
+            )
         record = entry.get("record")
         if not scenario_root(record):
             raise EvidenceError(
@@ -151,6 +159,19 @@ def validate(entries: tuple[Evidence, ...]) -> None:
                 f"its parent becomes the root that accounts for files, and a parent "
                 f"outside or above a scenario accounts for the whole tree"
             )
+
+
+def inside_repository(candidate: str) -> bool:
+    """Whether a path names something this repository ships.
+
+    The fingerprint is of a file the repository carries, so an absolute path or a parent
+    segment names something else. Only `record` was bounded when the root shape was
+    stated positively, which left `tests` free to read `/etc/hosts` or `../../outside`.
+    """
+    if not candidate:
+        return False
+    path = Path(candidate)
+    return not path.is_absolute() and ".." not in path.parts
 
 
 def scenario_root(record: str) -> Path | None:

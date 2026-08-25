@@ -214,6 +214,16 @@ class DriftTests(unittest.TestCase):
                 found = evidence_currency.scenario_root(record)
                 self.assertEqual(found.as_posix(), expected)
 
+    def test_a_tests_path_cannot_leave_the_repository(self) -> None:
+        # Only `record` was bounded when the root shape was stated positively, so the
+        # fingerprint's own subject could name a file this repository does not ship.
+        for candidate in ("/etc/hosts", "../../outside.md", "scripts/../PROJECT.md", ""):
+            with self.subTest(candidate=candidate):
+                self.assertFalse(evidence_currency.inside_repository(candidate))
+
+    def test_a_tests_path_inside_the_repository_is_accepted(self) -> None:
+        self.assertTrue(evidence_currency.inside_repository("skills/static-review/SKILL.md"))
+
     def test_a_tree_covering_record_cannot_silence_the_walk(self) -> None:
         # One entry whose record sits beside the registry would make SCENARIOS itself
         # the covering root, so every unaccounted file becomes accounted for. Refused at
