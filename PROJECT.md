@@ -48,10 +48,13 @@ Settled; reopen only with a reason, not by default.
   define an output; exactly one of those outputs is read by another skill (`static-review` →
   `handle-feedback` and `static-review` → `triage-findings`, `docs/review-record-contract.md`). The
   rest have no contract because they have no consumer, not because one is missing — deliberate
-  asymmetry, not a gap. "Exactly one" is derived from the `skill-interface.yaml` declarations and
-  held true by `seam_contract.py --check`, rather than by the two counts this decision used to carry
-  — those were kept by hand against a type distinction no field records, so nothing could say when
-  they drifted. A real seam opts into matching `skill-interface.yaml` declarations, whose stable
+  asymmetry, not a gap. How many seams exist is derived from the `skill-interface.yaml`
+  declarations, and `seam_contract.py --check` keeps the generated inventory from going stale — so
+  a second seam appears in that inventory and in the diff rather than being counted by hand. The gate
+  does not hold the number at one, and nothing should: zero seams is a clean answer there. What it
+  removes is the drift the two counts this decision used to carry were exposed to, kept by hand
+  against a type distinction no field records. A real seam opts into matching
+  `skill-interface.yaml` declarations, whose stable
   identity is publisher UUID, record type, major version, and media type. The sidecar
   supports local discovery and recommendation only; it carries no payload schema, eligibility rule,
   execution instruction, or authorization. The seam list is **derived from these declarations**

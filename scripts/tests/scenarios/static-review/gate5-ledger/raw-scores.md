@@ -7,7 +7,7 @@ treatment 是 **ledger-shaped**：先一張表，每個 unit 一列（job / hand
 
 ## PER-UNIT（每個 unit 是否各自作答：job 一句 + 依賴來源）
 
-control  1  ✗  無任何 unit 有 job клause；來源僅 U1 明確、U4 順帶
+control  1  ✗  無任何 unit 有 job clause；來源僅 U1 明確、U4 順帶
 control  2  ✗  同上；U4 的 plan_lookup 完全未提
 control  3  ✗  有「Noted as correct」提到 monthly_totals 注入
 control  4  ✗  有「Positive signal」提到 plan_lookup 是參數

@@ -7,6 +7,13 @@ evidence:
     fingerprint: 7f15415a7348fc5c
     recorded: 2026-08-25
     record: scripts/tests/scenarios/static-review/gate5-ledger/README.md
+  - id: static-review-gate5-ledger-spec
+    state: current
+    tests: skills/static-review/SKILL.md
+    section: Responsibility & Dependency Ledger
+    fingerprint: 9b2ffd113db13b9c
+    recorded: 2026-08-25
+    record: scripts/tests/scenarios/static-review/gate5-ledger/README.md
   - id: static-review-contract-inventory-phase3
     state: current
     tests: skills/static-review/SKILL.md
@@ -27,4 +34,4 @@ evidence:
     section: whole-file
     recorded: 2026-08-17
     record: scripts/tests/scenarios/triage-findings/README.md
-    superseded-reason: the recorded runs predate the current wording, which docs/review-record-contract.md already says in prose and nothing enforced
+    superseded-reason: the whole-file fingerprint cannot be re-earned without a re-run, though no recorded signal measures behaviour the later wording changed; what postdates the runs is two branches the fixture cannot reach

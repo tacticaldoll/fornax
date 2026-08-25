@@ -186,7 +186,9 @@ def scenario_directories(root: Path) -> list[str]:
     record is not called README.md would otherwise be invisible, which is the
     hole this derivation exists to close, one filename further out.
 
-    A scenario is the outermost directory that carries Markdown of its own.
+    A scenario is the outermost directory that carries a file of its own. Requiring
+    Markdown would read a name property again — the hole this derivation closed, one
+    file extension further out — so any file counts.
     Anything below it — fixtures, per-round scores, nested record sets — is that
     scenario's material, not a second scenario, which is why the walk stops
     descending once it has claimed a root. That admits both layouts in use here:
@@ -202,7 +204,7 @@ def scenario_directories(root: Path) -> list[str]:
             continue
         if any(path.is_relative_to(root_path) for root_path in claimed):
             continue
-        if not any(child.suffix == ".md" for child in path.iterdir() if child.is_file()):
+        if not any(child.is_file() for child in path.iterdir()):
             continue
         claimed.append(path)
         found.append(path.relative_to(root).as_posix())

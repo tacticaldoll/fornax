@@ -13,11 +13,12 @@ floor and then validates the workspace with a parser the pins do not name — th
 passes while checking something else. So the installed version of every pin is
 compared too.
 
-The workflow is a third declaration of the same versions. It installs its own style
-pin rather than reading the requirements file, so the two can name different releases
-while both look deliberate — and the local gate would then check the workspace with a
-linter CI does not run. Every pin the workflow installs is compared against the
-requirements file for that reason.
+The workflow used to install its own style pin rather than reading the requirements
+file, so the two could name different releases while both looked deliberate. That
+duplicate is gone: the gate the workflow runs installs from the requirements file and
+checks style inside itself. Every pin the workflow still installs inline is compared
+against the requirements file anyway — zero of them is the intended state and a clean
+answer, and the comparison is what keeps a reintroduced one from passing quietly.
 """
 
 from __future__ import annotations

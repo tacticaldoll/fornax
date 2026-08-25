@@ -512,9 +512,8 @@ Prefer lightweight tests that match the risk of the change.
   so a syntax error would only surface for an OpenCode user.
 - Python style is checked by `ruff check .` against `ruff.toml` — width 100, rules `E`/`F`/`W`
   with `preview` on, pinned to one ruff version so a release cannot fail an unrelated push. It is
-  CI-only because the pre-commit hook runs only the pinned maintenance environment; run
-  `pipx run ruff==0.16.1 check .` locally for the same answer before pushing. Never auto-apply a fix
-  as part of another change, and treat a ruff version bump as its own commit — preview rules move
+  run by the workspace gate, so the pre-commit hook and CI reach the same answer. Never auto-apply
+  a fix as part of another change, and treat a ruff version bump as its own commit — preview rules move
   between releases.
 - `.python-version` is the single source for the minimum maintenance runtime. CI consumes it
   directly, and `scripts/runtime_contract.py` keeps Ruff's syntax target aligned. The pre-commit
