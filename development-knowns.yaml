@@ -1,13 +1,14 @@
 schema: 1
 knowns:
   - id: markdown-install-pins-unguarded
-    statement: Documented install pins carried the release tag with nothing comparing them to distribution.json.
+    statement: Two releases shipped install commands pinned to an earlier tag because nothing compared the documented pins to distribution.json.
     kind: defect
     treatment: resolved
     rationale: The host manifests were checked for agreement while the commands a reader copies were not, so a release could bump every manifest, miss a pin, and stay green.
     evidence:
-      - A pin rolled back to an earlier tag in tools/fornax-cli/README.md left every workspace check passing.
-      - scripts/distribution_manifest.py compared only the four host manifests against distribution.json.
+      - v0.1.1 and v0.1.2 both shipped README.md, .opencode/INSTALL.md and tools/fornax-cli/README.md still pinned to v0.1.0, so the documented install command resolved to an earlier release for eleven days.
+      - v0.2.0 corrected the pins by hand, and nothing prevented the same drift across the six releases that followed.
+      - A pin rolled back to an earlier tag left every workspace check passing before the check existed.
     verification: scripts/distribution_manifest.py reads every tracked Markdown file for a versioned install ref and requires it to match distribution.json; the rollback that used to pass now fails, as does a pin in a file that was never registered.
     updated: 2026-08-25
   - id: gate-wording-micro-test-unevidenced
