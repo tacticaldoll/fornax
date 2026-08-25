@@ -12,17 +12,18 @@ knowns:
     verification: scripts/distribution_manifest.py reads every tracked Markdown file for a versioned install ref and requires it to match distribution.json; the rollback that used to pass now fails, as does a pin in a file that was never registered.
     updated: 2026-08-25
   - id: gate-wording-micro-test-unevidenced
-    statement: The recorded gate-wording micro-test used the prior wording as its control, so no no-guidance control has been run and the treatment arm cannot separate wording from the template it shipped with.
+    statement: Review gate wording is micro-tested; the Gate 5 wording binds without the report template it ships beside.
     kind: risk
-    treatment: accept
-    rationale: The measurement that exists answers whether the change binds, which is what the release needed; whether the failure occurs with no guidance at all, and whether the wording binds without the table, are separate questions nothing has asked.
+    treatment: resolved
+    rationale: Three arms settle it: the prior wording answered no unit per unit, the corrected wording did so with the table and equally without it, so the wording carries the obligation and the table carries the shape.
     evidence:
-      - skills/harden-skill/references/hardening.md requires a no-guidance control and says to drop the guidance when the control does not exhibit the failure.
-      - scripts/tests/scenarios/static-review/gate5-ledger/README.md records prior-wording control against shipped treatment, 5 reps each, and names the arm it could not separate.
-      - No control arm read the gate as passed, so the failure gates.md describes was not reproduced in the form it states.
+      - scripts/tests/scenarios/static-review/gate5-ledger/README.md records three arms at 5 fresh-context reps each, every sample read by hand.
+      - The no-table arm answered per unit 5 of 5 and volunteered completeness statements no spec had asked it for.
+      - A gate definition cannot be withheld and still leave a gate to review at, so the prior wording is the no-guidance condition for a behavior added to an existing document.
     declined-changes:
       - Read a passing workspace gate as evidence that a wording change binds agent behaviour.
-    reconsider-when: A third arm carrying the new wording without the table is run, or a no-guidance arm is run, or a review run reports a ledger that omits a unit Gate 5 opened.
+      - Run an arm with no gates.md at all, which would measure an invented gate rather than this one.
+    verification: scripts/evidence_currency.py --check ties this result to the exact Gate 5 text it measured and fails when that text moves.
     updated: 2026-08-25
   - id: gate5-ledger-omits-interface-usage
     statement: Gate 5 names call sites as its interface evidence while the ledger records no interface usage.

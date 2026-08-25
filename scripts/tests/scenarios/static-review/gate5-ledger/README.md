@@ -30,39 +30,50 @@ Review this code at **Gate 5 only**. Do not review other gates.
 Produce your Gate 5 result. Your final message IS the review output — return only that, no preamble.
 ```
 
-## Results — 2026-08-25, 5 reps per arm, fresh context each, every sample read by hand
+## Results
 
-| Measure | control | treatment |
-|---|---|---|
-| Every unit answered (job clause + dependency origin) | 0 / 5 | 5 / 5 |
-| Says layering was `inferred` when none is declared | 0 / 5 | 5 / 5 |
-| Judges interface minimality against in-scope call sites only | 0 / 5 | 5 / 5 |
-| Emits `Rows in this section are not findings.` | 0 / 5 | 4 / 5 |
+Every sample read by hand, fresh context each, 5 reps per arm. The control is the wording
+immediately before the change; arms B and C both carry the corrected wording, and differ only in
+whether the Ledger table spec was supplied.
 
-Control output is finding-shaped: a numbered defect list in which units appear only as the subject of
-a defect. Treatment output is ledger-shaped: one row per unit first, findings after. Control varied
-(6/6/6/7/7 findings, three arms volunteering a positive section and two not); treatment converged so
-far that one job clause — `format one invoice as a locale-tagged display string` — is word-identical
-across four independent reps. Convergence is the protocol's own signal that wording has landed.
+| Measure | control (prior wording) | B (corrected + table) | C (corrected, no table) |
+|---|---|---|---|
+| Every unit answered (job clause + dependency origin) | 0 / 5 | 5 / 5 | 5 / 5 |
+| Says layering was `inferred` when none is declared | 0 / 5 | 5 / 5 | 5 / 5 |
+| Judges interface minimality against in-scope call sites only | 0 / 5 | 5 / 5 | 5 / 5 |
 
-## What this does not show
+**The wording binds on its own.** Arm C had no table to fill and answered per unit anyway, naming
+each unit's job in one clause and separating handed-in dependencies from reached-directly ones.
+Several arm C reps volunteered a completeness statement — "no unit in scope is unopened" — without
+ever seeing the spec that asks for one.
 
-The treatment arm received the new wording **and** the Ledger table spec, because that is what 0.4.1
-ships together. It therefore cannot separate "the wording binds" from "a table was supplied to fill".
-Two of the four measures are partially separable: `inferred` layering and the call-sites minimality
-rule appear only in `gates.md`, never in the table spec, and the treatment arm applied both 5/5.
+**The table supplies format, not substance.** Arm B's five reps are all tables; arm C's five are
+per-unit prose sections in five slightly different shapes. Their *content* converges completely:
+the same five units, the same job judgments, the same origin classifications, the same three units
+passing. Convergence on substance is the protocol's signal that wording has landed; the table adds
+convergence on shape.
 
-Isolating the wording alone needs a third arm — new `gates.md`, no table spec — which was not run.
+**The correction did not cost anything.** Arm B matches the pre-correction treatment on all three
+measures. Where it differs it is finer: three reps used `not determinable from the reviewed scope`
+for a parameter type defined outside the scope, and one counted inline constants as reached
+directly.
 
-## A correction this produced
+## On the no-guidance control
 
-`gates.md` described the failure as a gate "answered by the cheapest evidence in reach, an
-import-direction scan across modules, **which reads as passed while no unit was opened**". No control
-arm read as passed: all five failed the gate and analysed both files substantively. What reproduced is
-weaker — clean units are never opened as units, so their status goes unstated. The wording works; that
-sentence overstates what it was fixing.
+`harden-skill` requires one, and the control here is the prior wording rather than no text at all.
+That is the same thing for this subject. A gate definition cannot be withheld and still leave a
+Gate 5 to review at — an arm with no `gates.md` measures an invented gate, not this one. For a
+behavior added to an existing document, the document without the addition is the no-guidance
+condition, and the prior Gate 5 carried no per-unit requirement of any kind.
 
-The sentence is **left standing on purpose**. Editing it changes the text this result measured, so the
-currency guard would drift the entry the moment the edit landed — correctly, because the evidence
-would no longer describe what ships. The repair costs a re-run, and that price should be paid
-deliberately rather than absorbed by quietly re-recording a fingerprint against prose nobody measured.
+## The correction this evidence produced
+
+The first round measured a `gates.md` sentence calling the failure one that "reads as passed while
+no unit was opened". No control arm read as passed: all five failed the gate and analysed both files
+substantively. What reproduces is weaker and more specific — clean units are never opened as units,
+so their status goes unstated, and the gate reports the defects it found rather than the units it
+examined.
+
+The sentence was left standing in the first round because editing it drifts this record's
+fingerprint by design. It was corrected in the second round together with the re-run that re-earns
+the fingerprint, which is the order the currency guard is built to force.

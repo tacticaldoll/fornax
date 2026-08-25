@@ -83,8 +83,10 @@ One function has one job, and core logic is not unnecessarily hardwired to concr
 these two are answered **per unit, from the structural extraction**, not by one verdict for the
 gate. The extraction already records each unit's I/O and external side effects, its captured
 variables and hidden dependencies, and its domain distribution — that is the material this gate
-judges. A gate that does not read it is answered by the cheapest evidence in reach, an
-import-direction scan across modules, which reads as passed while no unit was opened.
+judges. A gate that does not read it answers from whatever is cheapest to reach — an
+import-direction scan, or the one unit whose defect is loudest — and reports the defects it found
+rather than the units it opened. A unit it never opened has no recorded status, which is not the
+same as a passing one.
 
 For every unit this gate opened, its answer is two clauses:
 

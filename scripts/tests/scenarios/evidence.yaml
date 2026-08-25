@@ -4,7 +4,7 @@ evidence:
     state: current
     tests: skills/static-review/references/gates.md
     section: Gate 5: Responsibility & Boundaries
-    fingerprint: ddcde3c8d42d2124
+    fingerprint: 7f15415a7348fc5c
     recorded: 2026-08-25
     record: scripts/tests/scenarios/static-review/gate5-ledger/README.md
   - id: triage-findings-fresh-context
