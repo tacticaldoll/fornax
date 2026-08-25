@@ -1090,6 +1090,11 @@ class ProjectedDescriptionTests(unittest.TestCase):
             '.git@v1.2.3"',
             ".git@v1.2.3 \\",
             '.git#v1.2.3"',
+            ".git@v1.2.3; echo done",
+            ".git@v1.2.3|tee out",
+            ".git@v1.2.3>out",
+            ".git@v1.2.3)",
+            ".git@v1.2.3,",
         ):
             with self.subTest(ref=ref):
                 self.assertEqual(pattern.findall("https://x.invalid/r" + ref), ["1.2.3"])

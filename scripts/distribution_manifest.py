@@ -130,17 +130,20 @@ def validate_projected_descriptions(root: Path, canonical: str) -> bool:
 def install_pin_pattern(repository: str) -> re.Pattern[str]:
     """Match a documented install ref that already names a release tag.
 
-    The version must end where the tag ends, stated as the delimiters a ref may end
-    with rather than as the characters it may not continue with. The excluded-character
-    form let `@v0.4.1+build.5` through — `+` was not in the list, and SemVer permits it
-    — after the same form had already been written to stop `.999` and `rc1`.
+    The version must end where the tag ends, modelled as the alphabet a version is
+    written in rather than as a list of what may follow it. Two list forms failed here
+    first: excluding `[\\w.-]` let `+build.5` through because `+` was missing, and then
+    enumerating the permitted terminators missed `;`, `|` and `>`, so a stale pin
+    followed by a shell separator went unread entirely.
 
-    A tag ends at whitespace, a quote, or one of the separators a documented install
-    command puts after it: `#subdirectory=`, a closing paren, a comma, a backtick. Any
-    other character means the tag continues and this is a different release.
+    SemVer closes the question the lists could not. A version continues through
+    alphanumerics, `.`, `-` and `+` — prerelease and build metadata included — and ends
+    at anything else. That set is defined by the grammar being matched, so it does not
+    have to anticipate what a document puts next: a quote, a `#` fragment, a shell
+    separator, and end of line are all simply outside it.
     """
     return re.compile(
-        re.escape(repository) + r"\.git[@#]v(\d+\.\d+\.\d+)(?=[\s\"'`#,)\]]|$)"
+        re.escape(repository) + r"\.git[@#]v(\d+\.\d+\.\d+)(?![0-9A-Za-z.+-])"
     )
 
 
