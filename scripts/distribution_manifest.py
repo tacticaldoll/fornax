@@ -130,11 +130,18 @@ def validate_projected_descriptions(root: Path, canonical: str) -> bool:
 def install_pin_pattern(repository: str) -> re.Pattern[str]:
     """Match a documented install ref that already names a release tag.
 
-    The version must end where the tag ends. Matching a prefix let `@v0.4.1.999` and
-    `@v0.4.1rc1` both capture `0.4.1` and compare equal to the release, so a pin
-    resolving somewhere else passed while validation stayed green.
+    The version must end where the tag ends, stated as the delimiters a ref may end
+    with rather than as the characters it may not continue with. The excluded-character
+    form let `@v0.4.1+build.5` through — `+` was not in the list, and SemVer permits it
+    — after the same form had already been written to stop `.999` and `rc1`.
+
+    A tag ends at whitespace, a quote, or one of the separators a documented install
+    command puts after it: `#subdirectory=`, a closing paren, a comma, a backtick. Any
+    other character means the tag continues and this is a different release.
     """
-    return re.compile(re.escape(repository) + r"\.git[@#]v(\d+\.\d+\.\d+)(?![\w.-])")
+    return re.compile(
+        re.escape(repository) + r"\.git[@#]v(\d+\.\d+\.\d+)(?=[\s\"'`#,)\]]|$)"
+    )
 
 
 def validate_install_pins(root: Path, repository: str, version: str) -> bool:

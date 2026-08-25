@@ -1063,7 +1063,7 @@ class ProjectedDescriptionTests(unittest.TestCase):
     def test_a_longer_tag_does_not_pass_on_a_version_prefix(self) -> None:
         # Matching a prefix let @v0.4.1.999 and @v0.4.1rc1 capture 0.4.1 and compare
         # equal, so a pin resolving to another tag passed while validation stayed green.
-        for suffix in (".999", "rc1", "-rc1"):
+        for suffix in (".999", "rc1", "-rc1", "+build.5", "+other"):
             with self.subTest(suffix=suffix), TemporaryDirectory() as tmp:
                 root = Path(tmp)
                 fixtures.write_distribution(root)
@@ -1078,6 +1078,21 @@ class ProjectedDescriptionTests(unittest.TestCase):
 
                 self.assertFalse(passed)
                 self.assertIn("a registered install doc carrying no pin", output)
+
+    def test_every_documented_terminator_still_matches(self) -> None:
+        # The alternate-spelling control. An excluded-character list stopped `.999` and
+        # let `+build.5` through; stating the permitted terminators has to keep every
+        # form the real documents use, which is what this pins.
+        pattern = distribution_manifest.install_pin_pattern("https://x.invalid/r")
+        for ref in (
+            ".git@v1.2.3",
+            ".git@v1.2.3#subdirectory=tools/cli",
+            '.git@v1.2.3"',
+            ".git@v1.2.3 \\",
+            '.git#v1.2.3"',
+        ):
+            with self.subTest(ref=ref):
+                self.assertEqual(pattern.findall("https://x.invalid/r" + ref), ["1.2.3"])
 
     def test_an_unpinned_install_ref_is_left_alone(self) -> None:
         # Tracking the default branch is a documented form, not a stale pin. Judging it
