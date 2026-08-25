@@ -473,8 +473,11 @@ Prefer lightweight tests that match the risk of the change.
 
 - Run repository validation for every change.
 - Use `.venv/bin/python scripts/check_workspace.py` as the public local entry point; CI runs the
-  same script in its pinned Python 3.10 environment. Keep component checks independently runnable
-  for focused diagnostics.
+  same script in its pinned Python 3.10 environment, and the style gate runs inside it so a green
+  local run and a green CI run mean the same thing. CI additionally parses the non-Python sources
+  and exercises the deployment CLI against an installed engine — steps that need tools the
+  maintenance environment does not declare, so they stay CI-only by design rather than by omission.
+  Keep component checks independently runnable for focused diagnostics.
 - Run `.venv/bin/python scripts/development_knowns.py --check` through the workspace gate. Record only
   non-obvious current conditions that affect development judgment; external review language is
   evidence, not the project statement, and a treatment never authorizes work without an explicit
@@ -506,7 +509,7 @@ Prefer lightweight tests that match the risk of the change.
   on a `.js` file parses it as CommonJS and silently passes anything containing `import`, so the
   check would do nothing. The plugin is the one that fails silently in use: nothing else reads it,
   so a syntax error would only surface for an OpenCode user.
-- Python style is checked in CI by `ruff check .` against `ruff.toml` — width 100, rules `E`/`F`/`W`
+- Python style is checked by `ruff check .` against `ruff.toml` — width 100, rules `E`/`F`/`W`
   with `preview` on, pinned to one ruff version so a release cannot fail an unrelated push. It is
   CI-only because the pre-commit hook runs only the pinned maintenance environment; run
   `pipx run ruff==0.16.1 check .` locally for the same answer before pushing. Never auto-apply a fix

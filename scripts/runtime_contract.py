@@ -12,6 +12,12 @@ all. An environment holding a different version of a pinned library satisfies th
 floor and then validates the workspace with a parser the pins do not name — the gate
 passes while checking something else. So the installed version of every pin is
 compared too.
+
+The workflow is a third declaration of the same versions. It installs its own style
+pin rather than reading the requirements file, so the two can name different releases
+while both look deliberate — and the local gate would then check the workspace with a
+linter CI does not run. Every pin the workflow installs is compared against the
+requirements file for that reason.
 """
 
 from __future__ import annotations
@@ -29,6 +35,8 @@ ROOT = Path(__file__).resolve().parent.parent
 PYTHON_VERSION = re.compile(r"^(\d+)\.(\d+)$")
 RUFF_TARGET = re.compile(r'^target-version\s*=\s*"([^"]+)"\s*$', re.MULTILINE)
 REQUIREMENTS = Path("requirements-maintenance.txt")
+WORKFLOW = Path(".github/workflows/validate.yml")
+WORKFLOW_PIN = re.compile(r"pip install ([A-Za-z0-9][A-Za-z0-9._-]*)==([^\s\"']+)")
 PIN = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)==([^\s;#]+)")
 SETUP = "run the maintenance environment setup from README.md"
 
@@ -109,6 +117,25 @@ def check(
                 errors.append(f"{name} is pinned at {pinned} but is not installed; {SETUP}")
             elif found != pinned:
                 errors.append(f"{name} is pinned at {pinned} but {found} is installed; {SETUP}")
+
+    # An absent workflow is nothing to reconcile rather than a disagreement — the same
+    # answer seam_contract gives to zero seams. What must not pass quietly is a workflow
+    # that is present and names a different release.
+    workflow_path = root / WORKFLOW
+    workflow_text = _read(workflow_path, errors) if workflow_path.is_file() else None
+    if workflow_text is not None and requirements_text is not None:
+        declared = pins(requirements_text)
+        for name, pinned in sorted(set(WORKFLOW_PIN.findall(workflow_text))):
+            if name not in declared:
+                errors.append(
+                    f"{WORKFLOW.name} installs {name}=={pinned}, which "
+                    f"{REQUIREMENTS.name} does not declare"
+                )
+            elif declared[name] != pinned:
+                errors.append(
+                    f"{WORKFLOW.name} installs {name}=={pinned} but "
+                    f"{REQUIREMENTS.name} pins {declared[name]}"
+                )
 
     if version is not None and target is not None:
         expected = f"py{version[0]}{version[1]}"

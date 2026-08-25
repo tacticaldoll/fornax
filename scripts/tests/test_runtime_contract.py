@@ -134,6 +134,66 @@ class RuntimeContractTests(unittest.TestCase):
                 self.assertEqual(runtime_contract.pins(line), {"markdown-it-py": "4.2.0"})
 
 
+class WorkflowPinTests(unittest.TestCase):
+    def workspace(self, root: Path, workflow: str | None) -> None:
+        (root / ".python-version").write_text("3.10\n", encoding="utf-8")
+        (root / "ruff.toml").write_text('target-version = "py310"\n', encoding="utf-8")
+        (root / "requirements-maintenance.txt").write_text("tool==1.2.3\n", encoding="utf-8")
+        if workflow is not None:
+            path = root / ".github" / "workflows" / "validate.yml"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(workflow, encoding="utf-8")
+
+    def check(self, root: Path) -> list[str]:
+        return runtime_contract.check(root, running=(3, 10), installed=lambda name: "1.2.3")
+
+    def test_an_absent_workflow_is_nothing_to_reconcile(self) -> None:
+        # Zero declarations is a clean answer, not a disagreement.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.workspace(root, None)
+
+            self.assertEqual(self.check(root), [])
+
+    def test_a_workflow_pin_matching_the_requirements_passes(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.workspace(root, "        run: pip install tool==1.2.3\n")
+
+            self.assertEqual(self.check(root), [])
+
+    def test_a_workflow_pinning_another_release_fails(self) -> None:
+        # The gate would otherwise check the workspace with a linter CI does not run.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.workspace(root, "        run: pip install tool==9.9.9\n")
+
+            errors = self.check(root)
+
+            self.assertEqual(len(errors), 1, errors)
+            self.assertIn("installs tool==9.9.9", errors[0])
+            self.assertIn("pins 1.2.3", errors[0])
+
+    def test_a_workflow_pin_the_requirements_never_declared_fails(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.workspace(root, "        run: pip install other==2.0.0\n")
+
+            errors = self.check(root)
+
+            self.assertEqual(len(errors), 1, errors)
+            self.assertIn("does not declare", errors[0])
+
+    def test_this_repository_agrees_with_its_own_workflow(self) -> None:
+        errors = [
+            error
+            for error in runtime_contract.check(runtime_contract.ROOT)
+            if "validate.yml" in error
+        ]
+
+        self.assertEqual(errors, [])
+
+
 class SharedPinTests(unittest.TestCase):
     """The CLI declares the libraries the workspace validator imports, because
     snapshot validation shells out to it. Where both files name a package they must

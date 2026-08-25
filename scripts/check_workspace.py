@@ -25,6 +25,7 @@ STEPS = (
     ("development knowns", "scripts/development_knowns.py", "--check"),
     ("evidence currency", "scripts/evidence_currency.py", "--check"),
     ("text hygiene", "scripts/check_text.py"),
+    ("python style", "-m", "ruff", "check", "."),
     (
         "validation tests",
         "-m",
