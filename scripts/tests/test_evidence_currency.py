@@ -211,15 +211,17 @@ class DriftTests(unittest.TestCase):
             (scenario / "README.md").write_text("# one\n", encoding="utf-8")
             (scenario / "fixture" / "records" / "case.md").write_text("# case\n", encoding="utf-8")
 
-            found = evidence_currency.unregistered_scenarios(
+            found = evidence_currency.unaccounted_files(
                 root, {"scripts/tests/scenarios/one/README.md"}
             )
 
             self.assertEqual(found, [])
 
-    def test_a_stray_file_beside_registered_scenarios_is_reported(self) -> None:
-        # The grouping level a naive "outermost directory with files" rule claimed,
-        # stopping the scenarios under it from being enumerated at all.
+    def test_a_stray_file_is_named_and_its_siblings_stay_accounted_for(self) -> None:
+        # The distinguishing case. Any directory-naming rule reports the grouping level
+        # and stops enumerating the registered scenario beneath it; naming the file
+        # reports the stray and leaves the sibling covered. A rule that returns
+        # directories cannot produce this answer at all.
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             group = root / "scripts" / "tests" / "scenarios" / "skill"
@@ -227,28 +229,28 @@ class DriftTests(unittest.TestCase):
             (group / "case" / "README.md").write_text("# case\n", encoding="utf-8")
             (group / "notes.md").write_text("# stray\n", encoding="utf-8")
 
-            found = evidence_currency.unregistered_scenarios(
+            found = evidence_currency.unaccounted_files(
                 root, {"scripts/tests/scenarios/skill/case/README.md"}
             )
 
-            self.assertEqual(found, ["scripts/tests/scenarios/skill"])
+            self.assertEqual(found, ["scripts/tests/scenarios/skill/notes.md"])
 
-    def test_only_the_outermost_uncovered_directory_is_reported(self) -> None:
+    def test_every_unaccounted_file_is_named_however_deep(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             nested = root / "scripts" / "tests" / "scenarios" / "skill" / "case"
             nested.mkdir(parents=True, exist_ok=True)
             (nested / "README.md").write_text("# case\n", encoding="utf-8")
 
-            found = evidence_currency.unregistered_scenarios(root, set())
+            found = evidence_currency.unaccounted_files(root, set())
 
-            self.assertEqual(found, ["scripts/tests/scenarios/skill/case"])
+            self.assertEqual(found, ["scripts/tests/scenarios/skill/case/README.md"])
 
     def test_every_checked_in_scenario_is_registered(self) -> None:
         entries = evidence_currency.load(evidence_currency.ROOT / evidence_currency.REGISTRY)
         registered = {entry.get("record") for entry in entries}
 
-        found = evidence_currency.unregistered_scenarios(evidence_currency.ROOT, registered)
+        found = evidence_currency.unaccounted_files(evidence_currency.ROOT, registered)
 
         self.assertTrue(registered)
         self.assertEqual(found, [])
