@@ -1060,6 +1060,25 @@ class ProjectedDescriptionTests(unittest.TestCase):
         self.assertFalse(passed)
         self.assertIn("no documented install pin names the release tag", output)
 
+    def test_a_longer_tag_does_not_pass_on_a_version_prefix(self) -> None:
+        # Matching a prefix let @v0.4.1.999 and @v0.4.1rc1 capture 0.4.1 and compare
+        # equal, so a pin resolving to another tag passed while validation stayed green.
+        for suffix in (".999", "rc1", "-rc1"):
+            with self.subTest(suffix=suffix), TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                fixtures.write_distribution(root)
+                relative = distribution_manifest.PINNED_INSTALL_DOCS[0]
+                path = root / relative
+                path.write_text(
+                    path.read_text(encoding="utf-8").replace("@v1.2.3", f"@v1.2.3{suffix}"),
+                    encoding="utf-8",
+                )
+
+                passed, output = self.check_distribution(root)
+
+                self.assertFalse(passed)
+                self.assertIn("a registered install doc carrying no pin", output)
+
     def test_an_unpinned_install_ref_is_left_alone(self) -> None:
         # Tracking the default branch is a documented form, not a stale pin. Judging it
         # would force a version onto the one command that deliberately carries none.

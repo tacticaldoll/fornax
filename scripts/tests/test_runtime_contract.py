@@ -182,6 +182,31 @@ class WorkflowPinTests(unittest.TestCase):
             self.assertIn("installs tool==9.9.9", errors[0])
             self.assertIn("pins 1.2.3", errors[0])
 
+    def test_every_spelling_of_an_inline_pin_is_compared(self) -> None:
+        # Anchoring on "pip install " missed --upgrade, a quoted spec, and every package
+        # after the first on one line — three ways a disagreeing pin passed unread.
+        spellings = (
+            "        run: python -m pip install tool==9.9.9\n",
+            "        run: pip install --upgrade tool==9.9.9\n",
+            '        run: pip install "tool==9.9.9"\n',
+            "        run: pip install other==2.0.0 tool==9.9.9\n",
+        )
+        for workflow in spellings:
+            with self.subTest(workflow=workflow.strip()), TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                self.workspace(root, workflow)
+
+                errors = self.check(root)
+
+                self.assertTrue(any("tool==9.9.9" in error for error in errors), errors)
+
+    def test_a_requirements_file_reference_is_not_a_pin(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.workspace(root, "        run: pip install -r requirements-maintenance.txt\n")
+
+            self.assertEqual(self.check(root), [])
+
     def test_a_workflow_pin_the_requirements_never_declared_fails(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)

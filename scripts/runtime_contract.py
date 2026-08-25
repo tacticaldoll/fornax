@@ -16,10 +16,12 @@ compared too.
 The workflow used to install its own style pin rather than reading the requirements
 file, so the two could name different releases while both looked deliberate. That
 duplicate is gone: the gate the workflow runs installs from the requirements file and
-checks style inside itself. Every `name==version` pin the workflow still
-installs inline is compared against the requirements file anyway — zero of them is the
-intended state and a clean answer, and the comparison is what keeps a reintroduced one
-from passing quietly. A VCS ref is out of scope: the workflow installs the deployment
+checks style inside itself. Every `name==version` token the workflow
+carries inline is compared against the requirements file anyway — derived from the
+token rather than from one command spelling, because anchoring on `pip install `
+missed `--upgrade`, a quoted spec, and every package after the first on one line. Zero
+of them is the intended state and a clean answer, and the comparison is what keeps a
+reintroduced one from passing quietly. A VCS ref is out of scope: the workflow installs the deployment
 engine as `agent-skill-deployer @ git+…@v0.1.2`, which the requirements file does not
 declare and this does not read, so that pin is guarded by nothing here.
 """
@@ -40,7 +42,7 @@ PYTHON_VERSION = re.compile(r"^(\d+)\.(\d+)$")
 RUFF_TARGET = re.compile(r'^target-version\s*=\s*"([^"]+)"\s*$', re.MULTILINE)
 REQUIREMENTS = Path("requirements-maintenance.txt")
 WORKFLOW = Path(".github/workflows/validate.yml")
-WORKFLOW_PIN = re.compile(r"pip install ([A-Za-z0-9][A-Za-z0-9._-]*)==([^\s\"']+)")
+WORKFLOW_PIN = re.compile(r"(?<![\w.-])([A-Za-z0-9][A-Za-z0-9._-]*)==([A-Za-z0-9][^\s\"',;]*)")
 PIN = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)==([^\s;#]+)")
 SETUP = "run the maintenance environment setup from README.md"
 

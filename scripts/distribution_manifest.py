@@ -128,8 +128,13 @@ def validate_projected_descriptions(root: Path, canonical: str) -> bool:
 
 
 def install_pin_pattern(repository: str) -> re.Pattern[str]:
-    """Match a documented install ref that already names a release tag."""
-    return re.compile(re.escape(repository) + r"\.git[@#]v(\d+\.\d+\.\d+)")
+    """Match a documented install ref that already names a release tag.
+
+    The version must end where the tag ends. Matching a prefix let `@v0.4.1.999` and
+    `@v0.4.1rc1` both capture `0.4.1` and compare equal to the release, so a pin
+    resolving somewhere else passed while validation stayed green.
+    """
+    return re.compile(re.escape(repository) + r"\.git[@#]v(\d+\.\d+\.\d+)(?![\w.-])")
 
 
 def validate_install_pins(root: Path, repository: str, version: str) -> bool:
