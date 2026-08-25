@@ -8,7 +8,7 @@ knowns:
     evidence:
       - A pin rolled back to an earlier tag in tools/fornax-cli/README.md left every workspace check passing.
       - scripts/distribution_manifest.py compared only the four host manifests against distribution.json.
-    verification: scripts/distribution_manifest.py validates every pin in PINNED_INSTALL_DOCS against the canonical version, and the same rollback now fails validation.
+    verification: scripts/distribution_manifest.py reads every tracked Markdown file for a versioned install ref and requires it to match distribution.json; the rollback that used to pass now fails, as does a pin in a file that was never registered.
     updated: 2026-08-25
   - id: gate-wording-micro-test-unevidenced
     statement: No checked-in evidence shows that review gate wording has been micro-tested against a no-guidance control.
