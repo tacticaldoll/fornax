@@ -1,0 +1,64 @@
+commit 8f2c1a9  feat(validate): guard the release surfaces
+
+    Two release surfaces went unguarded. The host manifests are checked
+    against distribution.json; the tag files and the notice banners were not.
+
+    Both new checks derive what they inspect from the workspace rather than
+    from a list kept beside them, so a surface added later is guarded without
+    an edit. A maintained list goes stale in exactly the direction nobody
+    notices: the thing nobody thought to add to it.
+
+--- a/scripts/release_surfaces.py
++++ b/scripts/release_surfaces.py
+@@ -0,0 +1,44 @@
++"""Check the release surfaces agree with distribution.json.
++
++Both checks below derive their inputs from the workspace rather than from a
++maintained list, so a surface added later is guarded without an edit.
++"""
++
++import re
++from pathlib import Path
++
++TAG_PATTERN = re.compile(r"tag:\s*v(\d+\.\d+\.\d+)")
++
++NOTICE_FILES = (
++    "NOTICE.md",
++    "docs/support.md",
++    "docs/upgrading.md",
++)
++
++
++def check_tag_files(root: Path, version: str) -> list[str]:
++    """Every tracked YAML naming a release tag must name this release."""
++    errors = []
++    for path in sorted(root.rglob("*.yaml")):
++        text = path.read_text(encoding="utf-8")
++        for found in TAG_PATTERN.findall(text):
++            if found != version:
++                errors.append(f"{path}: tag v{found} does not match {version}")
++    return errors
++
++
++def check_notice_banners(root: Path, version: str) -> list[str]:
++    """Every notice banner must name the current release."""
++    errors = []
++    for relative in NOTICE_FILES:
++        path = root / relative
++        if not path.is_file():
++            continue
++        if f"version {version}" not in path.read_text(encoding="utf-8"):
++            errors.append(f"{relative}: banner does not name {version}")
++    return errors
++
++
++def check(root: Path, version: str) -> list[str]:
++    return check_tag_files(root, version) + check_notice_banners(root, version)
+
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -410,6 +410,9 @@
+ - Major for removed or renamed skills, trigger changes, removed behavior.
++- Release surfaces are checked automatically. Every surface that carries the
++  release version is discovered from the workspace, so none of them depends on
++  a maintainer remembering to register it.
