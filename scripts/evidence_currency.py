@@ -142,6 +142,18 @@ def validate(entries: tuple[Evidence, ...]) -> None:
             raise EvidenceError(f"{identifier}: current evidence requires a fingerprint")
         if state == "superseded" and not entry.get("superseded-reason"):
             raise EvidenceError(f"{identifier}: superseded evidence requires a reason")
+        record = entry.get("record")
+        if not record:
+            raise EvidenceError(f"{identifier}: record must name a path")
+        # A record at the top of the tree it declares makes its own parent the covering
+        # root, and every file beneath becomes accounted for by one entry. Refused here
+        # rather than guarded at the walk: the walk cannot tell that answer from a tree
+        # with nothing unaccounted, which is the reading that hides everything.
+        if Path(record).parent == SCENARIOS:
+            raise EvidenceError(
+                f"{identifier}: record must sit inside a scenario directory, not beside "
+                f"the registry — its parent would cover the whole tree"
+            )
 
 
 def section_text(text: str, heading: str) -> str | None:

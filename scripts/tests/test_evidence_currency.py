@@ -167,6 +167,24 @@ class DriftTests(unittest.TestCase):
             self.assertIn("no registry entry", output)
             self.assertNotIn("scenarios/known - a checked-in", output)
 
+    def test_a_tree_covering_record_cannot_silence_the_walk(self) -> None:
+        # One entry whose record sits beside the registry makes SCENARIOS itself the
+        # covering root, so every unaccounted file becomes accounted for. Refused at
+        # validate rather than guarded at the walk, which cannot tell that answer from
+        # a clean tree.
+        registry = CURRENT.format(fingerprint="abc123").replace(
+            "record: scenarios/sample/README.md",
+            "record: scripts/tests/scenarios/evidence.yaml",
+        )
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write(root, registry)
+
+            with self.assertRaises(evidence_currency.EvidenceError) as caught:
+                evidence_currency.validate(evidence_currency.load(root / "evidence.yaml"))
+
+            self.assertIn("would cover the whole tree", str(caught.exception))
+
     def test_a_record_that_is_not_there_fails_the_standalone_check(self) -> None:
         # The unittest suite already asserted this; the documented command did not, so
         # `--check` passed on a claim pointing at a deleted result.
@@ -283,6 +301,13 @@ class ModelTests(unittest.TestCase):
             "current without fingerprint": (
                 base.replace("    fingerprint: abc123\n", ""),
                 "requires a fingerprint",
+            ),
+            "record covering the whole tree": (
+                base.replace(
+                    "record: scenarios/sample/README.md",
+                    "record: scripts/tests/scenarios/evidence.yaml",
+                ),
+                "would cover the whole tree",
             ),
             "superseded without reason": (
                 base.replace("state: current", "state: superseded"),
