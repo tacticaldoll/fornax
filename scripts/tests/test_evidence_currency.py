@@ -84,6 +84,27 @@ class SectionTests(unittest.TestCase):
         # silently hashing the whole document instead would report a clean drift.
         self.assertIsNone(evidence_currency.section_text(DOCUMENT, "Gate 9"))
 
+    def test_a_hash_inside_a_fenced_block_does_not_end_the_section(self) -> None:
+        # The defect the CommonMark parser closes: a shebang in a fenced block ended
+        # the section, so the fingerprint covered part of the text it named. Any rule
+        # that treats a `#`-prefixed line as a heading fails this.
+        document = (
+            "## Gate 5: Responsibility\n\nbefore\n\n```sh\n#!/usr/bin/env bash\n```\n\n"
+            "after\n\n## Gate 6: Logic\n\nout\n"
+        )
+
+        found = evidence_currency.section_text(document, "Gate 5: Responsibility")
+
+        self.assertIn("after", found)
+        self.assertNotIn("Gate 6", found)
+
+    def test_a_heading_inside_a_fenced_block_is_not_a_section(self) -> None:
+        # An output template's headings belong to the template, not to the document
+        # around it — which is where one registered fingerprint had been pinned.
+        document = "## Real\n\n```markdown\n### Templated\n\nrow\n```\n"
+
+        self.assertIsNone(evidence_currency.section_text(document, "Templated"))
+
     def test_the_heading_is_matched_by_text_not_by_its_hashes(self) -> None:
         self.assertIsNone(evidence_currency.section_text(DOCUMENT, "## Gate 5: Responsibility"))
 

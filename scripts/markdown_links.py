@@ -57,6 +57,36 @@ def iter_markdown_links(text: str) -> Iterator[MarkdownLink]:
     yield from _iter_token_links(PARSER.parse(text))
 
 
+def heading_section(text: str, heading: str) -> Optional[str]:
+    """Return one heading's section, the heading line included, or None when absent.
+
+    Delegates the grammar to the same CommonMark parser the link walk uses. A
+    hand-written rule that treats any `#`-prefixed line as a heading truncates a
+    section at a shebang inside a fenced block, which is how a fingerprint came to
+    cover part of the text it claimed.
+
+    The heading is named by its text, not its `#` prefix — the registry that reads
+    this cannot express a scalar opening with `#`.
+    """
+    tokens = list(PARSER.parse(text))
+    lines = text.splitlines()
+    for index, token in enumerate(tokens):
+        if token.type != "heading_open" or token.map is None:
+            continue
+        inline = tokens[index + 1] if index + 1 < len(tokens) else None
+        if inline is None or inline.content.strip() != heading:
+            continue
+        start = token.map[0]
+        depth = int(token.tag[1:])
+        for later in tokens[index + 1 :]:
+            if later.type != "heading_open" or later.map is None:
+                continue
+            if int(later.tag[1:]) <= depth:
+                return "\n".join(lines[start : later.map[0]])
+        return "\n".join(lines[start:])
+    return None
+
+
 def local_target(destination: str) -> Optional[str]:
     """Return the filesystem portion of a local destination, if it has one."""
     if destination.startswith("//"):

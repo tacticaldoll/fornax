@@ -10,8 +10,8 @@ evidence:
   - id: static-review-gate5-ledger-spec
     state: current
     tests: skills/static-review/SKILL.md
-    section: Responsibility & Dependency Ledger
-    fingerprint: 9b2ffd113db13b9c
+    section: Phase 5: Report
+    fingerprint: 6ec410fd0184aa64
     recorded: 2026-08-25
     record: scripts/tests/scenarios/static-review/gate5-ledger/README.md
   - id: static-review-contract-inventory-phase3

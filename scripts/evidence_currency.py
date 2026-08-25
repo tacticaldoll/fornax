@@ -37,6 +37,7 @@ from pathlib import Path
 
 from constrained_yaml import raw_scalar
 from diagnostic_text import printable
+from markdown_links import heading_section
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -159,25 +160,14 @@ def validate(entries: tuple[Evidence, ...]) -> None:
 def section_text(text: str, heading: str) -> str | None:
     """Return one Markdown section, heading line included, or None when absent.
 
-    The heading is named by its text, not by its `#` prefix: a plain scalar may not
-    open with `#` in this repository's YAML subset, and the level is readable from
-    the document anyway.
+    The grammar is delegated to `markdown_links`, which already owns the repository's
+    CommonMark parser. The rule this replaced treated any `#`-prefixed line as a
+    heading, so a shebang inside a fenced block ended the section and the fingerprint
+    covered part of the text it named.
     """
     if heading == WHOLE_FILE:
         return text
-    lines = text.splitlines()
-    for index, line in enumerate(lines):
-        if not line.startswith("#") or line.lstrip("#").strip() != heading:
-            continue
-        depth = len(line) - len(line.lstrip("#"))
-        for offset in range(index + 1, len(lines)):
-            candidate = lines[offset]
-            if candidate.startswith("#"):
-                level = len(candidate) - len(candidate.lstrip("#"))
-                if level <= depth:
-                    return "\n".join(lines[index:offset])
-        return "\n".join(lines[index:])
-    return None
+    return heading_section(text, heading)
 
 
 def fingerprint(root: Path, tests: str, heading: str) -> str | None:
