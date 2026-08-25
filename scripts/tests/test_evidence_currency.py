@@ -41,6 +41,14 @@ after
 def write(root: Path, registry: str, document: str = DOCUMENT) -> None:
     (root / "doc.md").write_text(document, encoding="utf-8")
     (root / "evidence.yaml").write_text(registry, encoding="utf-8")
+    # Every `record:` an entry names must exist, unless a case is testing that it does not.
+    for line in registry.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("record:") or "gone" in stripped:
+            continue
+        record = root / stripped.split(":", 1)[1].strip()
+        record.parent.mkdir(parents=True, exist_ok=True)
+        record.write_text("# record\n", encoding="utf-8")
 
 
 def run_check(root: Path) -> tuple[bool, str]:
@@ -158,6 +166,23 @@ class DriftTests(unittest.TestCase):
             self.assertIn("scenarios/orphan", output)
             self.assertIn("no registry entry", output)
             self.assertNotIn("scenarios/known - a checked-in", output)
+
+    def test_a_record_that_is_not_there_fails_the_standalone_check(self) -> None:
+        # The unittest suite already asserted this; the documented command did not, so
+        # `--check` passed on a claim pointing at a deleted result.
+        registry = CURRENT.format(fingerprint="placeholder").replace(
+            "record: scenarios/sample/README.md", "record: scenarios/gone/README.md"
+        )
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write(root, registry)
+            actual = evidence_currency.fingerprint(root, "doc.md", "Gate 5: Responsibility")
+            write(root, registry.replace("placeholder", actual))
+
+            failed, output = run_check(root)
+
+            self.assertTrue(failed)
+            self.assertIn("its record scenarios/gone/README.md is not there", output)
 
     def test_a_scenario_whose_record_is_not_a_readme_is_still_seen(self) -> None:
         # Deriving from the README filename would have left this invisible, which is

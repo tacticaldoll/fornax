@@ -54,6 +54,25 @@ def skill_md(name: str, handoff: str | None = None) -> str:
     return body
 
 
+def write_worktree(root: Path) -> None:
+    """Make the root a git worktree, which is what the pin scan asks for its file list."""
+    if not (root / ".git").exists():
+        subprocess.run(["git", "init", "-q", str(root)], check=True)
+
+
+def write_install_docs(root: Path, version: str) -> None:
+    """Write one pinned install document per path the pin check requires to carry one."""
+    for relative in validate_skills.PINNED_INSTALL_DOCS:
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            "Install:\n\n```sh\n"
+            f"pipx install \"git+https://example.invalid/fixture.git@v{version}"
+            "#subdirectory=tools/cli\"\n```\n",
+            encoding="utf-8",
+        )
+
+
 def write_distribution(
     root: Path,
     description: str = "Portable skills that do the thing, rather than the other thing.",
@@ -61,7 +80,13 @@ def write_distribution(
     name: str = "fixture",
     publisher_id: str = PUBLISHER_ID,
 ) -> None:
-    """A canonical distribution plus the host manifests that project it."""
+    """A canonical distribution plus the host manifests that project it.
+
+    Two things the pin check needs come from named helpers rather than from this
+    body: making the root a worktree, and writing the install documents. Folding
+    them in here gave one fixture three jobs and made every test that touches a
+    distribution depend on `git` for reasons most of them do not assert.
+    """
     (root / "distribution.json").write_text(
         json.dumps(
             {
@@ -89,18 +114,8 @@ def write_distribution(
             encoding="utf-8",
         )
 
-    # The pin check reads the workspace through git, so the fixture is a worktree.
-    if not (root / ".git").exists():
-        subprocess.run(["git", "init", "-q", str(root)], check=True)
-    for relative in validate_skills.PINNED_INSTALL_DOCS:
-        path = root / relative
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(
-            "Install:\n\n```sh\n"
-            f"pipx install \"git+https://example.invalid/fixture.git@v{version}"
-            "#subdirectory=tools/cli\"\n```\n",
-            encoding="utf-8",
-        )
+    write_worktree(root)
+    write_install_docs(root, version)
 
     marketplace = root / ".claude-plugin" / "marketplace.json"
     marketplace.parent.mkdir(parents=True, exist_ok=True)

@@ -214,6 +214,17 @@ def scenario_directories(root: Path) -> list[str]:
 def check(root: Path, entries: tuple[Evidence, ...]) -> bool:
     """Report each entry as current, superseded, or drifted. True when any drifted."""
     failed = False
+    for entry in entries:
+        record = entry.get("record")
+        if not (root / record).is_file():
+            print(
+                printable(
+                    f"FAIL {entry.get('id')} - its record {record} is not there; a claim "
+                    f"pointing at a deleted result is the defect one round later"
+                )
+            )
+            failed = True
+
     registered = {entry.get("record") for entry in entries}
     covered = {str(Path(record).parent) for record in registered}
     for directory in scenario_directories(root):

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
@@ -1071,6 +1072,20 @@ class ProjectedDescriptionTests(unittest.TestCase):
             passed, output = self.check_distribution(root)
 
             self.assertTrue(passed, output)
+
+    def test_a_non_worktree_reports_rather_than_raising(self) -> None:
+        # The pin scan asks git what the workspace carries, and the lister raises on a
+        # root that is not a worktree. The second caller did not turn that into a
+        # diagnostic, so a valid distribution.json in an exported tree crashed.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_distribution(root)
+            subprocess.run(["rm", "-rf", str(root / ".git")], check=True)
+
+            passed, output = self.check_distribution(root)
+
+            self.assertFalse(passed)
+            self.assertIn("workspace could not be listed", output)
 
     def test_pins_cannot_be_checked_without_a_repository_url(self) -> None:
         with TemporaryDirectory() as tmp:

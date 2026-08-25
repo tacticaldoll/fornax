@@ -29,3 +29,18 @@ def workspace_files(root: Path) -> list[Path]:
         capture_output=True,
     )
     return [root / os.fsdecode(path) for path in result.stdout.split(b"\0") if path]
+
+
+def listed(root: Path) -> tuple[list[Path] | None, str | None]:
+    """Return the workspace files, or a diagnostic naming why they could not be read.
+
+    The raise is the right default — a check must not read an unlistable workspace as
+    an empty one — but every caller then has to turn it into its own diagnostic, and
+    the second caller did not. This is that turn, written once: a release tarball or a
+    `git archive` export is a directory a check can legitimately be pointed at, and it
+    should report rather than traceback.
+    """
+    try:
+        return workspace_files(root), None
+    except (OSError, subprocess.CalledProcessError) as error:
+        return None, f"workspace could not be listed: {error}"

@@ -21,7 +21,7 @@ from uuid import UUID
 
 from diagnostic_text import printable
 from skill_model import NAME_PATTERN
-from workspace_files import workspace_files
+from workspace_files import listed
 
 
 VERSION_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
@@ -150,7 +150,12 @@ def validate_install_pins(root: Path, repository: str, version: str) -> bool:
     pattern = install_pin_pattern(repository)
     carrying: set[str] = set()
 
-    for path in sorted(workspace_files(root)):
+    paths, error = listed(root)
+    if error is not None:
+        print(printable(f"FAIL distribution.json - {error}"))
+        return True
+
+    for path in sorted(paths):
         if path.suffix != ".md" or not path.is_file():
             continue
         try:
