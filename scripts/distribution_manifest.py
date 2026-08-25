@@ -37,6 +37,15 @@ HOST_VERSION_MANIFESTS = (
 HOST_DESCRIPTION_MANIFESTS = HOST_VERSION_MANIFESTS + (".claude-plugin/marketplace.json",)
 
 
+# Presence only. Which files must carry a pin cannot be derived — an unpinned ref is
+# a documented form — so this list answers the one direction the scan cannot.
+PINNED_INSTALL_DOCS = (
+    ".opencode/INSTALL.md",
+    "README.md",
+    "tools/fornax-cli/README.md",
+)
+
+
 @dataclass(frozen=True)
 class DistributionValidation:
     passed: bool
@@ -128,14 +137,18 @@ def validate_install_pins(root: Path, repository: str, version: str) -> bool:
     not a stale pin, and only a ref already carrying a version is a claim about
     which release to install.
 
-    Finding no pin anywhere fails. Every documented install path names a tag, so
-    an empty result means the scan stopped matching what the docs actually say,
-    and a check that inspected nothing must not report what one that inspected
-    everything reports.
+    Derivation and a declared set guard opposite directions, so both are here. The
+    scan catches a stale pin in a file nobody registered, which a list cannot see.
+    PINNED_INSTALL_DOCS catches a registered file that stops carrying a pin, which
+    the scan cannot see: an unpinned ref is a documented form, so no rule over the
+    text alone separates "deliberately unpinned" from "lost its pin".
+
+    Replacing the list with the scan traded the second guarantee for the first and
+    was described as only a gain. It was not.
     """
     failed = False
     pattern = install_pin_pattern(repository)
-    found_any = False
+    carrying: set[str] = set()
 
     for path in sorted(workspace_files(root)):
         if path.suffix != ".md" or not path.is_file():
@@ -147,13 +160,21 @@ def validate_install_pins(root: Path, repository: str, version: str) -> bool:
         pinned = pattern.findall(text)
         if not pinned:
             continue
-        found_any = True
         relative_path = path.relative_to(root).as_posix()
+        carrying.add(relative_path)
         for stale in sorted(set(pinned) - {version}):
             print(f"FAIL {relative_path} - install pin v{stale} must match distribution.json")
             failed = True
 
-    if not found_any:
+    for relative_path in PINNED_INSTALL_DOCS:
+        if relative_path not in carrying:
+            print(f"FAIL {relative_path} - a registered install doc carrying no pin")
+            failed = True
+
+    # Only when nothing is registered: with a non-empty list the rows above say it
+    # better, one per document. This fires when the list itself was emptied, so
+    # deleting the registry cannot buy a clean answer.
+    if not PINNED_INSTALL_DOCS and not carrying:
         print("FAIL distribution.json - no documented install pin names the release tag")
         failed = True
 

@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 import fixtures
 import skill_model
+import distribution_manifest
 import validate_skills
 
 PUBLISHER = fixtures.PUBLISHER_ID
@@ -986,7 +987,8 @@ class ProjectedDescriptionTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             fixtures.write_distribution(root)
-            pin = root / "INSTALL.md"
+            relative = validate_skills.PINNED_INSTALL_DOCS[0]
+            pin = root / relative
             pin.write_text(
                 pin.read_text(encoding="utf-8").replace("@v1.2.3", "@v0.9.9"),
                 encoding="utf-8",
@@ -995,7 +997,7 @@ class ProjectedDescriptionTests(unittest.TestCase):
             passed, output = self.check_distribution(root)
 
             self.assertFalse(passed)
-            self.assertIn("INSTALL.md", output)
+            self.assertIn(relative, output)
             self.assertIn("install pin v0.9.9 must match distribution.json", output)
 
     def test_a_pin_in_an_unregistered_file_is_judged_too(self) -> None:
@@ -1017,17 +1019,43 @@ class ProjectedDescriptionTests(unittest.TestCase):
             self.assertIn("docs/quickstart.md", output)
             self.assertIn("install pin v0.0.1 must match distribution.json", output)
 
-    def test_a_workspace_with_no_pin_at_all_fails(self) -> None:
-        # An empty scan and a clean scan must not report the same thing.
-        with TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            fixtures.write_distribution(root)
-            (root / "INSTALL.md").unlink()
+    def test_a_registered_doc_that_stops_carrying_a_pin_fails(self) -> None:
+        # The direction derivation cannot see: an unpinned ref is a documented form,
+        # so no rule over the text alone separates "deliberately unpinned" from
+        # "lost its pin". Replacing the list with the scan traded this guarantee away.
+        for relative in validate_skills.PINNED_INSTALL_DOCS:
+            with self.subTest(relative=relative), TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                fixtures.write_distribution(root)
+                path = root / relative
+                path.write_text(
+                    path.read_text(encoding="utf-8").replace("@v1.2.3", ""),
+                    encoding="utf-8",
+                )
 
-            passed, output = self.check_distribution(root)
+                passed, output = self.check_distribution(root)
 
-            self.assertFalse(passed)
-            self.assertIn("no documented install pin names the release tag", output)
+                self.assertFalse(passed)
+                self.assertIn(f"{relative} - a registered install doc carrying no pin", output)
+
+    def test_emptying_the_registry_does_not_buy_a_clean_answer(self) -> None:
+        # With a populated registry the per-document rows say it better. This is the
+        # case they cannot cover: the registry itself deleted, leaving nothing to miss.
+        original = distribution_manifest.PINNED_INSTALL_DOCS
+        distribution_manifest.PINNED_INSTALL_DOCS = ()
+        try:
+            with TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                fixtures.write_distribution(root)
+                for relative in original:
+                    (root / relative).unlink()
+
+                passed, output = self.check_distribution(root)
+        finally:
+            distribution_manifest.PINNED_INSTALL_DOCS = original
+
+        self.assertFalse(passed)
+        self.assertIn("no documented install pin names the release tag", output)
 
     def test_an_unpinned_install_ref_is_left_alone(self) -> None:
         # Tracking the default branch is a documented form, not a stale pin. Judging it
