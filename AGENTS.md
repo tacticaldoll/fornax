@@ -512,6 +512,14 @@ Prefer lightweight tests that match the risk of the change.
   `PYTHONPATH=scripts .venv/bin/python -m unittest discover -s scripts/tests`. Check the fixture actually
   fails when the rule is removed; a suite that passes either way proves nothing. The
   `tools/fornax-cli` suite is one of the two CI-only steps named above.
+- When a check is a hand-written matcher claiming an invariant over a grammar — a version, a
+  dependency spec, a heading — cover it with two negative controls, not one: a **near-miss sharing
+  the accepted prefix**, and a **valid alternate spelling of the same meaning**. Instance tests stay
+  necessary; these are what make the claim about the grammar rather than about the examples. Both
+  halves have failed here in one day: a tag boundary written as an excluded-character list let
+  `+build.5` through, and a pin matcher rewritten to ignore the command prefix began reporting
+  `# example: tool==1.0` as an install. Each was one control short, and the missing control was a
+  different one each time.
 - The OpenCode plugin is syntax-checked in CI with
   `node --input-type=module --check < .opencode/plugins/fornax.js`, install-free on the runner; the
   hook is parsed by `scripts/check_sources.py` inside the workspace gate. Feed the plugin through
