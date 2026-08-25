@@ -520,6 +520,13 @@ Prefer lightweight tests that match the risk of the change.
   `+build.5` through, and a pin matcher rewritten to ignore the command prefix began reporting
   `# example: tool==1.0` as an install. Each was one control short, and the missing control was a
   different one each time.
+- Prefer modelling the grammar of the thing matched over listing what may surround it. The matched
+  thing's alphabet is closed and defined — SemVer says a version continues through alphanumerics,
+  `.`, `-` and `+` — while the set of things a document may put next is open, so a list of
+  terminators is a guess that has to be extended each time a context appears. The same boundary here
+  took three forms: excluding `[\w.-]` missed `+`, then permitting a punctuation set missed `;`, `|`
+  and `>`, and only the version's own alphabet needed no third revision. Two controls catch the
+  instance; modelling the closed side is what stops the next one.
 - The OpenCode plugin is syntax-checked in CI with
   `node --input-type=module --check < .opencode/plugins/fornax.js`, install-free on the runner; the
   hook is parsed by `scripts/check_sources.py` inside the workspace gate. Feed the plugin through
