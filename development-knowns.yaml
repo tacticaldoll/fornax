@@ -12,17 +12,18 @@ knowns:
     verification: scripts/distribution_manifest.py reads every tracked Markdown file for a versioned install ref and requires it to match distribution.json; the rollback that used to pass now fails, as does a pin in a file that was never registered.
     updated: 2026-08-25
   - id: gate-wording-micro-test-unevidenced
-    statement: No checked-in evidence shows that review gate wording has been micro-tested against a no-guidance control.
+    statement: The recorded gate-wording micro-test used the prior wording as its control, so no no-guidance control has been run and the treatment arm cannot separate wording from the template it shipped with.
     kind: risk
     treatment: accept
-    rationale: The required ledger rests on the REQUIRED-slot form prescribed for an omitted element, not on a measurement that the wording changes agent behaviour.
+    rationale: The measurement that exists answers whether the change binds, which is what the release needed; whether the failure occurs with no guidance at all, and whether the wording binds without the table, are separate questions nothing has asked.
     evidence:
-      - skills/harden-skill/references/hardening.md prescribes micro-tests before trusting a wording change.
-      - No fixture or scenario under scripts/tests exercises a gates.md wording change.
+      - skills/harden-skill/references/hardening.md requires a no-guidance control and says to drop the guidance when the control does not exhibit the failure.
+      - scripts/tests/scenarios/static-review/gate5-ledger/README.md records prior-wording control against shipped treatment, 5 reps each, and names the arm it could not separate.
+      - No control arm read the gate as passed, so the failure gates.md describes was not reproduced in the form it states.
     declined-changes:
       - Read a passing workspace gate as evidence that a wording change binds agent behaviour.
-    reconsider-when: A micro-test result for review gate wording is checked in, or a review run reports a ledger that omits a unit Gate 5 opened, or omits units without recording that the gate was blocked or not opened for them.
-    updated: 2026-08-24
+    reconsider-when: A third arm carrying the new wording without the table is run, or a no-guidance arm is run, or a review run reports a ledger that omits a unit Gate 5 opened.
+    updated: 2026-08-25
   - id: gate5-ledger-omits-interface-usage
     statement: Gate 5 names call sites as its interface evidence while the ledger records no interface usage.
     kind: debt
