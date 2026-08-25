@@ -89,7 +89,7 @@ rep 5  PASS —— 直接引用新措辭作為**搜尋啟發式**：
 
                 SELF-CLAUSE
 control              5 / 5      ← 現行措辭
-treatment            4 / 4      ← 加了 introduces 條款（rep 4 未回，不影響結論）
+treatment            5 / 5      ← 加了 introduces 條款（rep 4 最後回來，同樣 PASS）
 
 ## 執行事先寫定的結論
 
@@ -102,6 +102,9 @@ hardening.md 第 2 項：control 未展現該失效，就沒有東西要修。
 但 control 在沒有那個提示的情況下找到同一個東西，而且 rep 3 還找得更深。
 啟發式讓路徑更短，不改變結果。事先寫定的標準沒有為「路徑更短」留位置，
 而事後為它開一個位置，正好就是這個 session 反覆在防的那件事。
+
+rep 4 (treatment)  SELF-CLAUSE **PASS** —— 第 2 列即為該原則，
+       並寫「the rule's first counter-example sits beside the rule」
 
 ## 那五個真實缺陷的正確歸因
 

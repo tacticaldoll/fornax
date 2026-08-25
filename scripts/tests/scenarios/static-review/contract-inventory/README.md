@@ -45,9 +45,15 @@ would be the very move this repository keeps catching itself at.
 
 ## What this changes about the five original defects
 
-They were not a gap in the skill. Nothing ran `static-review` against those changes — the reviews
-were ad-hoc adversarial passes. Phase 4b's track would have caught them, which is what these ten
-samples demonstrate. The missing step was application, not wording.
+Four of the five were not a gap in the skill. Nothing ran `static-review` against those changes —
+the reviews were ad-hoc adversarial passes, and Phase 4b's track reaches each of the four: a
+maintained list contradicting a docstring, a borrowed "absence is clean" answer contradicting
+`PROJECT.md`, an `AGENTS.md` sentence claiming more than was true, and a derivation contradicting
+its own docstring. All four are clauses the change stated and broke.
+
+The fifth is not. A resolved registry entry whose statement shape diverged from its sibling's is
+convergence with an existing pattern — Gate 7's question, not a contract clause. The Against-Contract
+track would not have raised it, and this record should not claim otherwise.
 
 ## Limitation
 
