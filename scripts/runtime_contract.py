@@ -29,12 +29,12 @@ from __future__ import annotations
 
 import re
 import sys
-
-import yaml
-from packaging.requirements import InvalidRequirement, Requirement
 from importlib.metadata import PackageNotFoundError, version as installed_version
 from pathlib import Path
 from typing import Callable
+
+import yaml
+from packaging.requirements import InvalidRequirement, Requirement
 
 from diagnostic_text import printable
 from read_whole import COMMENT, Unread, shell_words

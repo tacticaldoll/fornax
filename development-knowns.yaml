@@ -43,6 +43,21 @@ knowns:
       - Add tomli so ruff.toml and a pyproject dependency string are parsed rather than matched, for two readings that have never been wrong and that a move to Python 3.11 makes free.
     verification: "Each grammar states the channel it has. The two parsed ones are total by their libraries — Requirement consumes the string or raises, safe_load parses the document or raises, and runtime_contract reports what raised rather than reading fewer commands. The token grammars reach their value through read_whole.whole, whose Whole rejects any match not spanning its subject; test_read_whole.py fails when that check is removed. Command structure is covered by cases rather than by a guarantee, because a structure this reads wrongly is silent: echoed text, another program whose name starts with pip, the wrong verb, an install after a control operator, after assignments, through the module, and by path are each a case in test_runtime_contract.py. The case that was missing was the one that failed. RUFF_TARGET needs no channel: check requires exactly one match in ruff.toml, so a misread changes the count and fails."
     updated: 2026-08-26
+  - id: import-grouping-unchecked
+    statement: Whether a module's imports are grouped as the files claim is checked by nobody, and a third-party import landed in the middle of a standard-library group with every gate green.
+    kind: debt
+    treatment: accept
+    rationale: Ruff owns this rule and adopting it costs edits to twenty files, among them the pinned CLI adapter this repository ships and a review-scenario fixture whose content is the input a recorded micro-test measured. The defect it would catch is cosmetic, and the two files it would disturb are not.
+    evidence:
+      - runtime_contract.py gained yaml and packaging between its standard-library imports in a commit that passed ruff, the full suite and the twelve-step gate.
+      - "ruff check --select I reports 23 findings across 20 files, including tools/fornax-cli/fornax_cli/cli.py and scripts/tests/scenarios/static-review/gate5-ledger/fixture/billing.py."
+      - "Setting src so ruff resolves first-party modules by path rather than by a maintained list of names was measured as removing every finding. That measurement was wrong: the key had been appended under the lint table, where ruff rejects it, and the run failed to load its configuration while the reading took a blank line for a clean answer."
+      - ruff.toml already records import sorting as an opinion this repository has not adopted; what is new here is a measured cost rather than a stated one.
+    declined-changes:
+      - Select I and run --fix, which edits the shipped CLI adapter and a fixture whose bytes a recorded result measured, to catch a defect that changes no behaviour.
+      - Exclude those two paths and select I for the rest, which trades one unchecked claim for a maintained list of exemptions.
+    verification: None. This is the one condition in this file with no check behind it, which is what makes it debt rather than a resolved defect; the grouping in runtime_contract.py was repaired by hand.
+    updated: 2026-08-26
   - id: evidence-entry-model-splits-by-hand
     statement: A result measured against two documents is registered as two evidence entries only because a maintainer remembers to split it.
     kind: debt
