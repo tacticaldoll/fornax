@@ -510,7 +510,11 @@ Prefer lightweight tests that match the risk of the change.
   no edit to be counted and no seams at all is a clean answer.
 - Cover a new or changed validation rule in `scripts/tests/`, run with
   `PYTHONPATH=scripts .venv/bin/python -m unittest discover -s scripts/tests`. Check the fixture actually
-  fails when the rule is removed; a suite that passes either way proves nothing. The
+  fails when the rule is removed; a suite that passes either way proves nothing. Revert the unit
+  the claim names, not something it calls: moving a heading grammar out of `seam_contract` into the
+  shared parser was verified by breaking the shared parser, which of course went red, while putting
+  the private regex back into `seam_contract` — the entire change — left the suite green, because
+  the test called the parser directly and never ran the consumer whose ownership had moved. The
   `tools/fornax-cli` suite is one of the two CI-only steps named above.
 - When a check is a hand-written matcher claiming an invariant over a grammar — a version, a
   dependency spec, a heading — cover it with two negative controls, not one: a **near-miss sharing

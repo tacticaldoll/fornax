@@ -10,11 +10,12 @@ from unittest.mock import patch
 
 import fixtures
 import generated_block
-import markdown_links
 import seam_contract
+import skill_interface
 
 PUBLISHER = fixtures.PUBLISHER_ID
 RECORD = f"{PUBLISHER}/review-record@1 text/markdown"
+MARKED = RECORD.split("/", 1)[1]
 
 BEFORE = "# Fixture\n\nProse above the block.\n\n"
 AFTER = "\nProse below the block.\n"
@@ -174,18 +175,39 @@ class SeamDiscovery(unittest.TestCase):
 
 
 class TemplateHeadingTests(unittest.TestCase):
-    def test_a_heading_inside_a_fenced_block_is_not_an_element(self) -> None:
+    def test_a_heading_inside_a_fenced_example_is_not_an_element(self) -> None:
         # `^#{2,3} (.+)$` counted one, so a template carrying a fenced example would
         # have the example's headings inventoried as the record's own — the same defect
         # the evidence fingerprint had, in a sibling module.
-        template = (
-            "## Review Record\n\n### Gate Index\n\n```text\n### Not A Section\n```\n\n"
+        #
+        # This drives elements(), not the parser it calls. The first attempt asserted
+        # markdown_links.heading_texts() and stayed green when seam_contract kept its
+        # own regex, which is the whole of what this repair changed: the claim is about
+        # the consumer's wiring, so the consumer is what the test has to run.
+        skill_md = (
+            f"<!-- OUTPUT-TEMPLATE: {MARKED} -->\n"
+            "```markdown\n"
+            "## Review Record\n\n"
+            "**Source**: [what was read]\n\n"
+            "### Gate Index\n\n"
+            "~~~text\n"
+            "### Not A Section\n"
+            "~~~\n\n"
             "### Real Tail\n"
+            "```\n"
         )
 
-        found = markdown_links.heading_texts(template)
+        shape = seam_contract.elements(skill_md, skill_interface.RecordIdentity.parse(RECORD))
 
-        self.assertEqual(found, ["Review Record", "Gate Index", "Real Tail"])
+        self.assertEqual(
+            shape,
+            [
+                ("Source", "field"),
+                ("Review Record", "section"),
+                ("Gate Index", "section"),
+                ("Real Tail", "section"),
+            ],
+        )
 
 
 class Staleness(unittest.TestCase):
