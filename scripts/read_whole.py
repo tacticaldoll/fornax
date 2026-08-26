@@ -1,6 +1,6 @@
 """Read a token whole, or report it unread. There is no third answer.
 
-Five rounds of repairs to this repository's matchers closed the same path each time:
+Round after round of repairs to this repository's matchers closed the same path:
 a function that could return a shorter, well-formed value than the text it was given.
 `ruff==0.16.1|x` read as `0.16.1`, `@v1.2.3;other` as `v1.2.3`, `tool==1.0#x` as
 `1.0` — every one a truncation that then compared equal to what it was checked
@@ -43,7 +43,7 @@ class Whole:
     """A token read to its end, which is checked here rather than promised elsewhere.
 
     Saying "construct this through `whole()`" is a convention, and a convention is
-    what the five rounds already had. `Whole(PATTERN.match(text))` built a prefix and
+    what the rounds before it already had. `Whole(PATTERN.match(text))` built a prefix and
     reported its `.value` as a complete read, which is the defect this module claims
     to make inexpressible — expressible, through the door the dataclass opens for free.
 

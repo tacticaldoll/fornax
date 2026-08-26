@@ -15,7 +15,7 @@ The manifest read goes through skill_yaml rather than a pattern kept here. A
 private one diverged from it twice: ``\\s`` around the colon crossed the newline, so
 an empty `family:` read the line beneath it, and trimming quote *characters* could
 not tell a quoted scalar from a plain one, so `family: "meta'` read as `meta` here
-while the validator refused the manifest. Two readers disagreeing about one key is
+while the validator refused the manifest. Readers disagreeing about one key is
 the thing this module has no reason to own.
 
 The maps live in README.md between the SKILL-MAPS markers. `--write` splices

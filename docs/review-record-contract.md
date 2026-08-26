@@ -2,7 +2,7 @@
 
 The one record identity in this repository that crosses skill boundaries: `static-review` produces
 a **Review Record**, while `handle-feedback` and `triage-findings` both name it as `**Input**:`. This
-file names what crosses those two seams, so a change to the producer or either consumer is visible.
+file names what crosses each of those seams, so a change to the producer or a consumer is visible.
 
 It describes these relationships as they stand; it is not a published interface. Nothing parses a
 Review Record, no host reads this file, and **none of the skills link to it** — a skill folder is a

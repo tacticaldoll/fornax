@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Maintain a generated block between markers in a Markdown file.
 
-Two generators need the same protocol — print the block, splice it into its file, or
+Its consumers need the same protocol — print the block, splice it into its file, or
 fail when the committed copy is stale — and only what they generate differs. The
-protocol has never varied; the two copies of it had drifted in nothing but the name
-of their error class. A third consumer is foreseeable, which is what makes a copy
-the wrong answer.
+protocol has never varied; the copies of it had drifted in nothing but the name of
+their error class. More consumers were foreseeable, and more arrived, which is what
+makes a copy the wrong answer.
 
 The repository root is threaded in rather than held here. Each generator resolves it
 from its own location and the suites redirect a whole run by patching that value, so

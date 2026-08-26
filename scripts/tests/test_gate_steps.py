@@ -44,9 +44,9 @@ class GateStepsTests(unittest.TestCase):
                     self.assertIn(f"{number}. {step.description}", written)
 
     def test_a_step_added_to_the_gate_makes_the_committed_list_stale(self) -> None:
-        # The guarantee the transcribed list did not have. README said eight checks
-        # while eleven ran, and nothing could see it, because a count in prose is not
-        # a claim any check reads.
+        # The guarantee the transcribed list did not have. README named fewer checks
+        # than ran, and nothing could see it, because a count in prose is not a claim
+        # any check reads.
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             write_readme(root, self.markers())

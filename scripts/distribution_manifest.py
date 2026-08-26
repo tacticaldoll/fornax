@@ -138,7 +138,7 @@ RELEASE_REF = re.compile(r"v[^\s~^:?*\[\\]+")
 def install_refs(text: str, repository: str) -> tuple[list[str], list[Unread]]:
     """Every release ref the text documents installing from *repository*, read whole.
 
-    Four forms of this said where a ref ends by listing what may follow it, and each
+    Form after form of this said where a ref ends by listing what may follow it, and each
     list was short by a character a later document used: `+`, then `;`, `|` and `>`,
     then `_` and `/`. Each shortfall shortened a ref into one that equalled the
     expected tag and passed as current — a stale pin answering clean.

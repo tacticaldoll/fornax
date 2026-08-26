@@ -1,6 +1,6 @@
 """Enforce the claim a module makes about what it depends on.
 
-"Standard library only" is a sentence nine modules in scripts/ carry, and it was
+"Standard library only" is a sentence several modules in scripts/ carry, and it was
 false in one of them for a week: seam_contract reached markdown-it-py through
 markdown_links after its heading grammar moved there, and PyYAML through
 skill_interface after the constrained scalar rules gained a parser. Both arrived in

@@ -87,7 +87,7 @@ def _double_quoted(value: str, number: int, error_factory: ErrorFactory) -> str:
 
     So the source after the scalar's own end mark must be blank. That is the parser
     saying where the token stopped rather than this module deciding, which is the guess
-    that took four forms elsewhere in this range.
+    that was rewritten form after form elsewhere in this range.
     """
     loader = yaml.BaseLoader(value)
     try:

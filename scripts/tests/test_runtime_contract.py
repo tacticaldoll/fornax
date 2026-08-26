@@ -129,7 +129,7 @@ class RuntimeContractTests(unittest.TestCase):
 
 class DeclaredPinTests(unittest.TestCase):
     def test_a_declaration_is_read_whole_or_reported(self) -> None:
-        # Two forms of this matcher shipped and both were wrong in the same direction.
+        # Form after form of this matcher shipped, each wrong in the same direction.
         # `[^\\s;#]+` ran past `|`, and the version alphabet that replaced it stopped
         # there and kept the prefix — turning `0.16.1|x`, which failed its comparison
         # loudly, into `0.16.1`, which passes it. Neither is a wider alphabet away: a
@@ -241,7 +241,7 @@ class WorkflowPinTests(unittest.TestCase):
 
     def test_every_spelling_of_an_inline_pin_is_compared(self) -> None:
         # Anchoring on "pip install " missed --upgrade, a quoted spec, and every package
-        # after the first on one line — three ways a disagreeing pin passed unread.
+        # after the first on one line — each a way a disagreeing pin passed unread.
         spellings = (
             "        run: python -m pip install tool==9.9.9\n",
             "        run: pip install --upgrade tool==9.9.9\n",
@@ -553,7 +553,7 @@ class SharedPinTests(unittest.TestCase):
     snapshot validation shells out to it. Where both files name a package they must
     name the same version, or one pinned tag validates differently between runs.
 
-    This lives here rather than beside the CLI because it reads two files and needs
+    This lives here rather than beside the CLI because it reads both declarations and needs
     nothing the deployment engine provides — and beside the CLI it ran only after
     that engine installed, so the invariant went unchecked whenever it did not.
     """

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Check workspace text-file hygiene and repository-local Markdown links."""
+"""Check workspace text-file hygiene, repository-local Markdown links, and written counts."""
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -14,6 +15,27 @@ from workspace_files import listed
 
 
 ROOT = Path(__file__).resolve().parent.parent
+
+# Nouns naming something the repository contains. A number written next to one of
+# these is a claim about the tree that nothing reads, and each of these nouns has
+# carried a stale one: README named fewer gate steps than ran, generated_block named
+# fewer consumers than dispatched blocks, PROJECT.md kept seam counts by hand. Derive
+# the number or describe the thing without it.
+INVENTORY = (
+    "arms|cases|checks|commits|consumers|controls|copies|entries|families|files|findings|"
+    "forms|generators|grammars|knowns|layers|matchers|modules|readers|rounds|seams|skills|"
+    "steps|tests|ways"
+)
+COUNTED = re.compile(
+    r"\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|"
+    r"fourteen|fifteen|twenty|twenty-two)[ \t]+(?:" + INVENTORY + r")\b",
+    re.IGNORECASE,
+)
+# Where a number beside one of those nouns is not a claim about the tree: a skill
+# states rules and thresholds, and a scenario record states the parameters a measured
+# result was taken under, which cannot be reworded without falsifying the record.
+COUNT_FREE = ("skills/", "scripts/tests/scenarios/", "docs/dispositions/")
+COUNTED_SUFFIXES = (".md", ".py", ".yaml", ".yml", ".toml")
 
 
 @dataclass(frozen=True)
@@ -55,12 +77,23 @@ def check(files: list[Path], root: Path) -> list[Diagnostic]:
             continue
         if not data.endswith(b"\n"):
             errors.append(Diagnostic(path, "text file must end with a newline"))
-        if path.suffix.lower() != ".md":
+        if path.suffix.lower() not in COUNTED_SUFFIXES:
             continue
         try:
             content = data.decode("utf-8")
         except UnicodeDecodeError:
-            errors.append(Diagnostic(path, "Markdown file must use UTF-8"))
+            if path.suffix.lower() == ".md":
+                errors.append(Diagnostic(path, "Markdown file must use UTF-8"))
+            continue
+        relative = path.relative_to(root).as_posix()
+        if not relative.startswith(COUNT_FREE):
+            for line, text in enumerate(content.splitlines(), 1):
+                found = COUNTED.search(text)
+                if found:
+                    errors.append(
+                        Diagnostic(path, f"line {line} writes a count: {found.group(0)}")
+                    )
+        if path.suffix.lower() != ".md":
             continue
         for link in iter_markdown_links(content):
             target = local_target(link.destination)
@@ -100,7 +133,7 @@ def main() -> int:
         print(printable(f"FAIL {shown}: {error.message}"))
     if errors:
         return 1
-    print("OK   workspace text hygiene and local Markdown links")
+    print("OK   workspace text hygiene, local Markdown links, and written counts")
     return 0
 
 

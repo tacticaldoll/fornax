@@ -568,7 +568,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None, root: Path | None = None) -> int:
-    """Validate one skills directory against one repository root.
+    """Validate a skills directory against a repository root.
 
     The root is a parameter because the argv seam alone left everything past the
     distribution check unreachable: it read Path.cwd(), so a test could only

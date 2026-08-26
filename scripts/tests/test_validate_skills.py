@@ -1113,8 +1113,8 @@ class ProjectedDescriptionTests(unittest.TestCase):
                 self.assertIn(f"install ref v1.2.3{suffix} must be v1.2.3", output)
 
     def test_a_ref_is_read_to_the_end_of_its_shell_word(self) -> None:
-        # Four forms of this ended the capture at a delimiter list and each list was one
-        # character short. The word's extent now comes from quoting, so the two controls
+        # Form after form of this ended the capture at a delimiter list and each was one
+        # character short. The word's extent now comes from quoting, so the controls
         # below are the ones that matter: a ref containing a character the old list
         # treated as a terminator, and a ref spelled with characters a version cannot
         # hold. Both used to shorten silently into something that equalled the tag.

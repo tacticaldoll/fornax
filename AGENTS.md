@@ -477,12 +477,12 @@ Prefer lightweight tests that match the risk of the change.
   and from Release rather than restated in either.
 - Settle what a review found with `triage-findings`, and keep the Disposition Record it produces
   under `docs/dispositions/<range>.md` so the next round can be handed the prior one. Requiring the
-  review without requiring the disposition is how a cause returns: three rounds repaired findings
+  review without requiring the disposition is how a cause returns: round after round repaired findings
   at their locations, and each round's repairs produced the next round's defects. One commit per
   cause, not one per round.
 - Use `.venv/bin/python scripts/check_workspace.py` as the public local entry point; CI runs the
   same script in its pinned Python 3.10 environment, and the style and hook-syntax gates run inside
-  it so a green local run and a green CI run mean the same thing. Two steps stay CI-only because
+  it so a green local run and a green CI run mean the same thing. What stays CI-only does so because
   they need what the maintenance environment does not declare: the JavaScript plugin needs `node`,
   and the deployment CLI tests need the engine installed. That is the whole of the difference —
   state it here when it moves, because a local gate that quietly checks less is how a rejected push
@@ -542,20 +542,34 @@ Prefer lightweight tests that match the risk of the change.
   `0.16.1`, matched the installed release and answered clean. `whole()` only calls `fullmatch` and
   is the only way to a `Whole`, so a grammar stated wrongly now yields an `Unread` the caller has
   to report. The guess stays a guess; what it can no longer do is pass.
+- **Do not write a count of what the repository contains.** Not how many skills, families, seams,
+  consumers, generated blocks, gate steps, registry entries, modules or tests there are, and not
+  how many commits or forms a past repair took. A number beside such a noun is a claim about the
+  tree that nothing reads, and every one of these nouns has carried a stale one: README named fewer
+  gate steps than the gate ran, `generated_block` named fewer consumers than dispatched blocks,
+  `PROJECT.md` kept seam counts by hand. Derive the number into a generated block, or describe the
+  thing without it — "form after form", "more than one check", "the consumers of one record
+  identity". `scripts/check_text.py` reports one, and the vocabulary it reads is the list of nouns
+  that have gone stale, so extending that list is how a new kind of count gets caught.
+  A quantity a rule *prescribes* is not this: "give a check three answers, not two" is a rule, a
+  scope threshold stated as a number of files is a threshold, and the reps and arms a scenario
+  record states are the parameters a measured result was taken under — rewording those falsifies
+  the record. Skills and scenario records are outside the check for that reason, which is also why
+  this check's own fixtures compose their counts from parts rather than earning an exemption.
 - After repairing a defect, sweep the repository for the same class before calling it fixed. Not by
   rereading the change — by enumerating the mechanism: every `re.compile`, every hand-written
   grammar, every place the same question is answered, then checking each against the property the
-  repair established. Reviews report what they were pointed at. The install-ref boundary took four
-  forms across four rounds, and when the class was finally swept, two more matchers of the same
-  shape were sitting in files no round had opened: a second hand-written heading grammar in
-  `seam_contract`, and a terminator list for a declared version in `runtime_contract`. Both were
-  found by asking "what else is like this", which no review had been asked. Sweeping is not the end
-  of it either — one of those repairs replaced a terminator list with an alphabet, which is the
-  same mistake in the other direction, and the sweep that found the site did not stop the repair
-  from being wrong. What ends a round is the reading being total, not the examples being covered:
-  once a wrong guess yields an `Unread` the caller reports, a further input the matcher misreads
-  is a known to register, not a repair to make. Five rounds ran past that point, each closing one
-  more example of a hole the type now closes.
+  repair established. Reviews report what they were pointed at. The install-ref boundary was
+  rewritten form after form, and when the class was finally swept, more matchers of the same shape
+  were sitting in files no round had opened: a hand-written heading grammar in `seam_contract`, and
+  a terminator list for a declared version in `runtime_contract`. Both were found by asking "what
+  else is like this", which no review had been asked. Sweeping is not the end of it either — one of
+  those repairs replaced a terminator list with an alphabet, which is the same mistake in the other
+  direction, and the sweep that found the site did not stop the repair from being wrong. What ends
+  a round is the reading being total, not the examples being covered: once a wrong guess yields an
+  `Unread` the caller reports, a further input the matcher misreads is a known to register, not a
+  repair to make. Round after round ran past that point, each closing one more example of a hole
+  the type now closes.
 - The OpenCode plugin is syntax-checked in CI with
   `node --input-type=module --check < .opencode/plugins/fornax.js`, install-free on the runner; the
   hook is parsed by `scripts/check_sources.py` inside the workspace gate. Feed the plugin through

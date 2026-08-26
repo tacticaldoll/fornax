@@ -30,9 +30,9 @@ class WorkspaceChecks(unittest.TestCase):
                 self.assertTrue((check_workspace.ROOT / script).is_file())
 
     def test_every_step_describes_itself_for_the_generated_list(self) -> None:
-        # README's list of these was transcribed and went stale by three entries. It is
-        # derived now, so a step with no description would generate a blank line rather
-        # than fail — which is how the drift stayed invisible the first time.
+        # README's list of these was transcribed and went stale. It is derived now, so a
+        # step with no description would generate a blank line rather than fail — which
+        # is how the drift stayed invisible the first time.
         for step in check_workspace.STEPS:
             with self.subTest(step=step.label):
                 self.assertTrue(step.description.strip(), step.label)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """List the files a workspace actually carries, as git sees them.
 
-Two checks need the same answer to "what is in this workspace": text hygiene
+More than one check needs the same answer to "what is in this workspace": text hygiene
 reads every file, and the distribution check looks for install pins in the
 Markdown among them. Asking git rather than walking the tree is what keeps
 .venv, caches, and build output out without a skip list that would go stale

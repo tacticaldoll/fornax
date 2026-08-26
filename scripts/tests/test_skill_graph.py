@@ -18,7 +18,7 @@ AFTER = "\nProse below the block.\n"
 
 
 def build_repo(root: Path, readme_body: str | None = None) -> None:
-    """A miniature workspace: two skills in different families, one handoff, a README."""
+    """A miniature workspace: skills in different families, a handoff, a README."""
     for name, family, handoff in (
         ("alpha-skill", "implementation", "beta-skill"),
         ("beta-skill", "knowledge", None),

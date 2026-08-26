@@ -7,7 +7,7 @@ by default (see the `audit-governance` skill). For what Fornax *is* — essence,
 ## Status
 
 - Early stage. Every skill is `status: draft`; nothing claims 1.0 maturity.
-- Skills span four families: implementation, knowledge, decisions, meta.
+- Skills are grouped by `family`; `scripts/skill_model.py` declares which families exist.
 - Public repo, enforced by CI and a pre-commit hook running `scripts/check_workspace.py`.
 
 ## Standing decisions
@@ -25,7 +25,7 @@ Settled; reopen only with a reason, not by default.
   `audit-governance` fall back the same way when the host offers no separate passes or reviewers.
   Stated because its absence cost something: a review gate briefly carried a check needing a diff
   baseline — undefined for the inputs that carry none, a pasted snippet or a file path, and
-  conditional for two more — and every workspace check passed it, because there was nothing to appeal
+  conditional for others — and every workspace check passed it, because there was nothing to appeal
   to.
 - **Judgments are language-neutral; a named language is example only.** A skill's criteria hold for
   any language the reviewed code is written in. A concrete language may appear as illustration
@@ -45,15 +45,15 @@ Settled; reopen only with a reason, not by default.
   for README grouping and the generated skill maps. The object-vs-meta and operation-kind
   distinctions are real but are *not* encoded as fields — nothing consumes them.
 - **A record contract exists only where one skill's output is another skill's input.** Most skills
-  define an output; exactly one of those outputs is read by another skill (`static-review` →
+  define an output; some of those outputs are read by another skill (`static-review` →
   `handle-feedback` and `static-review` → `triage-findings`, `docs/review-record-contract.md`). The
   rest have no contract because they have no consumer, not because one is missing — deliberate
   asymmetry, not a gap. How many seams exist is derived from the `skill-interface.yaml`
   declarations, and `seam_contract.py --check` keeps the generated inventory from going stale — so
-  a second seam appears in that inventory and in the diff rather than being counted by hand. The gate
-  does not hold the number at one, and nothing should: zero seams is a clean answer there. What it
-  removes is the drift the two counts this decision used to carry were exposed to, kept by hand
-  against a type distinction no field records. A real seam opts into matching
+  a new seam appears in that inventory and in the diff rather than being counted by hand. The gate
+  holds no number, and nothing should: zero seams is a clean answer there. What it removes is the
+  drift the counts this decision used to carry were exposed to, kept by hand against a type
+  distinction no field records. A real seam opts into matching
   `skill-interface.yaml` declarations, whose stable
   identity is publisher UUID, record type, major version, and media type. The sidecar
   supports local discovery and recommendation only; it carries no payload schema, eligibility rule,
@@ -61,7 +61,7 @@ Settled; reopen only with a reason, not by default.
   rather than prose or a maintained list, so a second seam appears automatically and zero seams
   reports clean. Invocation always remains a separate, explicitly authorized host action. Do not add
   a repository-wide payload schema: the sidecar declares identity and the inventory extracts visible
-  template headings, but two consumers of the same record identity are not evidence for a
+  template headings, but the consumers of one record identity are not evidence for a
   corpus-wide payload model. Reconsider a wider schema only when a second distinct record identity
   crosses a producer→consumer seam; that is the first evidence that can show which payload
   constraints actually generalize across records.

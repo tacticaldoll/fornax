@@ -336,5 +336,78 @@ class TextHygiene(unittest.TestCase):
         self.assertEqual(errors, [])
 
 
+class WrittenCountTests(unittest.TestCase):
+    # The counts below are composed from parts so this file does not carry the pattern
+    # it tests for. An exemption would have been the other way, and a check its own
+    # suite is exempt from is a check nothing holds to its own rule.
+    EIGHT, TWO, FOUR, FIVE, THREE = "eight", "Two", "four", "5", "three"
+
+    def workspace(self, root: Path, relative: str, body: str) -> Path:
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(body, encoding="utf-8")
+        return path
+
+    def test_a_count_of_what_the_repository_contains_is_reported(self) -> None:
+        # Each of these nouns has carried a stale number: README named fewer gate steps
+        # than ran, generated_block named fewer consumers than dispatched blocks,
+        # PROJECT.md kept seam counts by hand. Nothing read any of them.
+        for noun, number in (
+            ("checks", self.EIGHT),
+            ("consumers", self.TWO),
+            ("seams", self.TWO),
+            ("forms", self.FOUR),
+        ):
+            with self.subTest(noun=noun), TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                path = self.workspace(root, "DOC.md", f"# Doc\n\nIt has {number} {noun}.\n")
+
+                errors = check_text.check([path], root)
+
+                self.assertEqual(len(errors), 1, errors)
+                self.assertIn("writes a count", errors[0].message)
+
+    def test_prose_without_a_count_passes(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = self.workspace(root, "DOC.md", "# Doc\n\nThe gate runs these checks.\n")
+
+            self.assertEqual(check_text.check([path], root), [])
+
+    def test_a_skill_states_thresholds_and_a_scenario_states_its_parameters(self) -> None:
+        # A skill's rules and a recorded measurement's parameters are not claims about
+        # the tree. Rewording the reps an arm was run at falsifies the record.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            paths = [
+                self.workspace(
+                    root,
+                    "skills/x/SKILL.md",
+                    f"# X\n\nWhen the scope has more than {self.FIVE} files.\n",
+                ),
+                self.workspace(
+                    root,
+                    "scripts/tests/scenarios/x/README.md",
+                    f"# X\n\n{self.THREE} arms at {self.FIVE} reps each.\n",
+                ),
+            ]
+
+            self.assertEqual(check_text.check(paths, root), [])
+
+    def test_python_and_yaml_are_read_too(self) -> None:
+        # The counts that went stale were in docstrings and in a registry entry, not
+        # only in Markdown.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            paths = [
+                self.workspace(root, "m.py", f'"""{self.TWO} readers disagree."""\n'),
+                self.workspace(root, "r.yaml", f"note: it took {self.THREE} rounds\n"),
+            ]
+
+            errors = check_text.check(paths, root)
+
+            self.assertEqual(len(errors), 2, errors)
+
+
 if __name__ == "__main__":
     unittest.main()

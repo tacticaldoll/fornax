@@ -2,10 +2,9 @@
 """Generate README.md's list of what the workspace gate runs, from the gate itself.
 
 The third consumer of the block protocol, which its module anticipated. The list this
-replaces was transcribed by hand and had gone stale by three entries: README said the
-gate ran eight checks while eleven ran, and named two of the three missing ones as
-CI-only after the gate had absorbed them. Nothing could see the drift, because a count
-in prose is not a claim any check reads.
+replaces was transcribed by hand and had gone stale: README named fewer checks than
+ran, and called some of the missing ones CI-only after the gate had absorbed them.
+Nothing could see the drift, because a count in prose is not a claim any check reads.
 
 The gate's own STEPS is the source. A step added there appears here on the next
 `--write` and fails `--check` until it does, which is the same guarantee the skill maps

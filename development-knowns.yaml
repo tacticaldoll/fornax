@@ -15,9 +15,9 @@ knowns:
     statement: Review gate wording shipped for two releases with no measurement that it changed agent behaviour.
     kind: risk
     treatment: resolved
-    rationale: "Three arms settle it: the prior wording answered no unit per unit, the corrected wording did so with the table and equally without it, so the wording carries the obligation and the table carries the shape."
+    rationale: "The arms settle it — the prior wording answered no unit per unit, the corrected wording did so with the table and equally without it, so the wording carries the obligation and the table carries the shape."
     evidence:
-      - scripts/tests/scenarios/static-review/gate5-ledger/README.md records three arms at 5 fresh-context reps each, every sample read by hand.
+      - scripts/tests/scenarios/static-review/gate5-ledger/README.md records the arms, their fresh-context reps and the rubric; every sample was read by hand.
       - The no-table arm answered per unit 5 of 5 and volunteered completeness statements no spec had asked it for.
       - A gate definition cannot be withheld and still leave a gate to review at, so the prior wording is the no-guidance condition for a behavior added to an existing document.
     declined-changes:
@@ -29,10 +29,10 @@ knowns:
     statement: The shell is the one grammar this repository validates that it still reads without the parser that owns it.
     kind: debt
     treatment: accept
-    rationale: The parser is refused on licensing, not on value. bashlex parses bash to a syntax tree and answers every question runtime_contract asks of a command, but it is GPLv3+ and this repository is MIT, and its last release was January 2023. So shlex tokenizes and the command structure above it — where one command ends, whether pip sits in command position — stays hand-written, which is a narrower surface than the two grammars this entry used to cover.
+    rationale: The parser is refused on licensing, not on value. bashlex parses bash to a syntax tree and answers every question runtime_contract asks of a command, but it is GPLv3+ and this repository is MIT, and its last release was January 2023. So shlex tokenizes and the command structure above it — where one command ends, whether pip sits in command position — stays hand-written, which is a narrower surface than the grammars this entry used to cover.
     evidence:
-      - GitHub Actions YAML is owned by PyYAML, which is now installed and used; the hand-written reader it replaced took six commits in this range and was wrong once per layer.
-      - PEP 440 and PEP 508 are owned by packaging, which is now installed and used; the hand-written matcher it replaced took three commits and was wrong twice in the same direction.
+      - GitHub Actions YAML is owned by PyYAML, which is now installed and used; the hand-written reader it replaced was repaired commit after commit in this range and was wrong at every layer.
+      - PEP 440 and PEP 508 are owned by packaging, which is now installed and used; the hand-written matcher it replaced was repaired more than once and was wrong the same way each time.
       - The shell's words are owned by shlex in the standard library and are used, except for its comment rule, which ends a word at any hash where bash does not.
       - Command structure has no owner here. runtime_contract splits the word stream at control operators and requires pip in command position after any leading assignments; bashlex would answer both, and does, and cannot be taken.
       - CommonMark is owned by markdown-it-py, which is installed and used, so no heading grammar is hand-written.
@@ -47,10 +47,10 @@ knowns:
     statement: Whether a module's imports are grouped as the files claim is checked by nobody, and a third-party import landed in the middle of a standard-library group with every gate green.
     kind: debt
     treatment: accept
-    rationale: Ruff owns this rule and adopting it costs edits to twenty files, among them the pinned CLI adapter this repository ships and a review-scenario fixture whose content is the input a recorded micro-test measured. The defect it would catch is cosmetic, and the two files it would disturb are not.
+    rationale: Ruff owns this rule and adopting it edits files across the tree, among them the pinned CLI adapter this repository ships and a review-scenario fixture whose content is the input a recorded micro-test measured. The defect it would catch is cosmetic, and those two are not.
     evidence:
       - runtime_contract.py gained yaml and packaging between its standard-library imports in a commit that passed ruff, the full suite and the twelve-step gate.
-      - "ruff check --select I reports 23 findings across 20 files, including tools/fornax-cli/fornax_cli/cli.py and scripts/tests/scenarios/static-review/gate5-ledger/fixture/billing.py."
+      - "ruff check --select I reports findings across most of scripts/, plus tools/fornax-cli/fornax_cli/cli.py and scripts/tests/scenarios/static-review/gate5-ledger/fixture/billing.py; run it to see the current set rather than trusting a number written here."
       - "Setting src so ruff resolves first-party modules by path rather than by a maintained list of names was measured as removing every finding. That measurement was wrong: the key had been appended under the lint table, where ruff rejects it, and the run failed to load its configuration while the reading took a blank line for a clean answer."
       - ruff.toml already records import sorting as an opinion this repository has not adopted; what is new here is a measured cost rather than a stated one.
     declined-changes:
@@ -62,9 +62,9 @@ knowns:
     statement: A result measured against two documents is registered as two evidence entries only because a maintainer remembers to split it.
     kind: debt
     treatment: accept
-    rationale: The entry model carries one tests and section pair, and what a record measured is stated in its prose; requiring the split would mean parsing that prose, which is more fragile than the omission it would catch.
+    rationale: The entry model carries a single tests and section pair, and what a record measured is stated in its prose; requiring the split would mean parsing that prose, which is more fragile than the omission it would catch.
     evidence:
-      - scripts/evidence_currency.py declares one tests field and one section field per entry.
+      - scripts/evidence_currency.py declares a single tests field and a single section field per entry.
       - The gate5-ledger record measured gates.md and the Ledger spec together and was registered against only the first until a review found it.
     declined-changes:
       - Parse a record's What was measured prose to derive the documents it should be registered against.

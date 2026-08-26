@@ -18,9 +18,9 @@ class Step:
     """One gate step: what it is called, what it checks, and how it is run.
 
     The description sits here rather than in README.md because a transcribed list of
-    these went stale by three entries — the README said eight checks while eleven ran,
-    and named two of the three missing ones as CI-only when the gate had absorbed them.
-    scripts/gate_steps.py derives that list from this tuple.
+    these went stale: the README named fewer checks than ran, and called some of the
+    missing ones CI-only after the gate had absorbed them. scripts/gate_steps.py
+    derives that list from this tuple.
     """
 
     label: str
@@ -77,7 +77,7 @@ STEPS = (
     ),
     Step(
         "text hygiene",
-        "tracked text hygiene and repository-local Markdown links",
+        "tracked text hygiene, repository-local Markdown links, and written counts",
         ("scripts/check_text.py",),
     ),
     Step("python style", "Python style, at the pinned Ruff", ("-m", "ruff", "check", ".")),

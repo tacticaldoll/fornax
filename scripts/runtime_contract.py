@@ -59,7 +59,7 @@ def requirement(token: str) -> tuple[str, str] | Unread | None:
     """The exact pin a token states — unread if it states one that will not parse, and
     None if it states no exact pin at all.
 
-    PEP 508 is `packaging`'s grammar and this is `packaging` reading it. Two commits in
+    PEP 508 is `packaging`'s grammar and this is `packaging` reading it. Commits in
     this range wrote that grammar by hand and were wrong in the same direction twice: a
     terminator list ran past `|`, then the version's own alphabet stopped there and kept
     the prefix, turning a declaration that failed its comparison loudly into one that
@@ -209,7 +209,7 @@ def run_commands(text: str) -> tuple[list[str], list[str]]:
     """Every command the workflow runs, and everything about it this cannot resolve.
 
     YAML is parsed by the library that owns it. The hand-written reader that stood here
-    approximated the grammar in five layers and each layer was wrong once: it read every
+    approximated the grammar layer by layer and every layer was wrong: it read every
     scalar as a command, then only one order of a block header's indicators, then a
     plain scalar through the shell's continuation rule instead of YAML's folding, then
     folding as one-space joining with blank lines dropped. Every one of those produced a

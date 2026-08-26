@@ -7,7 +7,7 @@ cannot be added without also giving it a title. `STATUSES` is the single
 definition of the allowed `status` values, in lifecycle order.
 
 `NAME_PATTERN` is the shape a skill folder and the collection both take. Note that
-the repository spells this rule three ways — `^[a-z0-9-]+$` here,
+the repository spells this rule in more than one place — `^[a-z0-9-]+$` here,
 `^[a-z0-9]+(?:-[a-z0-9]+)*$` in development_knowns.py, and the same inline in
 skill_interface.py's record pattern — and the first admits a leading, trailing or
 doubled hyphen that the others reject. Unifying them changes what validates, so it is

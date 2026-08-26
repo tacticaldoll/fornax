@@ -145,7 +145,7 @@ def _document(content: str) -> dict[str, object] | None:
     A repeated key is refused rather than resolved. Both loaders take the last one
     silently; the readers this replaced answered UNREAD, and dropping that would have
     lost a guarantee by adopting a parser. The refusal reaches nested keys too, which
-    the hand-written readers only managed for two cases.
+    the hand-written readers reached only where the key sat at the top level.
     """
     if unreadable(content) is not None:
         return None

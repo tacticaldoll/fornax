@@ -116,7 +116,7 @@ def local_target(destination: str) -> Optional[str]:
     if destination.startswith("//"):
         return None
     # Split by hand, and not for want of an owner: `urlsplit(...).path` answers a
-    # different question. It drops the scheme and authority, which the two tests below
+    # different question. It drops the scheme and authority, which the tests below
     # still need — `C:/docs/x.md` came back as `/docs/x.md` and an external
     # `https://example.com/guide` as `/guide`, so both were judged as local paths. What
     # is wanted here is everything before the fragment, and `#` and `?` are where URL
