@@ -34,6 +34,7 @@ from pathlib import Path
 from typing import Callable
 
 from diagnostic_text import printable
+from read_whole import COMMENT, Read, Unread, shell_words, whole
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -41,55 +42,59 @@ PYTHON_VERSION = re.compile(r"^(\d+)\.(\d+)$")
 RUFF_TARGET = re.compile(r'^target-version\s*=\s*"([^"]+)"\s*$', re.MULTILINE)
 REQUIREMENTS = Path("requirements-maintenance.txt")
 WORKFLOW = Path(".github/workflows/validate.yml")
-WORKFLOW_PIN = re.compile(r"(?<![\w.-])([A-Za-z0-9][A-Za-z0-9._-]*)==([A-Za-z0-9][^\s\"',;]*)")
 INSTALL_LINE = re.compile(r"(?<![\w-])pip(?:3)?\s+install(?![\w-])")
 RUN_KEY = re.compile(r"^(\s*(?:-\s+)?)run\s*:[ \t]*(.*?)\s*$")
 BLOCK_HEADER = re.compile(r"[|>][-+]?\d*")
-COMMENT = re.compile(r"(?:(?<=\s)|^)#")
-DECLARATION = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)==(.+)$")
-VERSION = re.compile(r"[0-9][0-9A-Za-z.!+*_-]*")
+REQUIREMENT = re.compile(r"([A-Za-z0-9][A-Za-z0-9._-]*)==([0-9][0-9A-Za-z.!+*_-]*)")
 SETUP = "run the maintenance environment setup from README.md"
 
 
+def requirement(token: str) -> Read | None:
+    """The exact pin a token states — unread if it states one this cannot read whole,
+    and None if it states none at all.
+
+    The two callers used to answer this question with two different matchers. The
+    workflow's version ended at a list of characters that may follow it and the
+    requirements file's at the version's own alphabet, and each was wrong in its own
+    way about the same grammar. One reader, and it truncates neither: `whole()` is the
+    only way to a value here, and `whole()` only calls `fullmatch`.
+
+    A token carrying no `==` states no exact pin. A range, an `-r`, a bare name and a
+    plain word are all legal where these are read, and none of them is a failed read.
+    """
+    if "==" not in token:
+        return None
+    return whole(token, REQUIREMENT, "an exact pin")
+
+
 def pins(text: str) -> tuple[dict[str, str], list[str]]:
-    """Every ``name==version`` a declaration states, and every one that does not parse.
+    """Every exact pin a declaration states, and every one it states unreadably.
 
     A requirements line may carry a trailing comment or an environment marker, and a
     pyproject dependency arrives wrapped in quotes and a comma. All three are legal and
     all three otherwise end up inside the version, so each is removed before it is read.
 
-    What is left must then be a version *entirely* — `fullmatch`, not a prefix. Matching
-    a prefix of the version's own alphabet was the previous form, and it was worse than
-    the terminator list it replaced: `ruff==0.16.1|x` had produced `0.16.1|x`, which
-    failed its comparison loudly, and became `0.16.1`, which passes. An alphabet is a
-    guess about which characters a version may hold — it omitted the `_` that PEP 440
-    admits in a local version — and consuming the whole declaration is what checks the
-    guess held. A line that declares an exact pin and does not parse as one is returned
-    as malformed, because the alternative is to compare the part that happened to match.
+    The comment cut follows the shell's rule, which is pip's: `#` starts one at the
+    beginning of a word, not wherever it appears. Cutting at the first `#` read
+    `tool==1.0#x` as `1.0`. The marker cut needs no such care — `;` cannot occur inside
+    a version, so ending there cannot end early.
 
-    A line that declares no exact pin is not malformed. `-r base.txt`, a range, a bare
-    name and a comment are all legal in a requirements file and none of them is a claim
-    this function failed to read.
-
-    The comment cut follows pip's rule — `#` starts one at the beginning of a word, not
-    wherever it appears. Cutting at the first `#` read `tool==1.0#x` as `1.0`, which is
-    the truncation this function was written to stop, one line above where it stops it.
-    The marker cut needs no such care: `;` cannot occur inside a version, so ending
-    there cannot end early.
+    Neither PEP 440 nor TOML has a parser available on this floor, so the grammar here
+    is hand-written, and `development-knowns.yaml` records that with the owner it does
+    not use. What the hand-written part cannot do is truncate.
     """
     found: dict[str, str] = {}
-    malformed: list[str] = []
+    unreadable: list[str] = []
     for line in text.splitlines():
         stated = COMMENT.split(line, maxsplit=1)[0].split(";", 1)[0].strip().strip('",').strip()
-        declaration = DECLARATION.match(stated)
-        if not declaration:
+        read = requirement(stated)
+        if read is None:
             continue
-        name, version = declaration.groups()
-        if VERSION.fullmatch(version):
-            found[name] = version
-        else:
-            malformed.append(stated)
-    return found, malformed
+        if isinstance(read, Unread):
+            unreadable.append(read.text)
+            continue
+        found[read.group(1)] = read.group(2)
+    return found, unreadable
 
 
 def _default_installed(name: str) -> str | None:
@@ -109,32 +114,37 @@ def _read(path: Path, errors: list[str]) -> str | None:
     return None
 
 
-def workflow_pins(text: str) -> list[tuple[str, str]]:
-    """Every exact pin the workflow actually installs, wherever on its line it sits.
+def workflow_pins(text: str) -> tuple[list[tuple[str, str]], list[str]]:
+    """Every exact pin the workflow installs, and everything it states unreadably.
 
     Three failures bound this. Anchoring the whole match on `pip install ` read only the
-    first package and only one spelling, so `--upgrade`, a quoted spec and a second
-    package all passed unread. Dropping the anchor entirely read raw YAML, so a comment
-    or an `echo` became an install. Reading every scalar in the file then made any key
-    executable — installation text under `env:` was reported as a pin the workflow
-    installs, and nothing runs an environment variable.
+    first package and only one spelling. Dropping the anchor read raw YAML, so a comment
+    and an `echo` became installs. Reading every scalar made any key executable, so
+    installation text under `env:` was reported as a pin.
 
-    So the run command decides whether it installs and the token decides what: a command
-    under a `run:` key and carrying a pip install invocation contributes every
-    `name==version` in it, and anything else contributes none.
-
-    A comment is not an install command, but `#` only starts one at the beginning of a
-    word. Cutting at the first `#` anywhere discarded the rest of a command whose pip
-    URL carried a `#subdirectory=` fragment, so a pin after it went unread — a stale
-    workflow pin answering clean, the failure this check exists to catch.
+    So a run command decides whether it installs and its words decide what. The words
+    come from `shlex`, which owns the shell's quoting: an operator ends a word, a quote
+    holds one together, and nothing here has to guess which characters may follow a
+    version. A command the lexer cannot finish is reported rather than half-read.
     """
     found: list[tuple[str, str]] = []
+    unreadable: list[str] = []
     for command in run_commands(text):
-        executable = COMMENT.split(command, maxsplit=1)[0]
-        if not INSTALL_LINE.search(executable):
+        words = shell_words(command)
+        if isinstance(words, Unread):
+            unreadable.append(words.text)
             continue
-        found.extend(WORKFLOW_PIN.findall(executable))
-    return found
+        if not INSTALL_LINE.search(" ".join(words)):
+            continue
+        for word in words:
+            read = requirement(word)
+            if read is None:
+                continue
+            if isinstance(read, Unread):
+                unreadable.append(read.text)
+            else:
+                found.append((read.group(1), read.group(2)))
+    return found, unreadable
 
 
 def run_commands(text: str) -> list[str]:
@@ -163,10 +173,6 @@ def run_commands(text: str) -> list[str]:
             continue
 
         depth, value = len(key.group(1)), key.group(2)
-        if not BLOCK_HEADER.fullmatch(value):
-            commands.extend(_continued([value]))
-            continue
-
         body: list[str] = []
         while index < len(lines):
             line = lines[index]
@@ -175,7 +181,11 @@ def run_commands(text: str) -> list[str]:
             body.append(line)
             index += 1
 
-        if value.startswith(">"):
+        if not BLOCK_HEADER.fullmatch(value):
+            # A plain scalar, which YAML folds onto its more-indented lines, so an
+            # invocation written across two of them is still one command.
+            commands.extend(_continued([value, *body]))
+        elif value.startswith(">"):
             commands.append(" ".join(line.strip() for line in body if line.strip()))
         else:
             commands.extend(_continued(body))
@@ -233,8 +243,8 @@ def check(
 
     requirements_text = _read(root / REQUIREMENTS, errors)
     if requirements_text is not None:
-        declared, malformed = pins(requirements_text)
-        for line in malformed:
+        declared, unreadable = pins(requirements_text)
+        for line in unreadable:
             errors.append(f"{REQUIREMENTS.name} states {printable(line)}, which is not a pin")
         if not declared:
             errors.append(f"{REQUIREMENTS.name} must pin at least one name==version")
@@ -251,7 +261,10 @@ def check(
     workflow_text = _read(root / WORKFLOW, errors)
     if workflow_text is not None and requirements_text is not None:
         declared, _ = pins(requirements_text)
-        for name, pinned in sorted(set(workflow_pins(workflow_text))):
+        installs, unreadable = workflow_pins(workflow_text)
+        for line in unreadable:
+            errors.append(f"{WORKFLOW.name} states {printable(line)}, which cannot be read")
+        for name, pinned in sorted(set(installs)):
             if name not in declared:
                 errors.append(
                     f"{WORKFLOW.name} installs {name}=={pinned}, which "

@@ -287,6 +287,25 @@ class WorkflowPinTests(unittest.TestCase):
             self.assertEqual(len(errors), 1, errors)
             self.assertIn("9.9.9", errors[0])
 
+    def test_a_workflow_spec_that_cannot_be_read_whole_is_reported(self) -> None:
+        # The terminator list this replaced ended the version at `"` and `;`, so a
+        # quoted `tool==1.2.3|x` reached the comparison as `1.2.3` and matched. There
+        # is no shorter answer available now: it is read whole or reported unread.
+        for command, unreadable in (
+            ('        run: pip install "tool==1.2.3|x"\n', "tool==1.2.3|x"),
+            ("        run: pip install tool==1.2.3#x\n", "tool==1.2.3#x"),
+            ("        run: pip install 'unbalanced\n", "unbalanced"),
+        ):
+            with self.subTest(command=command.strip()), TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                self.workspace(root, command)
+
+                errors = self.check(root)
+
+                self.assertEqual(len(errors), 1, errors)
+                self.assertIn(unreadable, errors[0])
+                self.assertIn("cannot be read", errors[0])
+
     def test_a_requirements_file_reference_is_not_a_pin(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
