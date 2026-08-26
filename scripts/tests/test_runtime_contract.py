@@ -425,20 +425,52 @@ class WorkflowPinTests(unittest.TestCase):
                 self.assertEqual(len(errors), 1, f"{label}: {errors}")
                 self.assertIn("9.9.9", errors[0])
 
-    def test_a_run_value_this_cannot_resolve_is_reported(self) -> None:
-        # The same hole the token readers had, one layer up: a `run:` value read as
-        # something smaller and plausible rather than reported as unread. An alias has
-        # no resolution here and a malformed header is not a header.
-        for value in (">x", "*deploy", "&setup"):
-            with self.subTest(value=value), TemporaryDirectory() as tmp:
-                root = Path(tmp)
-                self.workspace(root, f"        run: {value}\n          pip install tool==9.9.9\n")
+    def test_a_document_yaml_cannot_parse_is_reported(self) -> None:
+        # `>x` is not a block header, so there is no document to read commands from.
+        # Reporting the parser's own complaint beats reporting no pins.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.workspace(root, "        run: >x\n          pip install tool==9.9.9\n")
 
-                errors = self.check(root)
+            errors = self.check(root)
 
-                self.assertEqual(len(errors), 1, errors)
-                self.assertIn(value, errors[0])
-                self.assertIn("cannot be read", errors[0])
+            self.assertEqual(len(errors), 1, errors)
+            self.assertIn("block scalar", errors[0])
+
+    def test_an_alias_with_no_anchor_is_reported(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.workspace(root, "        run: *deploy\n")
+
+            errors = self.check(root)
+
+            self.assertEqual(len(errors), 1, errors)
+            self.assertIn("deploy", errors[0])
+
+    def test_an_anchor_is_resolved_rather_than_refused(self) -> None:
+        # The hand-written reader reported this as YAML it could not resolve. It is an
+        # ordinary anchored scalar whose value is the command, which the parser that
+        # owns the grammar simply returns.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.workspace(root, "        run: &setup\n          pip install tool==9.9.9\n")
+
+            errors = self.check(root)
+
+            self.assertEqual(len(errors), 1, errors)
+            self.assertIn("9.9.9", errors[0])
+
+    def test_an_expression_leaves_what_it_installs_unknown(self) -> None:
+        # GitHub's expression language decides this at run time and nothing here parses
+        # it, so what the step installs is unknown rather than nothing.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.workspace(root, "        run: ${{ matrix.install }}\n")
+
+            errors = self.check(root)
+
+            self.assertEqual(len(errors), 1, errors)
+            self.assertIn("cannot be read", errors[0])
 
     def test_a_requirements_file_reference_is_not_a_pin(self) -> None:
         with TemporaryDirectory() as tmp:

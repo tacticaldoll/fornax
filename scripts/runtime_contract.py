@@ -29,6 +29,8 @@ from __future__ import annotations
 
 import re
 import sys
+
+import yaml
 from importlib.metadata import PackageNotFoundError, version as installed_version
 from pathlib import Path
 from typing import Callable
@@ -46,14 +48,9 @@ CONTROL = frozenset({";", "&&", "||", "|", "&"})
 ASSIGNMENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=")
 PIP = re.compile(r"(?:.*/)?pip[0-9.]*")
 PYTHON = re.compile(r"(?:.*/)?python[0-9.]*")
-RUN_KEY = re.compile(r"^(\s*(?:-\s+)?)run\s*:[ \t]*(.*?)\s*$")
-# A block scalar header carries an indentation indicator and a chomping indicator
-# in either order, so `>2-` and `>-2` are both valid and mean the same thing.
-BLOCK_HEADER = re.compile(r"[|>](?:[1-9][-+]?|[-+][1-9]?)?")
-UNRESOLVED = re.compile(r"[|>*&]")
-# A quoted scalar whose content this is sure of: no escape to interpret and no
-# interior quote of the kind that closes it. Any other quoting is not resolved.
-QUOTED = re.compile("\"([^\"\\\\]*)\"|'([^']*)'")
+# GitHub's expression language, which nothing here parses: what it expands to
+# is decided at run time and may well be an install.
+EXPRESSION = re.compile(r"\$\{\{")
 REQUIREMENT = re.compile(r"([A-Za-z0-9][A-Za-z0-9._-]*)==([0-9][0-9A-Za-z.!+*_-]*)")
 SETUP = "run the maintenance environment setup from README.md"
 
@@ -195,119 +192,55 @@ def _installs(words: list[str]) -> bool:
 
 
 def run_commands(text: str) -> tuple[list[str], list[str]]:
-    """Every command the workflow runs, and every `run:` value this cannot resolve.
+    """Every command the workflow runs, and everything about it this cannot resolve.
 
-    Only a `run:` value is a command. Every other scalar — a `name:`, an `env:` entry,
-    a `with:` input — is data the step is handed, and reading those as commands made a
-    documented pip invocation inside a help string count as an install.
+    YAML is parsed by the library that owns it. The hand-written reader that stood here
+    approximated the grammar in five layers and each layer was wrong once: it read every
+    scalar as a command, then only one order of a block header's indicators, then a
+    plain scalar through the shell's continuation rule instead of YAML's folding, then
+    folding as one-space joining with blank lines dropped. Every one of those produced a
+    smaller plausible command rather than a complaint, and the last read a workflow that
+    installs nothing as one that installs the right thing.
 
-    Then two joins, because two layers wrap the command. YAML folds a `>` scalar's
-    lines into one before the shell ever sees them, so `pip install` and its requirement
-    can sit on separate physical lines with no backslash at all. A literal `|` scalar
-    keeps its newlines, so its lines stay separate commands. A plain scalar folds onto
-    its more-indented lines the same way `>` does — this said so before it did so, and
-    routed the plain body through the shell's backslash rule instead, so `pip install`
-    on the key's line and `tool==9.9.9` beneath it became two commands and the pin was
-    lost with no error. The shell then continues what YAML hands it onto the next line
-    with a trailing backslash. A block's body is the lines indented past the `run` key,
-    which is also what ends it.
+    What is left here is not YAML. A `run` value is a shell script, so its lines are its
+    commands and a trailing backslash continues one onto the next — that is the shell's
+    grammar, and it stays.
 
-    What this cannot resolve, it says so about. `>2-` is a valid block header — the
-    indentation and chomping indicators come in either order — and matching only one
-    order sent it down the plain-scalar path, where the invocation and its pin became
-    two commands and the pin vanished with no error. That is the same hole the token
-    readers had, one layer up: a misreading that produces a smaller correct-looking
-    answer instead of a complaint. An alias or anchor is unresolvable here for the same
-    reason and is reported rather than read as literal text.
+    Two things are still refused rather than guessed. A document YAML cannot parse has
+    no commands to read, and saying which line broke beats reporting no pins. And a
+    `run` value carrying a `${{ }}` expression is decided at run time by a language
+    nothing here parses, so what it installs is unknown rather than nothing.
     """
-    lines = text.splitlines()
+    try:
+        document = yaml.safe_load(text)
+    except yaml.YAMLError as error:
+        return [], [str(error).replace("\n", " ")]
+
     commands: list[str] = []
     unresolved: list[str] = []
-    index = 0
-    while index < len(lines):
-        key = RUN_KEY.match(lines[index])
-        index += 1
-        if not key:
-            continue
-
-        depth, value = len(key.group(1)), key.group(2)
-        body: list[str] = []
-        while index < len(lines):
-            line = lines[index]
-            if line.strip() and len(line) - len(line.lstrip()) <= depth:
-                break
-            body.append(line)
-            index += 1
-
-        if BLOCK_HEADER.fullmatch(value):
-            if value.startswith(">"):
-                commands.extend(_folded(body))
-            else:
-                commands.extend(_continued(body))
-        elif UNRESOLVED.match(value):
+    for value in _run_values(document):
+        if not isinstance(value, str):
+            unresolved.append(f"run: {value!r}")
+        elif EXPRESSION.search(value):
             unresolved.append(f"run: {value}")
-        elif value[:1] in "\"'":
-            # YAML's quoting, which the shell never sees: `run: "echo hi"` runs
-            # `echo hi`. Handing the quotes on made the whole command one shell word,
-            # so it read as a requirement it could not parse and reported a valid
-            # workflow as unreadable.
-            quoted = QUOTED.fullmatch(value)
-            if quoted is None or body:
-                unresolved.append(f"run: {value}")
-            else:
-                single = quoted.group(1) if quoted.group(1) is not None else quoted.group(2)
-                commands.extend(_continued([single]))
         else:
-            # The value on the key's line is the scalar's first line, so it folds
-            # with the rest rather than being pasted onto the front of the result —
-            # a blank line after it is a paragraph break like any other.
-            opening = next(
-                (" " * (len(line) - len(line.lstrip())) + value for line in body if line.strip()),
-                value,
-            )
-            commands.extend(_continued(_folded([opening, *body])))
+            commands.extend(_continued(value.splitlines()))
     return commands, unresolved
 
 
-def _folded(lines: list[str]) -> list[str]:
-    """Fold a scalar the way YAML folds one, which does not always give a single line.
-
-    A blank line is a paragraph break: the lines around it fold into a newline, not a
-    space, so they are two commands. A line indented past the block keeps its breaks
-    too. Joining everything with spaces made
-
-        run: >
-          pip install
-
-          tool==9.9.9
-
-    read as one invocation and report a pin, when the workflow runs `pip install` with
-    no package and then a command named `tool==9.9.9`. A workflow that installs nothing
-    was read as one that installs the right thing.
-    """
-    base: int | None = None
-    folded: list[str] = []
-    paragraph: list[str] = []
-
-    def close() -> None:
-        if paragraph:
-            folded.append(" ".join(paragraph))
-            paragraph.clear()
-
-    for line in lines:
-        if not line.strip():
-            close()
-            continue
-        indent = len(line) - len(line.lstrip())
-        if base is None:
-            base = indent
-        if indent > base:
-            close()
-            folded.append(line.strip())
-            continue
-        paragraph.append(line.strip())
-    close()
-    return folded
+def _run_values(node: object) -> list[object]:
+    """Every value a `run` key carries, wherever in the document it sits."""
+    found: list[object] = []
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if key == "run":
+                found.append(value)
+            else:
+                found.extend(_run_values(value))
+    elif isinstance(node, list):
+        for item in node:
+            found.extend(_run_values(item))
+    return found
 
 
 def _continued(lines: list[str]) -> list[str]:
