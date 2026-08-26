@@ -236,6 +236,23 @@ class TemplateHeadingTests(unittest.TestCase):
             [("Source", "field"), ("Review Record", "section"), ("Real Tail", "section")],
         )
 
+    def test_a_header_field_stops_at_the_end_of_its_line(self) -> None:
+        # `[^*]` admits a newline, so a field name could run past its own line to
+        # whatever `**` came next. The contract says a header field is one line.
+        skill_md = (
+            f"<!-- OUTPUT-TEMPLATE: {MARKED} -->\n"
+            "```markdown\n"
+            "## Review Record\n\n"
+            "**Source**\n"
+            ": what was read\n\n"
+            "**Verdict**: PASS\n"
+            "```\n"
+        )
+
+        shape = seam_contract.elements(skill_md, skill_interface.RecordIdentity.parse(RECORD))
+
+        self.assertEqual(shape, [("Verdict", "field"), ("Review Record", "section")])
+
     def test_a_tilde_fenced_template_is_the_output_template(self) -> None:
         """The second control: the hand-written pattern matched `` ```markdown `` alone.
 

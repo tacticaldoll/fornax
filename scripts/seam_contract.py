@@ -56,7 +56,10 @@ OUTPUT_TEMPLATE = re.compile(
     r"([a-z0-9][a-z0-9!#$&^_.+-]*/[a-z0-9][a-z0-9!#$&^_.+-]*) -->"
 )
 TEMPLATE_LANGUAGE = "markdown"
-HEADER_FIELD = re.compile(r"^\*\*([^*]+)\*\*\s*:", re.MULTILINE)
+# Bounded by the field's own delimiters and by its line. `[^*]` admits a newline, so a
+# stray `**` opener let a field name run past the end of its line to whatever `**` came
+# next: `**Source**\n: x` read as the field `Source`, which the contract says is one line.
+HEADER_FIELD = re.compile(r"^\*\*([^*\n]+)\*\*[^\S\n]*:", re.MULTILINE)
 
 RecordShape = list[tuple[str, str]]
 Seam = tuple[str, str, str, RecordShape]
