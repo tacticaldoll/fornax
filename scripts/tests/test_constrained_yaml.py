@@ -38,6 +38,14 @@ class RawScalarTests(unittest.TestCase):
             ),
             "a plain scalar ending in a colon": ("trailing:", "a plain scalar may not hold ': '"),
             "text after the closing quote": ('"one" two', "line 3:"),
+            # Quoting had become the way around the comment rule one line above it:
+            # YAML ends the scalar at the quote and reads the rest as a comment, so
+            # `"value" # note` came back as `value` and the file said something else.
+            "comment after the closing quote": ('"one" # note', "comments are unsupported"),
+            "comment after a quoted colon value": (
+                '"Gate 5: Responsibility"  # note',
+                "comments are unsupported",
+            ),
             "quote that does not close": ('"one', "line 3:"),
             "literal multiline": ("|", "multiline scalars are unsupported"),
             "folded multiline": (">", "multiline scalars are unsupported"),

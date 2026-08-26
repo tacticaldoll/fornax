@@ -78,14 +78,28 @@ def _double_quoted(value: str, number: int, error_factory: ErrorFactory) -> str:
     """The content of one double-quoted scalar, read by the parser that owns quoting.
 
     `BaseLoader` resolves no implicit type, so what comes back is the text the quotes
-    hold. Anything after the closing quote makes this not one scalar, and the parser
-    says so rather than this module deciding where the quote ended — which is the
-    guess that took four forms elsewhere in this repository.
+    hold. Where the scalar ends comes from the parser too, and it has to: loading the
+    line and taking what came back accepted `"value" # note` as `value`, because YAML
+    ends a scalar at the quote and reads the rest as a comment. The rule one line above
+    refuses exactly that on a plain scalar, so quoting had become the way around it —
+    a reader storing a value that disagrees with the file, which is the thing this
+    module exists to prevent.
+
+    So the source after the scalar's own end mark must be blank. That is the parser
+    saying where the token stopped rather than this module deciding, which is the guess
+    that took four forms elsewhere in this range.
     """
+    loader = yaml.BaseLoader(value)
     try:
-        read = yaml.load(value, Loader=yaml.BaseLoader)
+        node = loader.get_single_node()
+        if not isinstance(node, yaml.ScalarNode):
+            raise error_factory(f"line {number}: a quoted scalar must hold one string")
+        if value[node.end_mark.index :].strip():
+            raise error_factory(
+                f"line {number}: a scalar is the whole value; comments are unsupported"
+            )
+        return loader.construct_object(node)
     except yaml.YAMLError as error:
         raise error_factory(f"line {number}: {str(error).splitlines()[0]}") from error
-    if not isinstance(read, str):
-        raise error_factory(f"line {number}: a quoted scalar must hold one string")
-    return read
+    finally:
+        loader.dispose()
