@@ -42,7 +42,10 @@ PYTHON_VERSION = re.compile(r"^(\d+)\.(\d+)$")
 RUFF_TARGET = re.compile(r'^target-version\s*=\s*"([^"]+)"\s*$', re.MULTILINE)
 REQUIREMENTS = Path("requirements-maintenance.txt")
 WORKFLOW = Path(".github/workflows/validate.yml")
-INSTALL_LINE = re.compile(r"(?<![\w-])pip(?:3)?\s+install(?![\w-])")
+CONTROL = frozenset({";", "&&", "||", "|", "&"})
+ASSIGNMENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=")
+PIP = re.compile(r"(?:.*/)?pip[0-9.]*")
+PYTHON = re.compile(r"(?:.*/)?python[0-9.]*")
 RUN_KEY = re.compile(r"^(\s*(?:-\s+)?)run\s*:[ \t]*(.*?)\s*$")
 # A block scalar header carries an indentation indicator and a chomping indicator
 # in either order, so `>2-` and `>-2` are both valid and mean the same thing.
@@ -140,17 +143,55 @@ def workflow_pins(text: str) -> tuple[list[tuple[str, str]], list[str]]:
         if isinstance(words, Unread):
             unreadable.append(words.text)
             continue
-        if not INSTALL_LINE.search(" ".join(words)):
-            continue
-        for word in words:
-            read = requirement(word)
-            if read is None:
+        for simple in _simple_commands(words):
+            if not _installs(simple):
                 continue
-            if isinstance(read, Unread):
-                unreadable.append(read.text)
-            else:
-                found.append((read.group(1), read.group(2)))
+            for word in simple:
+                read = requirement(word)
+                if read is None:
+                    continue
+                if isinstance(read, Unread):
+                    unreadable.append(read.text)
+                else:
+                    found.append((read.group(1), read.group(2)))
     return found, unreadable
+
+
+def _simple_commands(words: list[str]) -> list[list[str]]:
+    """Split a word stream at the operators that end one command and start another."""
+    commands: list[list[str]] = []
+    current: list[str] = []
+    for word in words:
+        if word in CONTROL:
+            if current:
+                commands.append(current)
+            current = []
+        else:
+            current.append(word)
+    if current:
+        commands.append(current)
+    return commands
+
+
+def _installs(words: list[str]) -> bool:
+    """Whether this simple command runs a pip install, judged by position not presence.
+
+    Searching the words for `pip install` made `echo pip install tool==9.9.9` an
+    install and its argument a pin the workflow was said to carry. What decides is
+    where the word sits: the command position, after any leading environment
+    assignments, and `install` as its first argument.
+    """
+    index = 0
+    while index < len(words) and ASSIGNMENT.match(words[index]):
+        index += 1
+    rest = words[index:]
+    if not rest:
+        return False
+    if PIP.fullmatch(rest[0]):
+        return rest[1:2] == ["install"]
+    if PYTHON.fullmatch(rest[0]):
+        return rest[1:4] == ["-m", "pip", "install"]
+    return False
 
 
 def run_commands(text: str) -> tuple[list[str], list[str]]:

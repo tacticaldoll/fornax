@@ -395,6 +395,36 @@ class WorkflowPinTests(unittest.TestCase):
 
             self.assertEqual(self.check(root), [])
 
+    def test_pip_is_an_install_only_in_command_position(self) -> None:
+        # Searching the words for `pip install` made echoed text an install and its
+        # argument a pin the workflow was said to carry.
+        for label, command in (
+            ("echoed", "echo pip install tool==9.9.9"),
+            ("another program", "pip-audit install tool==9.9.9"),
+            ("not the install verb", "pip download tool==9.9.9"),
+        ):
+            with self.subTest(label=label), TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                self.workspace(root, f"        run: {command}\n")
+
+                self.assertEqual(self.check(root), [])
+
+    def test_an_install_in_any_command_position_is_read(self) -> None:
+        for label, command in (
+            ("after an operator", "echo hi && pip install tool==9.9.9"),
+            ("after assignments", "PIP_NO_CACHE=1 pip install tool==9.9.9"),
+            ("through the module", "python3 -m pip install tool==9.9.9"),
+            ("by path", ".venv/bin/pip install tool==9.9.9"),
+        ):
+            with self.subTest(label=label), TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                self.workspace(root, f"        run: {command}\n")
+
+                errors = self.check(root)
+
+                self.assertEqual(len(errors), 1, f"{label}: {errors}")
+                self.assertIn("9.9.9", errors[0])
+
     def test_a_run_value_this_cannot_resolve_is_reported(self) -> None:
         # The same hole the token readers had, one layer up: a `run:` value read as
         # something smaller and plausible rather than reported as unread. An alias has
