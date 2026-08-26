@@ -1,34 +1,42 @@
 #!/usr/bin/env python3
-"""Read the YAML subset a skill.yaml manifest is written in.
+"""Read the YAML a skill.yaml manifest is written in.
 
 Deliberately more liberal than constrained_yaml.py, and the two are not
 interchangeable. That module enforces a narrow subset on files this repository alone
 writes, so it refuses anything it does not recognise. skill.yaml is a published
 interface that registries and third-party installers also parse, so a reader here
-that refused an ordinary manifest would reject something the ecosystem accepts. This
-one therefore reads what it needs and stays quiet about the rest.
+that refused an ordinary manifest would reject something the ecosystem accepts. It
+therefore reads whatever YAML says, and answers about the shapes the schema names.
 
-Every pattern uses ``[^\\S\\n]`` rather than ``\\s`` between a key and its value.
-Whitespace allowed to cross the newline lets a key with no value match the line
-beneath it, which is how an empty entrypoint once reported itself as
-"not found: triggers:".
+**Reader contract.** A reader returns the value the key declares, or says the key is
+declared in a shape it does not read. It never substitutes a reading of its own. The
+regexes this replaced did, three times: one attributed a nested item to the key above
+it, one returned an empty string for a key holding a block, and one trimmed quote
+characters from a scalar that was never quoted. Each substitution was silent, and a
+caller cannot guard what it is not told.
 
-**Reader contract.** A reader returns the value the key declares, or says the key
-is declared in a shape it does not read. It never substitutes a reading of its own
-for a shape it does not handle. Three readers used to: one attributed a nested
-item to the key above it, one returned an empty string for a key holding a block,
-and one trimmed quote characters from a scalar that was never quoted. Each
-substitution was silent, and a caller cannot guard what it is not told.
+They also refused what YAML accepts, which is the same fault facing the other way: a
+line indented past a list's items continues the plain scalar above it, and calling
+that mixed indentation rejected a manifest every parser in the ecosystem reads.
 
-``get_yaml_list`` and ``get_yaml_mapping_value`` carry the contract through
-``Shape``. ``declares_key`` and ``declares_value`` answer about declaration only,
-so they have nothing to substitute. ``clean_yaml_scalar`` returns the text as
-declared when it cannot parse a quote pair. ``get_top_level_yaml_value`` is **not
-yet** three-state: it returns ``None`` both for an absent key and for one declared
-without a same-line scalar. No defect has been reported against that, and it is
-recorded here rather than left to be rediscovered as an oversight.
+``get_yaml_list`` and ``get_yaml_mapping_value`` carry the contract through ``Shape``.
+``declares_key`` and ``declares_value`` are the two line-bounded regexes left: they
+answer about declaration only, so they have nothing to substitute.
+``get_top_level_yaml_value`` is **not yet** three-state — it returns ``None`` both for
+an absent key and for one whose value is not a non-empty string. No defect has been
+reported against that, and it is recorded here rather than left to be rediscovered.
+
+**Ask ``unreadable`` first.** Every value reader answers UNREAD for a document that
+will not parse. A caller that guards each field with ``if value`` then skips its
+checks one at a time and reports nothing about why, which is how an entrypoint
+carrying an escape sequence came to be validated by nothing at all.
+
+``_Loader`` is ``BaseLoader`` with two corrections. YAML 1.1's implicit types read a
+trigger written ``1:1`` as 61, ``no`` as False and ``007`` as 7 — a reader changing
+what a manifest says, arriving from the library rather than a regex — so no implicit
+resolver runs. And every loader takes a repeated key silently where these readers
+answered UNREAD, so one is refused, nested keys included.
 """
-
 from __future__ import annotations
 
 import enum
@@ -130,8 +138,17 @@ class _Loader(yaml.BaseLoader):
     """Scalars as written, and a repeated key refused."""
 
     def construct_mapping(self, node: yaml.MappingNode, deep: bool = False) -> dict:
-        seen: set[object] = set()
+        seen: set[str] = set()
         for key_node, _ in node.value:
+            # A key must be a scalar before it can be compared. YAML admits a complex
+            # key — `? [a, b]` — and constructing one gives a list, so testing set
+            # membership with it raised TypeError out of a function whose caller was
+            # promised a diagnostic. The schema has no complex keys, so refusing one
+            # is both the honest answer and the one that keeps the promise.
+            if not isinstance(key_node, yaml.ScalarNode):
+                raise yaml.constructor.ConstructorError(
+                    None, None, "a key must be a scalar", key_node.start_mark
+                )
             key = self.construct_object(key_node, deep=deep)
             if key in seen:
                 raise yaml.constructor.ConstructorError(

@@ -286,6 +286,13 @@ class ReaderContractTests(unittest.TestCase):
         self.assertIsNotNone(unreadable("triggers:\n  - a\ntriggers:\n  - b\n"))
         self.assertIsNotNone(unreadable("resources:\n  scripts: a\n  scripts: b\n"))
 
+    def test_a_key_this_cannot_compare_is_a_diagnostic_not_a_crash(self) -> None:
+        # YAML admits a complex key, `? [a, b]`, and constructing one gives a list.
+        # Testing set membership with it raised TypeError out of a function whose
+        # caller was promised a reason.
+        self.assertIsNotNone(unreadable("? [a, b]\n: value\n"))
+        self.assertIs(get_yaml_list("? [a, b]\n: value\n", "triggers").shape, Shape.UNREAD)
+
     def test_yaml_1_1_types_do_not_change_what_a_manifest_says(self) -> None:
         # safe_load reads a trigger written `1:1` as the integer 61, `no` as False and
         # `007` as 7. A reader that changes what a manifest says is the substitution
