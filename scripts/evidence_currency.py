@@ -286,8 +286,8 @@ def unaccounted_files(root: Path, registered: set[str]) -> list[str]:
     return found
 
 
-def check(root: Path, entries: tuple[Evidence, ...]) -> bool:
-    """Report each entry as current, superseded, or drifted. True when any drifted."""
+def records_exist(root: Path, entries: tuple[Evidence, ...]) -> bool:
+    """Report each entry whose record is not a file inside the repository."""
     failed = False
     for entry in entries:
         record = entry.get("record")
@@ -300,7 +300,17 @@ def check(root: Path, entries: tuple[Evidence, ...]) -> bool:
                 )
             )
             failed = True
+    return failed
 
+
+def tree_accounted(root: Path, entries: tuple[Evidence, ...]) -> bool:
+    """Report every file under the scenario tree no entry accounts for.
+
+    Not about an entry, which is why it is not in `check`. The registry declares the
+    roots and the walk derives the files, so a scenario added where nobody registered
+    it is reported like the rest.
+    """
+    failed = False
     registered = {entry.get("record") for entry in entries}
     for relative_path in unaccounted_files(root, registered):
         print(
@@ -310,6 +320,17 @@ def check(root: Path, entries: tuple[Evidence, ...]) -> bool:
             )
         )
         failed = True
+    return failed
+
+
+def check(root: Path, entries: tuple[Evidence, ...]) -> bool:
+    """Report each entry as current, superseded, or drifted. True when any drifted.
+
+    One clause, now that it is one job. It used to verify each record was a file inside
+    the tree and name every unaccounted scenario file as well, under this same sentence
+    — and the tree sweep is not about an entry at all. `main` calls all three.
+    """
+    failed = False
     for entry in entries:
         identifier = entry.get("id")
         if entry.get("state") == "superseded":
@@ -362,7 +383,11 @@ def main(argv: list[str] | None = None) -> int:
     except EvidenceError as error:
         print(printable(f"FAIL {REGISTRY} - {error}"), file=sys.stderr)
         return 1
-    if check(ROOT, entries):
+    # All three, and none short-circuits: a drifted fingerprint and an unaccounted file
+    # are separate facts and a reader wants both in one run.
+    missing = records_exist(ROOT, entries)
+    unaccounted = tree_accounted(ROOT, entries)
+    if check(ROOT, entries) or missing or unaccounted:
         return 1
     print(printable(f"OK   {REGISTRY} ({len(entries)} claim(s))"))
     return 0
