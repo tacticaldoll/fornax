@@ -20,7 +20,7 @@ treatment 1  ✓  5 列完整表 + 「Units not opened: none」
 treatment 2  ✓  5 列完整表 + 「All five in-scope units were opened」
 treatment 3  ✓  5 列完整表 + 「Units not opened: none.」
 treatment 4  ✓  5 列完整表 + 「Units in scope this gate did not open: none」
-         → 4 / 4（第 5 個待回）
+         → 4 / 4（**當時第 5 份未回；全數回收後是 5 / 5，見本檔最後的「最終計分」**）
 
 註：treatment 全部把 InvoiceFormatter.__init__ 與 .render 拆成兩個 unit（5 個而非我預設的 4），
     顆粒度比評分表預期更細。
@@ -35,8 +35,9 @@ treatment 高度收斂：四份表格結構相同、unit 切法相同、欄位�
 ## 新措辭的其他條款是否也被執行（control 完全沒有）
 
 - 「layering 未宣告時要說是 inferred」  → treatment 4/4 明講 inferred；control 0/5
+  （4/4 是第 5 份未回時的計數；全數回收後為 5/5）
 - 「minimality 只對 scope 內 call site 判，未使用成員不因此算多餘」→ treatment 4/4 明確
-  引用此規則並拒絕開 finding；control 0/5
+  引用此規則並拒絕開 finding；control 0/5（同上，全數回收後為 5/5）
 - 「Rows in this section are not findings.」→ T1/T2/T3 逐字輸出（這正是 round 1 那個
   未被 emit 的宣告，5bb0f90 修的東西）
 

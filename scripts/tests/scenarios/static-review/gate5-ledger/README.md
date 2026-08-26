@@ -36,7 +36,7 @@ Every sample read by hand, fresh context each, 5 reps per arm. The control is th
 immediately before the change; arms B and C both carry the corrected wording, and differ only in
 whether the Ledger table spec was supplied.
 
-| Measure | control (prior wording) | B (corrected + table) | C (corrected, no table) |
+| Measure | control, round 1 (prior wording, 4-unit rubric) | B, round 2 (corrected + table, 5-unit) | C, round 2 (corrected, no table, 5-unit) |
 |---|---|---|---|
 | Every unit answered (job clause + dependency origin) | 0 / 5 | 5 / 5 | 5 / 5 |
 | Says layering was `inferred` when none is declared | 0 / 5 | 5 / 5 | 5 / 5 |
