@@ -6,7 +6,7 @@ link destination, a registry scalar, the text of an OS error — and prints some
 back. The exit code was never at risk; the report a human reads was, and the report
 is the product.
 
-Two attacks, one class. An escape sequence rewrites the line it sits in, so a value
+More than one attack, one class. An escape sequence rewrites the line it sits in, so a value
 could bend its own FAIL toward looking like a pass. A right-to-left override reverses
 how the rest of the line renders, so "SKILL.md<RLO>dm.LLIKS ton" reads as
 "SKILL.md not SKILL.md" — the report saying the opposite of what it says. The first

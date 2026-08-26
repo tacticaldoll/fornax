@@ -99,7 +99,7 @@ table does.
   re-report is closed only if the unit was `gate-reviewed`, or was `partially-gate-reviewed` and the
   relevant gate is among those explicitly opened. A partial unit missing that gate, a `triage-only`
   unit, or an `unread` unit cannot close a finding by silence. This is why `Coverage` always
-  enumerates four sets and the gates opened for every partial unit.
+  enumerates each set and the gates opened for every partial unit.
 - **Membership needs the enumeration.** `Coverage: complete` without an enumerated set does not let
   the consumer decide whether a prior disposition was in scope; that produces `undetermined`, which
   is a compatibility state for foreign records and should never arise in the
@@ -108,13 +108,13 @@ table does.
   what they violate plus the unit that carries it, so a line that moves does not create a new
   finding. The producer does not need to emit an id, but it must name the unit clearly enough that
   one can be derived.
-- **One defect can arrive three times** — as a gate finding, an Against-Contract row, and a refuted
+- **One defect can arrive more than once** — as a gate finding, an Against-Contract row, and a refuted
   claim. The consumer collapses them to one finding and records every source id. The producer should
   not deduplicate across its own tracks; each track answers a different question.
 - **Vocabulary that must not collide across the seam.** `not inspected` names a *gate* the
   calibration never opened. `unread` names a *unit* never opened. `triage-only` names a unit that
   received Phase 2's rapid checks and no gates. `partially-gate-reviewed` names a unit and must list
-  the gates it received. The two axes are reported in the same record, so one word for both makes
+  the gates it received. Both axes are reported in the same record, so one word for both makes
   the record unreadable by its own consumer.
 - **A claim the producer does not emit is `not claimed`.** The consumer must not read a missing field
   as a passing one — see the Output Records section of `AGENTS.md`.

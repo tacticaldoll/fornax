@@ -69,7 +69,7 @@ def fail(skill_name: str, message: str) -> None:
 def child_directories(path: Path) -> tuple[list[Path], OSError | None]:
     """The directories directly under one path, or the error listing it gave.
 
-    A fact rather than a diagnostic, because the two callers phrase it differently
+    A fact rather than a diagnostic, because its callers phrase it differently
     and answer to different scopes — the same reason path_boundary returns verdicts.
     Both sites used to let the OSError escape, so a skills path that is not a
     directory reached the user as a traceback from the one entry point CI, the
@@ -284,7 +284,7 @@ def validate_manifest_path(
 ) -> bool:
     """Hold one declared manifest path to portability, containment, and its kind.
 
-    The entrypoint and the three resource keys differ in what they are called and in
+    The entrypoint and the resource keys differ in what they are called and in
     what they must name, so they share the sequence rather than restating it. The
     syntactic rule runs first: it needs no filesystem, and an absolute path that
     happens to resolve inside the folder would otherwise pass containment and still

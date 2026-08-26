@@ -145,7 +145,7 @@ def install_refs(text: str, repository: str) -> tuple[list[str], list[Unread]]:
 
     So the enclosing token is parsed rather than the ref's end guessed. The token is a
     quoted string, and both grammars these documents use agree on what closes one: all
-    five install commands here wrap the URL in `"`, whether the surrounding text is a
+    every install command here wraps the URL in `"`, whether the surrounding text is a
     shell command or the JSON of an editor config. `"` is a real closing delimiter, not
     a guess about what a document may put next. An unquoted URL ends at whitespace or a
     shell operator, which is the shell's own grammar.

@@ -17,7 +17,7 @@ dependencies = [
   # manifest as YAML, so the interpreter running fornax must be able to import them.
   # Pinned to the same versions as requirements-maintenance.txt — a deployment tool
   # that validates one pinned tag should not validate it with a different library
-  # each run — and a test asserts the two declarations agree.
+  # each run — and a test asserts the declarations agree.
   "markdown-it-py==4.2.0",
   "mdurl==0.1.2",
   "pyyaml==6.0.3",

@@ -15,7 +15,7 @@ workspace during a test.
 This module owns one error convention: raise, and let ``dispatch`` print
 ``FAIL <file> - <reason>``. That is not a departure from the entry points keeping
 their own conventions — both consumers already share this one, and neither of the
-two validators that must stay independently phrased is a consumer.
+validators that must stay independently phrased is a consumer.
 
 Standard library only.
 """
@@ -166,7 +166,7 @@ def dispatch(
     description: str,
     label: str,
 ) -> int:
-    """Parse the three modes and report a BlockError as a diagnostic, not a traceback."""
+    """Parse the modes and report a BlockError as a diagnostic, not a traceback."""
     parser = argparse.ArgumentParser(description=description)
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--write", action="store_true", help=f"splice the {label} into its file")

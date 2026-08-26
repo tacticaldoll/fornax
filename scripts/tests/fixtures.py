@@ -94,9 +94,9 @@ def write_distribution(
 ) -> None:
     """A canonical distribution plus the host manifests that project it.
 
-    Two things the pin check needs come from named helpers rather than from this
+    What the pin check needs comes from named helpers rather than from this
     body: making the root a worktree, and writing the install documents. Folding
-    them in here gave one fixture three jobs and made every test that touches a
+    them in here gave one fixture too many jobs and made every test that touches a
     distribution depend on `git` for reasons most of them do not assert.
     """
     (root / "distribution.json").write_text(

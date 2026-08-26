@@ -324,7 +324,7 @@ class WorkflowPinTests(unittest.TestCase):
     def test_every_order_of_a_block_header_is_read(self) -> None:
         # YAML puts the indentation and chomping indicators in either order, so `>2-`
         # and `>-2` are the same header. Matching one order sent the other down the
-        # plain-scalar path, where the invocation and its pin became two commands and
+        # plain-scalar path, where the invocation and its pin were split apart and
         # the pin disappeared with no error at all.
         for header in (">", ">-", ">+", ">2", ">2-", ">-2"):
             with self.subTest(header=header), TemporaryDirectory() as tmp:
@@ -342,7 +342,7 @@ class WorkflowPinTests(unittest.TestCase):
         # The category the previous round left untested. A plain scalar folds onto its
         # more-indented lines, which the docstring said and the code did not: the body
         # went through the shell's backslash rule, so `pip install` and `tool==9.9.9`
-        # became two commands and the pin was lost with no error.
+        # were split apart and the pin was lost with no error.
         for label, workflow in (
             ("plain inline", "        run: pip install tool==9.9.9\n"),
             ("plain multiline", "        run: pip install\n          tool==9.9.9\n"),

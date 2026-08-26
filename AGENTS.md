@@ -116,7 +116,7 @@ single bold `**Input**:` line after the intent paragraph and before the first wo
 ## Output Records
 
 A skill whose type owes a defined output (`docs/skill-types.md`) states that output's shape in
-`SKILL.md`. Three rules about that shape, each earned where a record receives field-level audit:
+`SKILL.md`. Rules about that shape, each earned where a record receives field-level audit:
 `static-review` produces a Review Record and `triage-findings` audits it
 (`docs/review-record-contract.md`). They are judgment, not structure: nothing validates them, and
 they apply only where a record makes claims about itself.
@@ -212,7 +212,7 @@ Before release:
 
 - **Review what the tag will carry, not only the skills.** The Review stage above is scoped to a
   skill; the validation machinery, its test suite, and the generators go inside the release tag as
-  well. A release has already shipped four unreviewed script commits — the gate, Ruff, and CI were
+  well. A release has already shipped unreviewed script commits — the gate, Ruff, and CI were
   green, which is not the same as reviewed. The obligation is the one stated in Testing Strategy;
   what Release adds is the report line — state which commits in the release range received a review
   pass and which did not, so skipping one is a visible decision rather than an omission.
@@ -515,7 +515,7 @@ Prefer lightweight tests that match the risk of the change.
   shared parser was verified by breaking the shared parser, which of course went red, while putting
   the private regex back into `seam_contract` — the entire change — left the suite green, because
   the test called the parser directly and never ran the consumer whose ownership had moved. The
-  `tools/fornax-cli` suite is one of the two CI-only steps named above.
+  `tools/fornax-cli` suite is among the CI-only steps named above.
 - When a check is a hand-written matcher claiming an invariant over a grammar — a version, a
   dependency spec, a heading — cover it with two negative controls, not one: a **near-miss sharing
   the accepted prefix**, and a **valid alternate spelling of the same meaning**. Instance tests stay
@@ -595,7 +595,7 @@ Keep scripts deterministic, portable, and easy to audit.
 - **When a module takes ownership of a behaviour, enumerate every existing implementation of it.**
   Extracting a shared owner is only half the change; the other half is finding the copies it now
   answers for and either routing them through it or recording why one stays outside. `skill_model.py`
-  does this for `NAME_PATTERN` — it names the three spellings the repository uses and says that
+  does this for `NAME_PATTERN` — it names the spellings the repository uses and says that
   unifying them changes what validates, so the divergence is a decision rather than a cleanup. Every
   participant left outside a new owner without that record has been a defect: a private manifest
   reader in `skill_graph.py`, an unguarded directory listing in `validate_skills.py`, and two return
@@ -634,11 +634,21 @@ Keep scripts deterministic, portable, and easy to audit.
   Derive the number into a generated block, or say the thing without it — "form after form", "more
   than one check", "the consumers of one record identity".
 
-  `scripts/check_text.py` reports one. The vocabulary it reads is the list of nouns that have gone
-  stale, so extending that list is how a new kind of count gets caught, and the classification
-  below is what decides whether a number is one at all. Each row names where the suite shows the
-  check agreeing with it, because a category stated here that the check does not implement is the
-  same defect this rule is about.
+  **The rule is a judgment; the check is not the rule.** `scripts/check_text.py` reports a cardinal
+  number standing immediately before a noun from a closed list — the nouns that have gone stale.
+  That is one syntax a count can take, and counts take others: an adjective between the number and
+  the noun slips past it, and so does any noun not on the list. Both were verified, and a count
+  phrased that way sat in `development-knowns.yaml` while the commit that added the check claimed
+  counts had stopped. Widening the syntax was measured and abandoned: allowing modifiers before
+  the noun and any plural after the number matched mostly prose — "one is", "72 characters", "PEP
+  508 is" — so it caught nothing new and would have buried what it did catch. Extending the noun
+  list narrows the gap; nothing closes it, because deciding whether a number counts the tree needs
+  the sentence's meaning. `development-knowns.yaml` records that.
+
+  The classification below is what decides whether a number is a count at all, and it is for the
+  author to apply — the check only catches the plainest form. Each row names where the suite shows
+  the check agreeing with it, because a category stated here that the check does not implement is
+  the same defect this rule is about.
 
   | A number that... | Is it a count? |
   |---|---|
@@ -654,7 +664,7 @@ Keep scripts deterministic, portable, and easy to audit.
   `..._a_configured_value_is_not_a_count`, and
   `..._a_derived_number_in_output_is_not_written_down`.
 
-  Skills and scenario records sit outside the check because their numbers are the middle two kinds
+  Skills and scenario records sit outside the check because their numbers are the prescribed and
   almost everywhere. That exemption is by directory, which is coarse; a count of tree state inside
   one would pass. Nothing better is available without reading intent, and this file is where that
   limit is recorded rather than left to be rediscovered.
@@ -662,4 +672,3 @@ Keep scripts deterministic, portable, and easy to audit.
   This check's own rule text and fixtures have to contain the pattern. They compose their numbers
   from parts instead of earning an exemption: a check its own suite is exempt from is a check
   nothing holds to its own rule.
-

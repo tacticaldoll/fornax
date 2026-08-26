@@ -5,7 +5,7 @@ a function that could return a shorter, well-formed value than the text it was g
 `ruff==0.16.1|x` read as `0.16.1`, `@v1.2.3;other` as `v1.2.3`, `tool==1.0#x` as
 `1.0` — every one a truncation that then compared equal to what it was checked
 against and answered clean. Widening the alphabet closed the instance and left the
-path open, which is why the fifth repair reopened it three lines above the fourth.
+path open, which is why a later repair reopened it just above the one before.
 
 So the path is what this module removes rather than the instances. A read is `Whole`
 or `Unread`; there is no `Partial`, and `Whole` is constructed only by `whole()`,

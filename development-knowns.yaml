@@ -1,7 +1,7 @@
 schema: 1
 knowns:
   - id: markdown-install-pins-unguarded
-    statement: Two releases shipped install commands pinned to an earlier tag because nothing compared the documented pins to distribution.json.
+    statement: Releases shipped install commands pinned to an earlier tag because nothing compared the documented pins to distribution.json.
     kind: defect
     treatment: resolved
     rationale: The host manifests were checked for agreement while the commands a reader copies were not, so a release could bump every manifest, miss a pin, and stay green.
@@ -12,7 +12,7 @@ knowns:
     verification: scripts/distribution_manifest.py reads every tracked Markdown file for a versioned install ref and requires it to match distribution.json; the rollback that used to pass now fails, as does a pin in a file that was never registered.
     updated: 2026-08-25
   - id: gate-wording-micro-test-unevidenced
-    statement: Review gate wording shipped for two releases with no measurement that it changed agent behaviour.
+    statement: Review gate wording shipped with no measurement that it changed agent behaviour.
     kind: risk
     treatment: resolved
     rationale: "The arms settle it — the prior wording answered no unit per unit, the corrected wording did so with the table and equally without it, so the wording carries the obligation and the table carries the shape."
@@ -36,12 +36,12 @@ knowns:
       - The shell's words are owned by shlex in the standard library and are used, except for its comment rule, which ends a word at any hash where bash does not.
       - Command structure has no owner here. runtime_contract splits the word stream at control operators and requires pip in command position after any leading assignments; bashlex would answer both, and does, and cannot be taken.
       - CommonMark is owned by markdown-it-py, which is installed and used, so no heading grammar is hand-written.
-      - TOML is owned by tomllib, which arrives in Python 3.11 while .python-version declares 3.10. Two readings stay hand-written for it and both stop at a quoted string's closing quote rather than at a guess.
+      - TOML is owned by tomllib, which arrives in Python 3.11 while .python-version declares 3.10. The readings that stay hand-written for it all stop at a quoted string's closing quote rather than at a guess.
       - A URL's fragment is split by hand in markdown_links.local_target because urlsplit answers a different question, returning the path without the scheme that the Windows-drive and external-scheme tests below it read.
     declined-changes:
       - Add bashlex, which would take a GPLv3+ dependency into an MIT repository for a development tool, and one whose last release predates this entry by three and a half years.
-      - Add tomli so ruff.toml and a pyproject dependency string are parsed rather than matched, for two readings that have never been wrong and that a move to Python 3.11 makes free.
-    verification: "Each grammar states the channel it has. The two parsed ones are total by their libraries — Requirement consumes the string or raises, safe_load parses the document or raises, and runtime_contract reports what raised rather than reading fewer commands. The token grammars reach their value through read_whole.whole, whose Whole rejects any match not spanning its subject; test_read_whole.py fails when that check is removed. Command structure is covered by cases rather than by a guarantee, because a structure this reads wrongly is silent: echoed text, another program whose name starts with pip, the wrong verb, an install after a control operator, after assignments, through the module, and by path are each a case in test_runtime_contract.py. The case that was missing was the one that failed. RUFF_TARGET needs no channel: check requires exactly one match in ruff.toml, so a misread changes the count and fails."
+      - Add tomli so ruff.toml and a pyproject dependency string are parsed rather than matched, for readings that have never been wrong and that a move to Python 3.11 makes free.
+    verification: "Each grammar states the channel it has. The parsed ones are total by their libraries — Requirement consumes the string or raises, safe_load parses the document or raises, and runtime_contract reports what raised rather than reading fewer commands. The token grammars reach their value through read_whole.whole, whose Whole rejects any match not spanning its subject; test_read_whole.py fails when that check is removed. Command structure is covered by cases rather than by a guarantee, because a structure this reads wrongly is silent: echoed text, another program whose name starts with pip, the wrong verb, an install after a control operator, after assignments, through the module, and by path are each a case in test_runtime_contract.py. The case that was missing was the one that failed. RUFF_TARGET needs no channel: check requires exactly one match in ruff.toml, so a misread changes the count and fails."
     updated: 2026-08-26
   - id: import-grouping-unchecked
     statement: Whether a module's imports are grouped as the files claim is checked by nobody, and a third-party import landed in the middle of a standard-library group with every gate green.
@@ -55,11 +55,26 @@ knowns:
       - ruff.toml already records import sorting as an opinion this repository has not adopted; what is new here is a measured cost rather than a stated one.
     declined-changes:
       - Select I and run --fix, which edits the shipped CLI adapter and a fixture whose bytes a recorded result measured, to catch a defect that changes no behaviour.
-      - Exclude those two paths and select I for the rest, which trades one unchecked claim for a maintained list of exemptions.
+      - Exclude those paths and select I for the rest, which trades one unchecked claim for a maintained list of exemptions.
     verification: None. This is the one condition in this file with no check behind it, which is what makes it debt rather than a resolved defect; the grouping in runtime_contract.py was repaired by hand.
     updated: 2026-08-26
+  - id: written-count-check-is-syntactic
+    statement: The rule against writing a count of what the repository contains is a judgment, and the check behind it recognises one syntax that a count can take.
+    kind: debt
+    treatment: accept
+    rationale: Deciding whether a number counts the tree needs the sentence's meaning. The check reports a cardinal standing immediately before a noun from a closed list, which is the plainest form and the one every stale count in this repository had taken; a count phrased any other way passes, and the rule is stated as an authoring judgment for that reason rather than as a guarantee.
+    evidence:
+      - The commit that added the check claimed counts had stopped while a count sat in this file, phrased with an adjective between the number and the noun, which the check does not see.
+      - Widening the syntax was measured and abandoned. Allowing modifiers before the noun and any plural word after the number matched mostly ordinary prose — "one is", a character threshold, a PEP number followed by a verb — so it surfaced nothing the closed list missed and would have buried what it did surface.
+      - The exemption for skills and scenario records is by directory, so a count of tree state written inside one passes.
+      - Every count the sweep found was reworded by reading the sentence, not by the check; the check found the plainest of them.
+    declined-changes:
+      - Widen the matcher to any plural noun after a cardinal, which was measured as mostly false positives.
+      - State the rule as a guarantee the check enforces, which is the claim a review refuted.
+    verification: scripts/tests/test_check_text.py covers the syntax the check does recognise, in each file kind it reads, and pins the classification's boundaries from both sides. What it cannot cover is the gap this entry records.
+    updated: 2026-08-26
   - id: evidence-entry-model-splits-by-hand
-    statement: A result measured against two documents is registered as two evidence entries only because a maintainer remembers to split it.
+    statement: A result measured against more than one document is registered as a separate evidence entry per document only because a maintainer remembers to split it.
     kind: debt
     treatment: accept
     rationale: The entry model carries a single tests and section pair, and what a record measured is stated in its prose; requiring the split would mean parsing that prose, which is more fragile than the omission it would catch.
@@ -71,7 +86,7 @@ knowns:
     reconsider-when: A third record is registered against fewer documents than its own prose names.
     updated: 2026-08-25
   - id: triage-findings-fixture-misses-new-branches
-    statement: The triage-findings scenario cannot exercise two branches added after its recorded runs, because its fixtures contain neither.
+    statement: The triage-findings scenario cannot exercise branches added after its recorded runs, because its fixtures contain neither.
     kind: debt
     treatment: accept
     rationale: This is a coverage gap rather than staleness, and the two are repaired differently — no recorded signal measures behaviour the later wording changed, so a re-run would re-earn a fingerprint without testing anything new.
@@ -100,8 +115,8 @@ knowns:
     treatment: accept
     rationale: Every check reads tree state; the only git call in scripts is ls-files, and with no pull-request workflow there is no checkpoint before history exists. Commit partition is invisible to that class of mechanism by construction.
     evidence:
-      - Three review rounds each landed one commit per round, and each round's repairs produced the next round's defects.
-      - "A path-partition gate would have passed the commit that motivated it: d8ed52f touches AGENTS.md, development-knowns.yaml and scripts only, so every split-when rule is vacuously satisfied while six reasons sit inside one region."
+      - Round after round each landed one commit, and each round's repairs produced the next round's defects.
+      - "A path-partition gate would have passed the commit that motivated it: d8ed52f touches AGENTS.md, development-knowns.yaml and scripts only, so every split-when rule is vacuously satisfied while unrelated reasons sit inside one region."
       - The same gate would refuse e514bbd, which spans templates and skills and is a shape the section explicitly blesses.
     declined-changes:
       - Encode the granularity rules as a path-partition check, which passes the motivating commit, refuses a blessed shape, and moves the enforcement floor PROJECT.md keeps at structure.
@@ -112,7 +127,7 @@ knowns:
     statement: A noqa directive with non-code text after its code list suppresses every rule on that line, and the ruff warning it produces does not fail the run.
     kind: defect
     treatment: accept
-    rationale: The pinned ruff has no setting that turns its invalid-directive warning into a failure, and the two rules about the suppression mechanism both miss this form — measured, not assumed.
+    rationale: The pinned ruff has no setting that turns its invalid-directive warning into a failure, and the rules about the suppression mechanism all miss this form — measured, not assumed.
     evidence:
       - A 103-character line carrying such a directive passed while a 116-character probe confirmed E501 was live.
       - PGH004 catches only a bare noqa with no codes; RUF100 catches only a directive suppressing nothing; the malformed-suffix form passes both.
@@ -126,7 +141,7 @@ knowns:
     treatment: accept
     rationale: Which JSON file is a host manifest has no reliable signal to derive from — the marketplace manifest is one and carries no version at all — so the list is the primary mechanism here, unlike the install pins where a versioned ref identifies itself.
     evidence:
-      - scripts/distribution_manifest.py compares only the four paths the tuple names against distribution.json.
+      - scripts/distribution_manifest.py compares only the paths the tuple names against distribution.json.
       - Removing a path from the tuple and letting that file drift to another version passes every check.
     declined-changes:
       - Derive host manifests by scanning JSON for a version field, which would claim package manifests and miss the marketplace file.

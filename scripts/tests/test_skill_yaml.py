@@ -32,7 +32,7 @@ class DeclarationTests(unittest.TestCase):
         # `"name": example` is an ordinary quoted key every parser reads. A regex over
         # the source line said absent, and "declared as something else" reported as
         # "never declared" is the substitution this module's contract forbids — made
-        # by the two functions the contract had named as having nothing to substitute.
+        # by the very functions the contract had named as having nothing to substitute.
         text = '"name": example\n"triggers":\n  - user asks\n'
 
         self.assertTrue(declares_key(parse(text), "name"))

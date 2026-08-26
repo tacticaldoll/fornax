@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Keep the declared maintenance runtime consistent with everything that reads it.
 
-.python-version is the single source for the floor, so two things must agree with
+.python-version is the single source for the floor, so what follows must agree with
 it: Ruff's syntax target, and the interpreter actually running. The second matters
 because the pre-commit hook only checks that .venv/bin/python is executable — a
 virtualenv built before the floor moved satisfies that and then fails later with an
@@ -220,7 +220,7 @@ def run_commands(text: str) -> tuple[list[str], list[str]]:
     commands and a trailing backslash continues one onto the next — that is the shell's
     grammar, and it stays.
 
-    Two things are still refused rather than guessed. A document YAML cannot parse has
+    What is left is still refused rather than guessed. A document YAML cannot parse has
     no commands to read, and saying which line broke beats reporting no pins. And a
     `run` value carrying a `${{ }}` expression is decided at run time by a language
     nothing here parses, so what it installs is unknown rather than nothing.

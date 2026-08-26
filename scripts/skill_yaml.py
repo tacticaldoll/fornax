@@ -10,7 +10,7 @@ therefore reads whatever YAML says, and answers about the shapes the schema name
 
 **Reader contract.** A reader returns the value the key declares, or says the key is
 declared in a shape it does not read. It never substitutes a reading of its own. The
-regexes this replaced did, three times: one attributed a nested item to the key above
+regexes this replaced did, more than once: one attributed a nested item to the key above
 it, one returned an empty string for a key holding a block, and one trimmed quote
 characters from a scalar that was never quoted. Each substitution was silent, and a
 caller cannot guard what it is not told.
@@ -20,7 +20,7 @@ line indented past a list's items continues the plain scalar above it, and calli
 that mixed indentation rejected a manifest every parser in the ecosystem reads.
 
 ``get_yaml_list`` and ``get_yaml_mapping_value`` carry the contract through ``Shape``.
-``declares_key`` and ``declares_value`` were the two line-bounded regexes left here,
+``declares_key`` and ``declares_value`` were the line-bounded regexes left here,
 described as having nothing to substitute; they did substitute, saying absent for a
 quoted key every parser reads, so they read the parsed mapping too.
 ``get_top_level_yaml_value`` is **not yet** three-state — it returns ``None`` both for
@@ -32,7 +32,7 @@ will not parse. A caller that guards each field with ``if value`` then skips its
 checks one at a time and reports nothing about why, which is how an entrypoint
 carrying an escape sequence came to be validated by nothing at all.
 
-``_Loader`` is ``BaseLoader`` with two corrections. YAML 1.1's implicit types read a
+``_Loader`` is ``BaseLoader`` corrected. YAML 1.1's implicit types read a
 trigger written ``1:1`` as 61, ``no`` as False and ``007`` as 7 — a reader changing
 what a manifest says, arriving from the library rather than a regex — so no implicit
 resolver runs. And every loader takes a repeated key silently where these readers
@@ -143,7 +143,7 @@ def declares_key(document: Document, key: str) -> bool:
     Read from the parsed mapping, not from the source. A regex over the source line said
     absent for `"name": example`, which is an ordinary quoted key every parser reads —
     and "declared as something else" reported as "never declared" is the substitution
-    this module's contract forbids, made by the two functions the contract had named
+    this module's contract forbids, made by the very functions the contract had named
     as having nothing to substitute.
     """
     return document.mapping is not None and key in document.mapping

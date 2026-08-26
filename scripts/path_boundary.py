@@ -2,7 +2,7 @@
 """Resolve a candidate path and decide whether it stays inside a declared boundary.
 
 Several checks in this repository read paths they do not control: a Markdown link
-destination, a git index entry, a manifest field. Each needs the same three facts —
+destination, a git index entry, a manifest field. Each needs the same facts —
 can the path be resolved, does it stay inside the root that reader declares, and is
 anything actually there — and each answers to a different root, phrases its own
 diagnostic, and disagrees about severity. A tracked file missing from the working
@@ -10,7 +10,7 @@ tree is a deletion git already reports; a missing link target is a defect.
 
 So this module returns facts and never diagnostics, never severity, and never a
 judgement about what kind of file the target is. Callers map a verdict to their own
-message, which is what keeps the two validators independently runnable with distinct
+message, which is what keeps the validators independently runnable with distinct
 scopes and wording. Standard library only.
 """
 

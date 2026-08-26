@@ -28,7 +28,7 @@ class InterfaceParsing(unittest.TestCase):
 
     def test_record_identities_are_not_ordered(self) -> None:
         # Nothing sorts, compares or takes a min of an identity. Matching a producer
-        # to a consumer intersects two sets, which needs hashing — frozen=True gives
+        # to a consumer intersects sets, which needs hashing — frozen=True gives
         # that, so an ordering capability would be six methods nobody calls.
         first = skill_interface.RecordIdentity.parse(RECORD)
         second = skill_interface.RecordIdentity.parse(
