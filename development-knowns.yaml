@@ -33,7 +33,8 @@ knowns:
     evidence:
       - GitHub Actions YAML is owned by PyYAML, which is now installed and used; the hand-written reader it replaced was repaired commit after commit in this range and was wrong at every layer.
       - PEP 440 and PEP 508 are owned by packaging, which is now installed and used; the hand-written matcher it replaced was repaired more than once and was wrong the same way each time.
-      - The shell's words are owned by shlex in the standard library and are used, except for its comment rule, which ends a word at any hash where bash does not.
+      - The shell's words are owned by shlex in the standard library and are used for the workflow, except for its comment rule, which ends a word at any hash where bash does not.
+      - "distribution_manifest.install_refs bounds a documented ref without shlex, because its input is Markdown where a line may hold prose, an apostrophe or JSON and a shell lexer reads those as unterminated quotes. What ends a ref there comes from git and pip instead: a closing quote, whitespace git forbids inside a ref name, or the hash beginning pip's URL fragment. The reason was in that function's docstring and not here, so this entry under-reported the surface it exists to record."
       - Command structure has no owner here. runtime_contract splits the word stream at control operators and requires pip in command position after any leading assignments; bashlex would answer both, and does, and cannot be taken.
       - CommonMark is owned by markdown-it-py, which is installed and used, so no heading grammar is hand-written.
       - TOML is owned by tomllib, which arrives in Python 3.11 while .python-version declares 3.10. The readings that stay hand-written for it all stop at a quoted string's closing quote rather than at a guess.
@@ -103,11 +104,13 @@ knowns:
       - Round after round each landed one commit, and each round's repairs produced the next round's defects.
       - "A path-partition gate would have passed the commit that motivated it: d8ed52f touches AGENTS.md, development-knowns.yaml and scripts only, so every split-when rule is vacuously satisfied while unrelated reasons sit inside one region."
       - The same gate would refuse e514bbd, which spans templates and skills and is a shape the section explicitly blesses.
+      - "The trigger below has fired and was examined rather than left standing: subjects in this range carry a second clause after a comma — recording that nothing reads a repaired grouping, saying what a check decides, settling a coupling — and each of those is a cause the rule would have had in its own commit."
+      - "What the examination found is the same thing the first two lines record: the gate that would notice a second cause is a path partition, and it passes the commit that motivated it. A cause is a reason, and a reason leaves no trace in a path. So the trigger has fired, the treatment is unchanged, and the reason is here rather than in a reviewer's next round."
     declined-changes:
       - Encode the granularity rules as a path-partition check, which passes the motivating commit, refuses a blessed shape, and moves the enforcement floor PROJECT.md keeps at structure.
       - Rewrite published history to split the commit, which no enforced claim requires.
-    reconsider-when: A review round after the one-commit-per-cause rule landed again puts multiple causes in one commit, which is the drift a gate would then have evidence for.
-    updated: 2026-08-25
+    reconsider-when: A gate becomes available that reads why a change was made rather than where it landed, or a partition defect reaches a release.
+    updated: 2026-08-26
   - id: malformed-noqa-suppresses-silently
     statement: A noqa directive with non-code text after its code list suppresses every rule on that line, and the ruff warning it produces does not fail the run.
     kind: defect

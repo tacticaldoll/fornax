@@ -289,14 +289,13 @@ It runs these checks, in this order:
 Run it before installing, publishing, or copying skills. A stale generated block is fixed with its
 matching `--write` command.
 
-One more runs in CI only, because the hook and the gate run only the pinned maintenance
-environment and this one needs Node:
+What stays CI-only needs what the pinned maintenance environment does not declare — Node for the
+OpenCode plugin, and the deployment engine for the CLI suite:
 
 ```sh
 node --input-type=module --check < .opencode/plugins/fornax.js   # the OpenCode plugin parses
+PYTHONPATH=tools/fornax-cli python3 -m unittest discover -s tools/fornax-cli/tests
 ```
-
-CI additionally runs the `tools/fornax-cli` suite, which needs the deployment engine installed.
 
 ## License
 
