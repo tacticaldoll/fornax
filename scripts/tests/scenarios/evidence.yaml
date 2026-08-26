@@ -3,28 +3,28 @@ evidence:
   - id: static-review-gate5-ledger
     state: current
     tests: skills/static-review/references/gates.md
-    section: Gate 5: Responsibility & Boundaries
+    section: "Gate 5: Responsibility & Boundaries"
     fingerprint: 7f15415a7348fc5c
     recorded: 2026-08-25
     record: scripts/tests/scenarios/static-review/gate5-ledger/README.md
   - id: static-review-gate5-ledger-spec
     state: current
     tests: skills/static-review/SKILL.md
-    section: Phase 5: Report
+    section: "Phase 5: Report"
     fingerprint: 6ec410fd0184aa64
     recorded: 2026-08-25
     record: scripts/tests/scenarios/static-review/gate5-ledger/README.md
   - id: static-review-contract-inventory-phase3
     state: current
     tests: skills/static-review/SKILL.md
-    section: Phase 3: Structural Extraction
+    section: "Phase 3: Structural Extraction"
     fingerprint: da68baf255e74c06
     recorded: 2026-08-25
     record: scripts/tests/scenarios/static-review/contract-inventory/README.md
   - id: static-review-contract-inventory-phase4b
     state: current
     tests: skills/static-review/SKILL.md
-    section: Phase 4b: Against-Contract Review (dual-track)
+    section: "Phase 4b: Against-Contract Review (dual-track)"
     fingerprint: 4648d01dd0bf16d1
     recorded: 2026-08-25
     record: scripts/tests/scenarios/static-review/contract-inventory/README.md

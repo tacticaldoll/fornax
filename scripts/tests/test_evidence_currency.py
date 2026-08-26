@@ -16,7 +16,7 @@ evidence:
   - id: sample
     state: current
     tests: doc.md
-    section: Gate 5: Responsibility
+    section: "Gate 5: Responsibility"
     fingerprint: {fingerprint}
     recorded: 2026-08-25
     record: scripts/tests/scenarios/sample/README.md
@@ -434,10 +434,30 @@ class ModelTests(unittest.TestCase):
                 self.assertIn(message, str(caught.exception))
 
     def test_yaml_features_outside_the_subset_fail(self) -> None:
-        registry = CURRENT.format(fingerprint='"quoted"')
+        # Double quoting is inside the subset now, and had to be: a heading named
+        # "Gate 5: Responsibility & Boundaries" cannot be a plain scalar, so refusing
+        # every quote left this registry unable to hold its own values and no YAML
+        # parser able to read the file. The rest stay out.
+        for label, fingerprint in (
+            ("single quoted", "'quoted'"),
+            ("flow list", "[one, two]"),
+            ("anchor", "&anchor"),
+            ("literal block", "|"),
+            ("trailing comment", "value  # note"),
+            ("colon space", "Gate 5: Responsibility"),
+        ):
+            with self.subTest(label=label):
+                with self.assertRaises(evidence_currency.EvidenceError):
+                    self.parse(CURRENT.format(fingerprint=fingerprint))
 
-        with self.assertRaises(evidence_currency.EvidenceError):
-            self.parse(registry)
+    def test_a_double_quoted_scalar_holds_what_a_plain_one_cannot(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write(root, CURRENT.format(fingerprint='"Gate 5: Responsibility"'))
+
+            entries = evidence_currency.load(root / "evidence.yaml")
+
+            self.assertEqual(entries[0].get("fingerprint"), "Gate 5: Responsibility")
 
 
 class RegistryTests(unittest.TestCase):

@@ -20,10 +20,25 @@ class RawScalarTests(unittest.TestCase):
     def test_unsupported_scalar_syntax_uses_the_requested_error(self) -> None:
         cases = {
             "empty": ("", "line 3: scalar must not be empty"),
-            "single quoted": ("'value'", "quoted and flow-style scalars are unsupported"),
-            "double quoted": ('"value"', "quoted and flow-style scalars are unsupported"),
-            "flow list": ("[one, two]", "quoted and flow-style scalars are unsupported"),
-            "flow mapping": ("{one: two}", "quoted and flow-style scalars are unsupported"),
+            "single quoted": (
+                "'value'",
+                "single-quoted and flow-style scalars are unsupported",
+            ),
+            "flow list": (
+                "[one, two]",
+                "single-quoted and flow-style scalars are unsupported",
+            ),
+            "flow mapping": (
+                "{one: two}",
+                "single-quoted and flow-style scalars are unsupported",
+            ),
+            "colon space in a plain scalar": (
+                "Gate 5: Responsibility",
+                "a plain scalar may not hold ': '",
+            ),
+            "a plain scalar ending in a colon": ("trailing:", "a plain scalar may not hold ': '"),
+            "text after the closing quote": ('"one" two', "line 3:"),
+            "quote that does not close": ('"one', "line 3:"),
             "literal multiline": ("|", "multiline scalars are unsupported"),
             "folded multiline": (">", "multiline scalars are unsupported"),
             # Every indicator form. Comparing the whole value against the two bare

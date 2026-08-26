@@ -15,7 +15,7 @@ knowns:
     statement: Review gate wording shipped for two releases with no measurement that it changed agent behaviour.
     kind: risk
     treatment: resolved
-    rationale: Three arms settle it: the prior wording answered no unit per unit, the corrected wording did so with the table and equally without it, so the wording carries the obligation and the table carries the shape.
+    rationale: "Three arms settle it: the prior wording answered no unit per unit, the corrected wording did so with the table and equally without it, so the wording carries the obligation and the table carries the shape."
     evidence:
       - scripts/tests/scenarios/static-review/gate5-ledger/README.md records three arms at 5 fresh-context reps each, every sample read by hand.
       - The no-table arm answered per unit 5 of 5 and volunteered completeness statements no spec had asked it for.
@@ -41,7 +41,7 @@ knowns:
     declined-changes:
       - Add bashlex, which would take a GPLv3+ dependency into an MIT repository for a development tool, and one whose last release predates this entry by three and a half years.
       - Add tomli so ruff.toml and a pyproject dependency string are parsed rather than matched, for two readings that have never been wrong and that a move to Python 3.11 makes free.
-    verification: Each grammar states the channel it has. The two parsed ones are total by their libraries — Requirement consumes the string or raises, safe_load parses the document or raises, and runtime_contract reports what raised rather than reading fewer commands. The token grammars reach their value through read_whole.whole, whose Whole rejects any match not spanning its subject; test_read_whole.py fails when that check is removed. Command structure is covered by cases rather than by a guarantee, because a structure this reads wrongly is silent: echoed text, another program whose name starts with pip, the wrong verb, an install after a control operator, after assignments, through the module, and by path are each a case in test_runtime_contract.py. The case that was missing was the one that failed. RUFF_TARGET needs no channel: check requires exactly one match in ruff.toml, so a misread changes the count and fails.
+    verification: "Each grammar states the channel it has. The two parsed ones are total by their libraries — Requirement consumes the string or raises, safe_load parses the document or raises, and runtime_contract reports what raised rather than reading fewer commands. The token grammars reach their value through read_whole.whole, whose Whole rejects any match not spanning its subject; test_read_whole.py fails when that check is removed. Command structure is covered by cases rather than by a guarantee, because a structure this reads wrongly is silent: echoed text, another program whose name starts with pip, the wrong verb, an install after a control operator, after assignments, through the module, and by path are each a case in test_runtime_contract.py. The case that was missing was the one that failed. RUFF_TARGET needs no channel: check requires exactly one match in ruff.toml, so a misread changes the count and fails."
     updated: 2026-08-26
   - id: evidence-entry-model-splits-by-hand
     statement: A result measured against two documents is registered as two evidence entries only because a maintainer remembers to split it.
@@ -86,7 +86,7 @@ knowns:
     rationale: Every check reads tree state; the only git call in scripts is ls-files, and with no pull-request workflow there is no checkpoint before history exists. Commit partition is invisible to that class of mechanism by construction.
     evidence:
       - Three review rounds each landed one commit per round, and each round's repairs produced the next round's defects.
-      - A path-partition gate would have passed the commit that motivated it: d8ed52f touches AGENTS.md, development-knowns.yaml and scripts only, so every split-when rule is vacuously satisfied while six reasons sit inside one region.
+      - "A path-partition gate would have passed the commit that motivated it: d8ed52f touches AGENTS.md, development-knowns.yaml and scripts only, so every split-when rule is vacuously satisfied while six reasons sit inside one region."
       - The same gate would refuse e514bbd, which spans templates and skills and is a shape the section explicitly blesses.
     declined-changes:
       - Encode the granularity rules as a path-partition check, which passes the motivating commit, refuses a blessed shape, and moves the enforcement floor PROJECT.md keeps at structure.
