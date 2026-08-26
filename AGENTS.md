@@ -664,7 +664,13 @@ Keep scripts deterministic, portable, and easy to audit.
   that does it.
 
   Reading catches the forms a pattern never will, and those are the ones that keep landing: an
-  adverb rather than a noun phrase — "wrong twice", "said so twice", "diverged twice" — and a noun
-  no list would have held, like the clauses a function's job takes to state. Each of those was
+  adverb rather than a noun phrase — "wrong twice", "said so twice", "diverged twice" — an ordinal
+  standing in for the count it was rewritten from — "A third omitted", "A second grammar" — and a
+  noun no list would have held, like the clauses a function's job takes to state. Each of those was
   written into the very commits that removed the check and claimed the sweep had been re-run; what
   had been re-run was the dead matcher's pattern.
+
+  The rule covers commit prose too. A commit message cannot go stale on its own — it describes the
+  change it made — but its numbers are copied into docstrings, which do, and that is where every
+  count removed above came from. The commit that swept them said "Two prohibited counts" and "Four
+  sites reworded" in the act of forbidding both. Name what changed, not how much of it.

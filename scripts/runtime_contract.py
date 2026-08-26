@@ -60,10 +60,11 @@ def requirement(token: str) -> tuple[str, str] | Unread | None:
     None if it states no exact pin at all.
 
     PEP 508 is `packaging`'s grammar and this is `packaging` reading it. Commits in
-    this range wrote that grammar by hand and were wrong in the same direction each time: a
-    terminator list ran past `|`, then the version's own alphabet stopped there and kept
-    the prefix, turning a declaration that failed its comparison loudly into one that
-    passes. A third omitted the `_` PEP 440 admits in a local version.
+    this range wrote that grammar by hand and each was wrong where the last had been
+    right. A terminator list ran past `|`. The version's own alphabet stopped there and
+    kept the prefix, turning a declaration that failed its comparison loudly into one
+    that passes. That alphabet omitted the `_` PEP 440 admits in a local version, so a
+    valid declaration silently became a different pin.
 
     `Requirement` is total the way `whole()` is, and for the same reason: it consumes
     the string or raises, and there is no answer in between for a caller to compare
@@ -137,9 +138,10 @@ def _read(path: Path, errors: list[str]) -> str | None:
 def workflow_pins(text: str) -> tuple[list[tuple[str, str]], list[str]]:
     """Every exact pin the workflow installs, and everything it states unreadably.
 
-    Three failures bound this. Anchoring the whole match on `pip install ` read only the
-    first package and only one spelling. Dropping the anchor read raw YAML, so a comment
-    and an `echo` became installs. Reading every scalar made any key executable, so
+    Each earlier form failed differently. Anchoring the whole match on `pip install `
+    read only the first package and only one spelling. Dropping the anchor read raw
+    YAML, so a comment and an `echo` became installs. Reading every scalar made any
+    key executable, so
     installation text under `env:` was reported as a pin.
 
     So a run command decides whether it installs and its words decide what. The words

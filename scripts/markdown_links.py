@@ -3,8 +3,8 @@
 
 This module owns the repository's CommonMark parser. Both operations that need the
 grammar live here rather than beside their callers: link destinations, and the text
-under one heading. A second hand-written grammar is how a fingerprint came to cover
-part of the section it named.
+under one heading. Writing the grammar again beside a caller is how a fingerprint came
+to cover part of the section it named.
 """
 
 from __future__ import annotations

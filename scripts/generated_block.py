@@ -128,7 +128,7 @@ class Block:
 
         # Rendered.text is documented as including its markers, and splicing a body
         # that does not would delete them from the target — detectable only by the
-        # next --check, after the damage. A third consumer is foreseeable.
+        # next --check, after the damage. More consumers were foreseeable, and came.
         if not (
             rendered.text.startswith(self.markers.start)
             and rendered.text.endswith(self.markers.end)

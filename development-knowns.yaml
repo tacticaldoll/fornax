@@ -49,7 +49,7 @@ knowns:
     treatment: accept
     rationale: Ruff owns this rule and adopting it edits files across the tree, among them the pinned CLI adapter this repository ships and a review-scenario fixture whose content is the input a recorded micro-test measured. The defect it would catch is cosmetic, and those two are not.
     evidence:
-      - runtime_contract.py gained yaml and packaging between its standard-library imports in a commit that passed ruff, the full suite and the twelve-step gate.
+      - runtime_contract.py gained yaml and packaging between its standard-library imports in a commit that passed ruff, the full suite and the whole workspace gate.
       - "ruff check --select I reports findings across most of scripts/, plus tools/fornax-cli/fornax_cli/cli.py and scripts/tests/scenarios/static-review/gate5-ledger/fixture/billing.py; run it to see the current set rather than trusting a number written here."
       - "Setting src so ruff resolves first-party modules by path rather than by a maintained list of names was measured as removing every finding. That measurement was wrong: the key had been appended under the lint table, where ruff rejects it, and the run failed to load its configuration while the reading took a blank line for a clean answer."
       - ruff.toml already records import sorting as an opinion this repository has not adopted; what is new here is a measured cost rather than a stated one.
