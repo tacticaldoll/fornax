@@ -306,6 +306,38 @@ class WorkflowPinTests(unittest.TestCase):
                 self.assertIn(unreadable, errors[0])
                 self.assertIn("cannot be read", errors[0])
 
+    def test_every_order_of_a_block_header_is_read(self) -> None:
+        # YAML puts the indentation and chomping indicators in either order, so `>2-`
+        # and `>-2` are the same header. Matching one order sent the other down the
+        # plain-scalar path, where the invocation and its pin became two commands and
+        # the pin disappeared with no error at all.
+        for header in (">", ">-", ">+", ">2", ">2-", ">-2"):
+            with self.subTest(header=header), TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                self.workspace(
+                    root, f"        run: {header}\n          pip install\n          tool==9.9.9\n"
+                )
+
+                errors = self.check(root)
+
+                self.assertEqual(len(errors), 1, errors)
+                self.assertIn("9.9.9", errors[0])
+
+    def test_a_run_value_this_cannot_resolve_is_reported(self) -> None:
+        # The same hole the token readers had, one layer up: a `run:` value read as
+        # something smaller and plausible rather than reported as unread. An alias has
+        # no resolution here and a malformed header is not a header.
+        for value in (">x", "*deploy", "&setup"):
+            with self.subTest(value=value), TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                self.workspace(root, f"        run: {value}\n          pip install tool==9.9.9\n")
+
+                errors = self.check(root)
+
+                self.assertEqual(len(errors), 1, errors)
+                self.assertIn(value, errors[0])
+                self.assertIn("cannot be read", errors[0])
+
     def test_a_requirements_file_reference_is_not_a_pin(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)

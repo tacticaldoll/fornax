@@ -44,7 +44,10 @@ REQUIREMENTS = Path("requirements-maintenance.txt")
 WORKFLOW = Path(".github/workflows/validate.yml")
 INSTALL_LINE = re.compile(r"(?<![\w-])pip(?:3)?\s+install(?![\w-])")
 RUN_KEY = re.compile(r"^(\s*(?:-\s+)?)run\s*:[ \t]*(.*?)\s*$")
-BLOCK_HEADER = re.compile(r"[|>][-+]?\d*")
+# A block scalar header carries an indentation indicator and a chomping indicator
+# in either order, so `>2-` and `>-2` are both valid and mean the same thing.
+BLOCK_HEADER = re.compile(r"[|>](?:[1-9][-+]?|[-+][1-9]?)?")
+UNRESOLVED = re.compile(r"[|>*&]")
 REQUIREMENT = re.compile(r"([A-Za-z0-9][A-Za-z0-9._-]*)==([0-9][0-9A-Za-z.!+*_-]*)")
 SETUP = "run the maintenance environment setup from README.md"
 
@@ -128,8 +131,8 @@ def workflow_pins(text: str) -> tuple[list[tuple[str, str]], list[str]]:
     version. A command the lexer cannot finish is reported rather than half-read.
     """
     found: list[tuple[str, str]] = []
-    unreadable: list[str] = []
-    for command in run_commands(text):
+    commands, unreadable = run_commands(text)
+    for command in commands:
         words = shell_words(command)
         if isinstance(words, Unread):
             unreadable.append(words.text)
@@ -147,8 +150,8 @@ def workflow_pins(text: str) -> tuple[list[tuple[str, str]], list[str]]:
     return found, unreadable
 
 
-def run_commands(text: str) -> list[str]:
-    """Return one string per command the workflow runs, however it is written.
+def run_commands(text: str) -> tuple[list[str], list[str]]:
+    """Every command the workflow runs, and every `run:` value this cannot resolve.
 
     Only a `run:` value is a command. Every other scalar — a `name:`, an `env:` entry,
     a `with:` input — is data the step is handed, and reading those as commands made a
@@ -156,15 +159,23 @@ def run_commands(text: str) -> list[str]:
 
     Then two joins, because two layers wrap the command. YAML folds a `>` scalar's
     lines into one before the shell ever sees them, so `pip install` and its requirement
-    can sit on separate physical lines with no backslash at all — which a backslash
-    joiner read as two commands and matched in neither. A literal `|` scalar keeps its
-    newlines, so its lines stay separate commands. The shell then continues either form
-    onto the next line with a trailing backslash.
+    can sit on separate physical lines with no backslash at all. A literal `|` scalar
+    keeps its newlines, so its lines stay separate commands. A plain scalar folds onto
+    its more-indented lines the same way `>` does. The shell then continues any of them
+    onto the next line with a trailing backslash. A block's body is the lines indented
+    past the `run` key, which is also what ends it.
 
-    A block's body is the lines indented past the `run` key, which is what ends it.
+    What this cannot resolve, it says so about. `>2-` is a valid block header — the
+    indentation and chomping indicators come in either order — and matching only one
+    order sent it down the plain-scalar path, where the invocation and its pin became
+    two commands and the pin vanished with no error. That is the same hole the token
+    readers had, one layer up: a misreading that produces a smaller correct-looking
+    answer instead of a complaint. An alias or anchor is unresolvable here for the same
+    reason and is reported rather than read as literal text.
     """
     lines = text.splitlines()
     commands: list[str] = []
+    unresolved: list[str] = []
     index = 0
     while index < len(lines):
         key = RUN_KEY.match(lines[index])
@@ -181,15 +192,16 @@ def run_commands(text: str) -> list[str]:
             body.append(line)
             index += 1
 
-        if not BLOCK_HEADER.fullmatch(value):
-            # A plain scalar, which YAML folds onto its more-indented lines, so an
-            # invocation written across two of them is still one command.
-            commands.extend(_continued([value, *body]))
-        elif value.startswith(">"):
-            commands.append(" ".join(line.strip() for line in body if line.strip()))
+        if BLOCK_HEADER.fullmatch(value):
+            if value.startswith(">"):
+                commands.append(" ".join(line.strip() for line in body if line.strip()))
+            else:
+                commands.extend(_continued(body))
+        elif UNRESOLVED.match(value):
+            unresolved.append(f"run: {value}")
         else:
-            commands.extend(_continued(body))
-    return commands
+            commands.extend(_continued([value, *body]))
+    return commands, unresolved
 
 
 def _continued(lines: list[str]) -> list[str]:
