@@ -6,9 +6,9 @@ and every tracked YAML file, and a syntax error in any of them is found by whoev
 runs it rather than by a gate. The hook and the YAML are checked here; `node` is not
 declared by the maintenance environment, so the plugin stays a CI step until it is.
 
-The YAML is checked because a `.yaml` extension is a claim, and two of this
-repository's own files did not meet it: both registries carried a plain scalar
-holding ": ", which YAML forbids, so no parser could read either while the readers
+The YAML is checked because a `.yaml` extension is a claim, and this repository's own
+registries did not meet it: both carried a plain scalar holding ": ", which YAML
+forbids, so no parser could read either while the readers
 written for them could. Nothing could see that, because nothing had ever asked a
 YAML parser to read them. Now something does, on every commit.
 

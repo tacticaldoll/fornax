@@ -92,7 +92,7 @@ class YamlParsingTests(unittest.TestCase):
         subprocess.run(["git", "-C", str(root), "add", name], check=True)
 
     def test_a_tracked_yaml_a_parser_cannot_read_is_reported(self) -> None:
-        # A `.yaml` extension is a claim, and two of this repository's own registries
+        # A `.yaml` extension is a claim, and this repository's own registries
         # did not meet it: a plain scalar holding ": ", which YAML forbids, read by
         # the hand-written readers written for them and by nothing else. Nothing could
         # see it, because nothing had ever asked a YAML parser to read them.
