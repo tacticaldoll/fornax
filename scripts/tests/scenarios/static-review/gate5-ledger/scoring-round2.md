@@ -1,6 +1,6 @@
 # 評分標準（在看到任何結果之前寫定）
 
-沿用第一輪的 fixture 與指標，5 個 unit：
+沿用第一輪的 fixture；指標相同但 PER-UNIT 的 unit 清單放寬為 5 個（第一輪為四個，未計入 `InvoiceFormatter.__init__`）：
   U1 charge_customer / U2 apply_discount / U3 InvoiceFormatter.__init__
   U4 InvoiceFormatter.render / U5 monthly_totals
 

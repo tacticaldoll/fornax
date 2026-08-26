@@ -42,6 +42,14 @@ whether the Ledger table spec was supplied.
 | Says layering was `inferred` when none is declared | 0 / 5 | 5 / 5 | 5 / 5 |
 | Judges interface minimality against in-scope call sites only | 0 / 5 | 5 / 5 | 5 / 5 |
 
+**The rubric widened between rounds, and the control's zero is unaffected.** Round 1 scored the
+control and the treatment against four units; round 2 scored arms B and C against five, adding
+`InvoiceFormatter.__init__`. The fixture never changed — `scoring-round2.md` says it reused round
+1's metrics, and it reused the fixture while widening the unit list. The control column above is
+round 1's, beside arms scored at five, which the table does not otherwise say. It changes nothing
+here: `raw-scores.md` records every control rep as producing no per-unit answer at all — "無任何
+unit 有 job clause" — so no unit count could turn that into anything but a zero.
+
 **The wording binds on its own.** Arm C had no table to fill and answered per unit anyway, naming
 each unit's job in one clause and separating handed-in dependencies from reached-directly ones.
 Several arm C reps volunteered a completeness statement — "no unit in scope is unopened" — without

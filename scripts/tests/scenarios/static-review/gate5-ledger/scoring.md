@@ -1,4 +1,6 @@
-# 評分標準（在看到任何結果之前寫定）
+# 第一輪評分標準（在看到任何結果之前寫定）
+
+第二輪的判準在 `scoring-round2.md`，它把 PER-UNIT 的 unit 清單從四個放寬到五個（加入 `InvoiceFormatter.__init__`）。本檔的四-unit 判準只適用於第一輪的 control 與 treatment。
 
 Fixture 的 4 個 unit：
   U1 charge_customer          — 有問題：多職責 + 直接抓 POOL/BILLING_TOKEN/requests

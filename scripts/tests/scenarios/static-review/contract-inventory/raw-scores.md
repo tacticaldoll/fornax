@@ -1,4 +1,6 @@
-# 第三輪人工評分（協定第 4 項）
+# 人工評分（協定第 4 項）
+
+本情境只有一次量測；日期由 `scripts/tests/scenarios/evidence.yaml` 的 `recorded` 承載。輪次不跨情境連號。
 
 ## control（現行措辭）
 
