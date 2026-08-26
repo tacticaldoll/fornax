@@ -524,20 +524,24 @@ Prefer lightweight tests that match the risk of the change.
   `+build.5` through, and a pin matcher rewritten to ignore the command prefix began reporting
   `# example: tool==1.0` as an install. Each was one control short, and the missing control was a
   different one each time.
-- Where a matcher has to find a token's end, prefer parsing the enclosing token whole over deciding
-  where it stops. Both ways of deciding are guesses. Listing what may follow guesses about an open
-  set — the things a document may put next — so it has to be extended each time a new context turns
-  up. Listing what the token itself may contain guesses about a set that is closed but still has to
-  be known correctly, and being wrong there is worse: a terminator list that ends too late yields a
-  visibly malformed value that fails its next comparison, while an alphabet that ends too early
-  yields a well-formed prefix that passes one. `ruff==0.16.1|x` read as `0.16.1|x` was caught by the
-  comparison; rewritten to the version's alphabet it read as `0.16.1`, matched the installed
-  release, and answered clean. The same alphabet omitted the `_` that PEP 440 admits in a local
-  version, so a valid `1.0+ubuntu_1` silently became a different pin.
-  So take the whole token and check nothing is left over: capture the complete Git ref and compare
-  it for equality rather than proving where it ended, `fullmatch` the requirement rather than
-  matching a prefix of it, hand headings to the CommonMark parser rather than to `^#{2,3} `. When
-  residue remains, report it — a token this cannot read is a finding, not a value to truncate.
+- A matcher that reads a token must name the grammar's owner, and use it. CommonMark is owned by
+  `markdown-it-py` and the shell by `shlex`, both installed and both used. Where the owner is not
+  installed — PEP 440 by `packaging`, GitHub Actions YAML by `PyYAML`, a pyproject string by
+  `tomllib`, which needs Python 3.11 — the matcher may be hand-written, but the grammar and its
+  absent owner go in `development-knowns.yaml` with the reason. Stopping at the enclosing
+  construct's own closing delimiter needs neither: `[^"]+` inside quotes, `[^*]+` inside `**`,
+  `[^\n]+` on a line are reading to a delimiter the construct defines, not guessing where a token
+  gives out. Inventing a terminator list is the thing that needs an owner or an entry — five
+  rounds of this were each a repair freely inventing one, and it was the freedom rather than any
+  particular list that kept reopening the hole.
+- Read a token whole through `read_whole.whole`, never a prefix of it. Both ways of deciding where
+  a token ends are guesses — listing what may follow it, or listing what it may contain — and the
+  second fails worse, because ending too early yields a well-formed value that passes its next
+  comparison while ending too late yields a malformed one that fails loudly. `ruff==0.16.1|x` read
+  as `0.16.1|x` was caught by the comparison; rewritten to the version's own alphabet it read as
+  `0.16.1`, matched the installed release and answered clean. `whole()` only calls `fullmatch` and
+  is the only way to a `Whole`, so a grammar stated wrongly now yields an `Unread` the caller has
+  to report. The guess stays a guess; what it can no longer do is pass.
 - After repairing a defect, sweep the repository for the same class before calling it fixed. Not by
   rereading the change — by enumerating the mechanism: every `re.compile`, every hand-written
   grammar, every place the same question is answered, then checking each against the property the
@@ -546,9 +550,12 @@ Prefer lightweight tests that match the risk of the change.
   shape were sitting in files no round had opened: a second hand-written heading grammar in
   `seam_contract`, and a terminator list for a declared version in `runtime_contract`. Both were
   found by asking "what else is like this", which no review had been asked. Sweeping is not the end
-  of it either — the version repair above replaced that terminator list with an alphabet, which is
-  the same mistake in the other direction, and the sweep that found the site did not stop the
-  repair from being wrong.
+  of it either — one of those repairs replaced a terminator list with an alphabet, which is the
+  same mistake in the other direction, and the sweep that found the site did not stop the repair
+  from being wrong. What ends a round is the reading being total, not the examples being covered:
+  once a wrong guess yields an `Unread` the caller reports, a further input the matcher misreads
+  is a known to register, not a repair to make. Five rounds ran past that point, each closing one
+  more example of a hole the type now closes.
 - The OpenCode plugin is syntax-checked in CI with
   `node --input-type=module --check < .opencode/plugins/fornax.js`, install-free on the runner; the
   hook is parsed by `scripts/check_sources.py` inside the workspace gate. Feed the plugin through

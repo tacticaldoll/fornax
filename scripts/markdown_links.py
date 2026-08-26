@@ -115,6 +115,12 @@ def local_target(destination: str) -> Optional[str]:
     """Return the filesystem portion of a local destination, if it has one."""
     if destination.startswith("//"):
         return None
+    # Split by hand, and not for want of an owner: `urlsplit(...).path` answers a
+    # different question. It drops the scheme and authority, which the two tests below
+    # still need — `C:/docs/x.md` came back as `/docs/x.md` and an external
+    # `https://example.com/guide` as `/guide`, so both were judged as local paths. What
+    # is wanted here is everything before the fragment, and `#` and `?` are where URL
+    # syntax says those begin; a literal one in a path is percent-encoded.
     target = destination.split("#", 1)[0].split("?", 1)[0]
     if not target:
         return None
