@@ -8,9 +8,9 @@ declared by the maintenance environment, so the plugin stays a CI step until it 
 
 The YAML is checked because a `.yaml` extension is a claim, and this repository's own
 registries did not meet it: both carried a plain scalar holding ": ", which YAML
-forbids, so no parser could read either while the readers
-written for them could. Nothing could see that, because nothing had ever asked a
-YAML parser to read them. Now something does, on every commit.
+forbids, so no parser could read either while the readers written for them could.
+Nothing could see that, because nothing had ever asked a YAML parser to read them.
+Now something does, on every commit.
 
 A missing interpreter is a failure, not a skip. Silently passing would make this
 gate report the same result whether it parsed the file or never opened it.

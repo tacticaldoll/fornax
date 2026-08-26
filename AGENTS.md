@@ -651,11 +651,11 @@ Keep scripts deterministic, portable, and easy to audit.
   last one is the same claim with a tense on it, and it went unreworded through two sweeps because
   neither the forbidden list nor the carve-out had named it.
 
-  A number beside such a noun is a claim about the tree that nothing reads, and every one of these
-  nouns has carried a stale one: README named fewer
-  gate steps than the gate ran, `generated_block` named fewer consumers than dispatched blocks,
-  `PROJECT.md` kept seam counts by hand. Derive the number into a generated block, or say the thing
-  without it — "form after form", "more than one check", "the consumers of one record identity".
+  A number beside such a noun is a claim about the tree that nothing reads, and every one of
+  these nouns has carried a stale one: README named fewer gate steps than the gate ran,
+  `generated_block` named fewer consumers than dispatched blocks, `PROJECT.md` kept seam counts
+  by hand. Derive the number into a generated block, or say the thing without it — "form after
+  form", "more than one check", "the consumers of one record identity".
 
   Not every number is one. A quantity a rule prescribes, a threshold, a configured value, a
   version, and the reps and arms a recorded measurement was taken under are all numbers that cannot

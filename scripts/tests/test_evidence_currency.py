@@ -62,10 +62,8 @@ def run_check(root: Path) -> tuple[bool, str]:
     entries = evidence_currency.load(root / "evidence.yaml")
     evidence_currency.validate(entries)
     with redirect_stdout(output):
-        missing = evidence_currency.records_exist(root, entries)
-        unaccounted = evidence_currency.tree_accounted(root, entries)
-        drifted = evidence_currency.check(root, entries)
-    return (missing or unaccounted or drifted), output.getvalue()
+        failed = evidence_currency.report(root, entries)
+    return failed, output.getvalue()
 
 
 class SectionTests(unittest.TestCase):

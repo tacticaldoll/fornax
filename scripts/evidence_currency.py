@@ -286,8 +286,13 @@ def unaccounted_files(root: Path, registered: set[str]) -> list[str]:
     return found
 
 
-def records_exist(root: Path, entries: tuple[Evidence, ...]) -> bool:
-    """Report each entry whose record is not a file inside the repository."""
+def records_missing(root: Path, entries: tuple[Evidence, ...]) -> bool:
+    """Report each entry whose record is not a file inside the repository.
+
+    Named for what a True answer means. `records_exist` returning True when one does
+    not is a name that reads as an assertion and states its opposite, which is what a
+    caller writing `if records_exist(...)` would act on.
+    """
     failed = False
     for entry in entries:
         record = entry.get("record")
@@ -303,7 +308,7 @@ def records_exist(root: Path, entries: tuple[Evidence, ...]) -> bool:
     return failed
 
 
-def tree_accounted(root: Path, entries: tuple[Evidence, ...]) -> bool:
+def tree_unaccounted(root: Path, entries: tuple[Evidence, ...]) -> bool:
     """Report every file under the scenario tree no entry accounts for.
 
     Not about an entry, which is why it is not in `check`. The registry declares the
@@ -360,6 +365,20 @@ def check(root: Path, entries: tuple[Evidence, ...]) -> bool:
     return failed
 
 
+def report(root: Path, entries: tuple[Evidence, ...]) -> bool:
+    """Run every phase and answer whether any failed.
+
+    None short-circuits: a drifted fingerprint and an unaccounted file are separate
+    facts and one pass should report both. Named here rather than sequenced by each
+    caller, because the suite reproducing that sequence by hand is a copy that drifts
+    the moment a phase is added.
+    """
+    missing = records_missing(root, entries)
+    unaccounted = tree_unaccounted(root, entries)
+    drifted = check(root, entries)
+    return missing or unaccounted or drifted
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     mode = parser.add_mutually_exclusive_group(required=True)
@@ -383,11 +402,7 @@ def main(argv: list[str] | None = None) -> int:
     except EvidenceError as error:
         print(printable(f"FAIL {REGISTRY} - {error}"), file=sys.stderr)
         return 1
-    # All three, and none short-circuits: a drifted fingerprint and an unaccounted file
-    # are separate facts and a reader wants both in one run.
-    missing = records_exist(ROOT, entries)
-    unaccounted = tree_accounted(ROOT, entries)
-    if check(ROOT, entries) or missing or unaccounted:
+    if report(ROOT, entries):
         return 1
     print(printable(f"OK   {REGISTRY} ({len(entries)} claim(s))"))
     return 0
