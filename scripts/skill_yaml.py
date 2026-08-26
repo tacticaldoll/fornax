@@ -20,8 +20,9 @@ line indented past a list's items continues the plain scalar above it, and calli
 that mixed indentation rejected a manifest every parser in the ecosystem reads.
 
 ``get_yaml_list`` and ``get_yaml_mapping_value`` carry the contract through ``Shape``.
-``declares_key`` and ``declares_value`` are the two line-bounded regexes left: they
-answer about declaration only, so they have nothing to substitute.
+``declares_key`` and ``declares_value`` were the two line-bounded regexes left here,
+described as having nothing to substitute; they did substitute, saying absent for a
+quoted key every parser reads, so they read the parsed mapping too.
 ``get_top_level_yaml_value`` is **not yet** three-state — it returns ``None`` both for
 an absent key and for one whose value is not a non-empty string. No defect has been
 reported against that, and it is recorded here rather than left to be rediscovered.
@@ -40,7 +41,6 @@ answered UNREAD, so one is refused, nested keys included.
 from __future__ import annotations
 
 import enum
-import re
 from dataclasses import dataclass
 
 import yaml
@@ -77,19 +77,37 @@ class ScalarRead:
 
 
 def declares_key(text: str, key: str) -> bool:
-    """Whether one key appears at all, for a key whose value is the block beneath it."""
-    return bool(re.search(rf"^{re.escape(key)}[^\S\n]*:", text, re.MULTILINE))
+    """Whether the document declares this key at all, whatever it is written as.
+
+    Read from the parsed mapping, not from the source. A regex over the source line said
+    absent for `"name": example`, which is an ordinary quoted key every parser reads —
+    and "declared as something else" reported as "never declared" is the substitution
+    this module's contract forbids, made by the two functions the contract had named
+    as having nothing to substitute.
+    """
+    document = _document(text)
+    return document is not None and key in document
 
 
 def declares_value(text: str, key: str) -> bool:
-    r"""Whether one key names a value on its own line.
+    """Whether the key declares a non-empty scalar, which is what its callers require.
 
-    ``[^\S\n]`` rather than ``\s`` throughout: whitespace that may cross the newline
-    lets an empty key match the next line, which is how an empty entrypoint came to
-    report itself as "not found: triggers:" and how an empty frontmatter name passed
-    by matching "description:".
+    Scalar on purpose. Every field asked about here — a name, a family, a description,
+    an entrypoint — is one in the schema, and answering yes for a key holding a block
+    would put the caller back where it was: declaration seen, `get_top_level_yaml_value`
+    returning None because the value is not a string, and the check after it silently
+    skipped. A block under one of these keys is a shape the field does not have, and
+    saying so is the same answer as saying it declares nothing usable.
+
+    An empty entrypoint once reported itself as "not found: triggers:" by matching the
+    line beneath it, and an empty frontmatter name passed by matching "description:".
+    Neither is reachable from a parsed mapping.
     """
-    return bool(re.search(rf"^{re.escape(key)}[^\S\n]*:[^\S\n]*\S", text, re.MULTILINE))
+    document = _document(text)
+    if document is None:
+        return False
+    value = document.get(key)
+    return isinstance(value, str) and bool(value.strip())
 
 
 def unreadable(content: str) -> str | None:

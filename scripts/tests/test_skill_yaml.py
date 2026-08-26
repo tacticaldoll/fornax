@@ -28,6 +28,23 @@ MANIFEST = (
 
 
 class DeclarationTests(unittest.TestCase):
+    def test_a_quoted_key_is_declared(self) -> None:
+        # `"name": example` is an ordinary quoted key every parser reads. A regex over
+        # the source line said absent, and "declared as something else" reported as
+        # "never declared" is the substitution this module's contract forbids — made
+        # by the two functions the contract had named as having nothing to substitute.
+        text = '"name": example\n"triggers":\n  - user asks\n'
+
+        self.assertTrue(declares_key(text, "name"))
+        self.assertTrue(declares_value(text, "name"))
+        self.assertTrue(declares_key(text, "triggers"))
+        self.assertEqual(get_top_level_yaml_value(text, "name"), "example")
+
+    def test_a_key_holding_a_block_declares_no_scalar(self) -> None:
+        # Answering yes here would put the caller back where it was: declaration seen,
+        # the value not a string, and the check after it silently skipped.
+        self.assertFalse(declares_value("entrypoint:\n  - a\n", "entrypoint"))
+
     def test_a_block_key_is_declared_without_a_same_line_value(self) -> None:
         self.assertTrue(declares_key(MANIFEST, "triggers"))
         self.assertFalse(declares_value(MANIFEST, "triggers"))
