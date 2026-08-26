@@ -24,7 +24,11 @@ TRIGGER_BLOCK = f"triggers:\n  - user asks for {NAME}\n"
 SKILL_MD = fixtures.skill_md(NAME)
 
 
-def check(skill_dir: Path, allow_template_placeholders: bool = False) -> tuple[bool, str]:
+def check(
+    skill_dir: Path,
+    allow_template_placeholders: bool = False,
+    publisher_id: str | None = None,
+) -> tuple[bool, str]:
     """Validate a skill, returning whether it *passed* and whatever it printed.
 
     The checks report whether they failed; this seam inverts once so the assertions
@@ -33,7 +37,9 @@ def check(skill_dir: Path, allow_template_placeholders: bool = False) -> tuple[b
     output = StringIO()
 
     with redirect_stdout(output):
-        failed = validate_skills.validate_skill(skill_dir, allow_template_placeholders)
+        failed = validate_skills.validate_skill(
+            skill_dir, allow_template_placeholders, publisher_id
+        )
 
     return not failed, output.getvalue()
 
@@ -1457,6 +1463,9 @@ class EntryPointTests(unittest.TestCase):
 
         self.assertEqual(code, 1)
         self.assertIn("publisher must match distribution.json", output)
+        # The run must not also say the skill is fine. One function owns the verdict,
+        # so the OK line and the FAIL line cannot both be about this skill.
+        self.assertNotIn(f"OK   {NAME}", output)
 
     def test_a_failure_is_reported_from_the_root_it_was_given(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -1500,13 +1509,9 @@ class InterfacePublisherTests(unittest.TestCase):
     mutation replacing the parameter with the literal passed the whole suite.
     """
 
-    def check_publishers(self, root: Path, publisher_id: str) -> tuple[bool, str]:
-        output = StringIO()
-
-        with redirect_stdout(output):
-            failed = validate_skills.validate_interface_publishers(root, publisher_id)
-
-        return not failed, output.getvalue()
+    def check_publishers(self, parent: Path, publisher_id: str) -> tuple[bool, str]:
+        """The publisher comparison as the skill's own verdict, which is where it runs."""
+        return check(parent / NAME, publisher_id=publisher_id)
 
     def test_a_sidecar_from_another_publisher_fails_collection_validation(self) -> None:
         with TemporaryDirectory() as tmp:

@@ -463,8 +463,22 @@ def validate_skill_document(
     return failed
 
 
-def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
-    """Validate one skill folder, returning whether it failed."""
+def validate_skill(
+    skill_dir: Path, allow_template_placeholders: bool, publisher_id: str | None = None
+) -> bool:
+    """Validate one skill folder, returning whether it failed.
+
+    Every per-skill check runs here, including the sidecar's publisher, because this is
+    what prints `OK   <name>`. The publisher comparison used to run in its own pass
+    after the loop, over the same folders and reporting through the same per-skill
+    channel: a mismatched sidecar produced `OK   example-skill` and then
+    `FAIL example-skill - ...` in one run, so grepping the output for a skill's OK line
+    got a confirmation the run went on to contradict.
+
+    `publisher_id` is the collection's canonical identity, or `None` when
+    `distribution.json` did not yield one — the sidecar is then read for its own
+    validity and its publisher is compared against nothing.
+    """
     name = skill_dir.name
     manifest_file = skill_dir / "skill.yaml"
     skill_file = skill_dir / "SKILL.md"
@@ -520,10 +534,14 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
     interface_file = skill_dir / INTERFACE_FILE
     if interface_file.exists():
         try:
-            load_interface(interface_file, name)
+            interface = load_interface(interface_file, name)
         except InterfaceError as error:
             fail(name, f"{INTERFACE_FILE} - {error}")
             skill_failed = True
+        else:
+            if publisher_id is not None and interface.publisher != publisher_id:
+                fail(name, f"{INTERFACE_FILE} publisher must match distribution.json")
+                skill_failed = True
 
     if not allow_template_placeholders:
         siblings, listing_error = child_directories(skill_dir.parent)
@@ -545,23 +563,6 @@ def validate_skill(skill_dir: Path, allow_template_placeholders: bool) -> bool:
         print(printable(f"OK   {name}"))
 
     return skill_failed
-
-
-def validate_interface_publishers(skills_path: Path, publisher_id: str) -> bool:
-    """Require this collection's sidecars to share its canonical publisher identity.
-
-    Returns whether any sidecar failed, like every other check here.
-    """
-    failed = False
-    for sidecar in sorted(skills_path.glob(f"*/{INTERFACE_FILE}")):
-        try:
-            interface = load_interface(sidecar)
-        except InterfaceError:
-            continue  # validate_skill reports invalid declarations with the skill context
-        if interface.publisher != publisher_id:
-            fail(sidecar.parent.name, f"{INTERFACE_FILE} publisher must match distribution.json")
-            failed = True
-    return failed
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -604,13 +605,10 @@ def main(argv: list[str] | None = None, root: Path | None = None) -> int:
     failed = not distribution.passed
 
     for skill_dir in skill_dirs:
-        if validate_skill(skill_dir, args.allow_template_placeholders):
+        if validate_skill(
+            skill_dir, args.allow_template_placeholders, distribution.publisher_id
+        ):
             failed = True
-
-    if distribution.publisher_id is not None and validate_interface_publishers(
-        skills_path, distribution.publisher_id
-    ):
-        failed = True
 
     if failed:
         return 1
