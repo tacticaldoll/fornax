@@ -48,11 +48,16 @@ from skill_yaml import (
 
 
 FRONTMATTER_PATTERN = re.compile(r"^---\s*\r?\n(.*?)\r?\n---", re.DOTALL)
-INPUT_LINE_PATTERN = re.compile(r"^\*\*Input\*\*[^\S\n]*:[^\S\n]*([^\n]+)$", re.MULTILINE)
-# The **Input**: line is Markdown, not YAML. It borrowed skill_yaml.declares_key,
-# which now reads a parsed mapping and would answer about a SKILL.md body as
-# though the body were a manifest.
-INPUT_LABEL = re.compile(r"^\*\*Input\*\*[^\S\n]*:", re.MULTILINE)
+# One line, one pattern, two questions: whether the contract line is there, and what it
+# says. They were two patterns, the shorter a strict prefix of the longer, so a change
+# to how the label may be written had to be made twice and nothing said the split was
+# deliberate. The remainder is optional because the rule is presence: AGENTS.md
+# prescribes what follows the label, and the validator requires the label.
+#
+# The **Input**: line is Markdown, not YAML. It borrowed skill_yaml.declares_key, which
+# now reads a parsed mapping and would answer about a SKILL.md body as though the body
+# were a manifest.
+INPUT_LINE = re.compile(r"^\*\*Input\*\*[^\S\n]*:[^\S\n]*([^\n]*)$", re.MULTILINE)
 RECORD_INPUT_PATTERN = re.compile(
     r"`(?P<producer>[a-z0-9]+(?:-[a-z0-9]+)*)`\s+"
     r"(?P<label>[A-Z][A-Za-z0-9]*(?:\s+[A-Z][A-Za-z0-9]*)*\s+Record)\b"
@@ -191,7 +196,7 @@ def validate_record_inputs(skill_dir: Path, name: str, content: str) -> bool:
     standardized ``a `producer` Record Name``-style claim on the Input line opts in;
     matching sidecars remain the authoritative seam inventory.
     """
-    input_match = INPUT_LINE_PATTERN.search(content)
+    input_match = INPUT_LINE.search(content)
     if not input_match:
         return False
     claims = list(RECORD_INPUT_PATTERN.finditer(input_match.group(1)))
@@ -456,7 +461,7 @@ def validate_skill_document(
         fail(name, "skill.yaml description must start with 'Use when '")
         failed = True
 
-    if not INPUT_LABEL.search(content):
+    if not INPUT_LINE.search(content):
         fail(name, "SKILL.md must state an **Input**: contract line")
         failed = True
 
