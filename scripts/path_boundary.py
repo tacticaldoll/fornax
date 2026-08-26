@@ -45,6 +45,17 @@ class Boundary:
     root: Path | None
     error: Exception | None = None
 
+    def __post_init__(self) -> None:
+        # Exactly one, checked here rather than promised. `Boundary(p, None, None)` and
+        # `Boundary(p, p, error)` were states the pair of optional fields admitted and
+        # no code meant, and a type that admits a state nobody means is where a caller
+        # eventually reads the one that is not there. Found by sweeping for the shape
+        # after the same defect was reported against skill_yaml.Document.
+        if (self.root is None) == (self.error is None):
+            raise ValueError(
+                "a boundary holds a resolved root or the failure, never both or neither"
+            )
+
     @classmethod
     def at(cls, root: Path) -> "Boundary":
         try:

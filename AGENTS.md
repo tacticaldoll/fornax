@@ -625,6 +625,25 @@ Keep scripts deterministic, portable, and easy to audit.
 - Do not add generated caches, local installs, or copied third-party skills unless the user asks
   to vendor them.
 - Run `git status --short` before final reporting so the user sees the actual change surface.
+- **Before adding a check, say what it would have caught and what it costs per change.** Name the
+  failure in this repository's history it would have stopped, and whether that failure reached a
+  user or stopped at a contributor. Then name the standing cost: the exemptions it needs, the prose
+  that has to explain it, the entries it adds to the registry, and the reviews it will generate
+  about itself. A check whose failure never left the workspace, and which needs a list of places it
+  does not apply, is worse than the authoring rule alone — it costs the same attention and its
+  green means less than a reader assumes.
+
+  Applied backwards over the checks here: parsing every tracked YAML passes easily, because two
+  registries were unreadable by any tool but this repository's own readers and the check needs no
+  exemptions. Deriving README's gate list passes, because the transcribed list was already wrong
+  and a derived block cannot go stale. The written-count pre-filter does not pass on its own terms
+  — no failure it prevents ever left the workspace, and it needs a directory exemption — which is
+  why it is kept small, described as a pre-filter, and not written up as a guarantee.
+
+  The corollary is that removing is a repair. A check that overclaims, a claim nothing reads, a
+  helper nothing calls: each is worse than its absence, and deleting one closes a finding as
+  properly as fixing one does.
+
 - **Do not write a count of what the repository contains.** Not how many skills, families, seams,
   consumers, generated blocks, gate steps, registry entries, modules or tests there are, and not
   how many commits or forms a past repair took. A number beside such a noun is a claim about the

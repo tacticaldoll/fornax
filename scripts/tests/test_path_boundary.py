@@ -109,5 +109,21 @@ class PathBoundaryTests(unittest.TestCase):
             self.assertEqual(Boundary.at(alias).root, real.resolve())
 
 
+class BoundaryStateTests(unittest.TestCase):
+    def test_a_boundary_holds_a_root_or_the_failure_and_never_both(self) -> None:
+        # The same shape a review found in skill_yaml.Document, found here by sweeping
+        # for it rather than by waiting for the next round to report it.
+        with self.assertRaises(ValueError):
+            Boundary(Path("/x"), None, None)
+        with self.assertRaises(ValueError):
+            Boundary(Path("/x"), Path("/x"), OSError("boom"))
+
+    def test_both_real_outcomes_are_constructible(self) -> None:
+        resolved = Boundary.at(Path.cwd())
+
+        self.assertIsNotNone(resolved.root)
+        self.assertIsNone(resolved.error)
+
+
 if __name__ == "__main__":
     unittest.main()
