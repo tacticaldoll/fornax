@@ -38,6 +38,15 @@ class DocumentStateTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             Document({}, "error")
 
+    def test_the_mapping_is_reachable_only_through_the_checked_accessor(self) -> None:
+        # The prose said the mapping is reached through require while the field stayed
+        # public, so any caller could still take it without asking anything. Checking a
+        # state is not enforcing how it is reached.
+        document = parse("name: x\n")
+
+        self.assertFalse(hasattr(document, "mapping"))
+        self.assertEqual(document.require(), {"name": "x"})
+
     def test_reaching_the_mapping_of_an_unreadable_document_raises(self) -> None:
         # The docstring said a caller holding the result could not skip the failure.
         # It could: skill_graph read a family straight out of an unreadable manifest

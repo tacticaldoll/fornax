@@ -27,10 +27,13 @@ quoted key every parser reads, so they read the parsed mapping too.
 an absent key and for one whose value is not a non-empty string. No defect has been
 reported against that, and it is recorded here rather than left to be rediscovered.
 
-**Ask ``unreadable`` first.** Every value reader answers UNREAD for a document that
-will not parse. A caller that guards each field with ``if value`` then skips its
-checks one at a time and reports nothing about why, which is how an entrypoint
-carrying an escape sequence came to be validated by nothing at all.
+**Ask ``Document.reason`` first.** No reader answers about a document that did not
+parse; each raises ``Unreadable`` instead. Answering used to mean answering in the
+same ``Shape`` a key declared unreadably gets, which conflates a fact about the
+document with a fact about one key — and that conflation is how a caller guarding
+each field with ``if value`` skipped its checks one at a time and reported nothing
+about why. An entrypoint carrying an escape sequence was validated by nothing at
+all, and a malformed manifest reported its family missing.
 
 ``_Loader`` is ``BaseLoader`` corrected. YAML 1.1's implicit types read a
 trigger written ``1:1`` as 61, ``no`` as False and ``007`` as 7 — a reader changing
@@ -89,26 +92,29 @@ class Document:
     once per required field, once per resource key and once for the version check.
     Reading is one act, and its outcome is a value the readers are handed.
 
-    Carrying the reason was supposed to make the failure unskippable, and the docstring
-    said so, and it was not: `skill_graph` read a family straight out of an unreadable
-    manifest and reported the family missing. So the mapping is reached through
-    `require`, which raises when there is none. A caller that does not ask about
-    `reason` first now fails loudly instead of being handed an answer about a document
-    that does not exist.
+    Carrying the reason was supposed to make the failure unskippable, and this said so
+    twice while it was not. First `skill_graph` read a family straight out of an
+    unreadable manifest and reported the family missing; then the mapping was routed
+    through `require` and this said it was reached that way, while the field stayed
+    public and any caller could still take it. Checking a state is not the same as
+    enforcing how it is reached, and the second sentence was the first mistake again.
+
+    So the payload is private and `require` is the only way to it. `reason` stays
+    public because asking about it is the thing a caller is supposed to do.
     """
 
-    mapping: dict[str, object] | None
+    _mapping: dict[str, object] | None
     reason: str | None
 
     def __post_init__(self) -> None:
-        if (self.mapping is None) == (self.reason is None):
+        if (self._mapping is None) == (self.reason is None):
             raise ValueError("a document holds a mapping or a reason, never both or neither")
 
     def require(self) -> dict[str, object]:
         """The mapping, for a caller that has already dealt with `reason`."""
-        if self.mapping is None:
+        if self._mapping is None:
             raise Unreadable(self.reason or "")
-        return self.mapping
+        return self._mapping
 
 
 class Unreadable(ValueError):
