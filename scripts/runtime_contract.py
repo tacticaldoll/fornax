@@ -70,11 +70,17 @@ def pins(text: str) -> tuple[dict[str, str], list[str]]:
     A line that declares no exact pin is not malformed. `-r base.txt`, a range, a bare
     name and a comment are all legal in a requirements file and none of them is a claim
     this function failed to read.
+
+    The comment cut follows pip's rule — `#` starts one at the beginning of a word, not
+    wherever it appears. Cutting at the first `#` read `tool==1.0#x` as `1.0`, which is
+    the truncation this function was written to stop, one line above where it stops it.
+    The marker cut needs no such care: `;` cannot occur inside a version, so ending
+    there cannot end early.
     """
     found: dict[str, str] = {}
     malformed: list[str] = []
     for line in text.splitlines():
-        stated = line.split("#", 1)[0].split(";", 1)[0].strip().strip('",').strip()
+        stated = COMMENT.split(line, maxsplit=1)[0].split(";", 1)[0].strip().strip('",').strip()
         declaration = DECLARATION.match(stated)
         if not declaration:
             continue

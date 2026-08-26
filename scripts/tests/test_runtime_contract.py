@@ -143,6 +143,9 @@ class DeclaredPinTests(unittest.TestCase):
             ("ruff==0.16.1|x", {}, ["ruff==0.16.1|x"]),
             ("ruff==0.16.1>y", {}, ["ruff==0.16.1>y"]),
             ("ruff==x.y.z", {}, ["ruff==x.y.z"]),
+            # pip starts a comment at a `#` beginning a word. Cutting at the first one
+            # anywhere reintroduced the truncation this test exists to stop.
+            ("ruff==0.16.1#x", {}, ["ruff==0.16.1#x"]),
             # Valid alternate spelling: PEP 440 admits `_` in a local version, which
             # the alphabet omitted and therefore truncated to a version that installs.
             ("tool==1.0+ubuntu_1", {"tool": "1.0+ubuntu_1"}, []),
