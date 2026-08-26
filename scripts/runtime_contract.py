@@ -200,7 +200,7 @@ def run_commands(text: str) -> tuple[list[str], list[str]]:
 
         if BLOCK_HEADER.fullmatch(value):
             if value.startswith(">"):
-                commands.append(_folded(body))
+                commands.extend(_folded(body))
             else:
                 commands.extend(_continued(body))
         elif UNRESOLVED.match(value):
@@ -217,13 +217,56 @@ def run_commands(text: str) -> tuple[list[str], list[str]]:
                 single = quoted.group(1) if quoted.group(1) is not None else quoted.group(2)
                 commands.extend(_continued([single]))
         else:
-            commands.extend(_continued([_folded([value, *body])]))
+            # The value on the key's line is the scalar's first line, so it folds
+            # with the rest rather than being pasted onto the front of the result —
+            # a blank line after it is a paragraph break like any other.
+            opening = next(
+                (" " * (len(line) - len(line.lstrip())) + value for line in body if line.strip()),
+                value,
+            )
+            commands.extend(_continued(_folded([opening, *body])))
     return commands, unresolved
 
 
-def _folded(lines: list[str]) -> str:
-    """Join lines the way YAML folds a scalar: one space, blank lines dropped."""
-    return " ".join(line.strip() for line in lines if line.strip())
+def _folded(lines: list[str]) -> list[str]:
+    """Fold a scalar the way YAML folds one, which does not always give a single line.
+
+    A blank line is a paragraph break: the lines around it fold into a newline, not a
+    space, so they are two commands. A line indented past the block keeps its breaks
+    too. Joining everything with spaces made
+
+        run: >
+          pip install
+
+          tool==9.9.9
+
+    read as one invocation and report a pin, when the workflow runs `pip install` with
+    no package and then a command named `tool==9.9.9`. A workflow that installs nothing
+    was read as one that installs the right thing.
+    """
+    base: int | None = None
+    folded: list[str] = []
+    paragraph: list[str] = []
+
+    def close() -> None:
+        if paragraph:
+            folded.append(" ".join(paragraph))
+            paragraph.clear()
+
+    for line in lines:
+        if not line.strip():
+            close()
+            continue
+        indent = len(line) - len(line.lstrip())
+        if base is None:
+            base = indent
+        if indent > base:
+            close()
+            folded.append(line.strip())
+            continue
+        paragraph.append(line.strip())
+    close()
+    return folded
 
 
 def _continued(lines: list[str]) -> list[str]:

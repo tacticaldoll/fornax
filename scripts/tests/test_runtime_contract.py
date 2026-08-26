@@ -365,6 +365,36 @@ class WorkflowPinTests(unittest.TestCase):
                 self.assertEqual(len(errors), 1, errors)
                 self.assertIn("cannot be read", errors[0])
 
+    def test_a_blank_line_in_a_folded_scalar_is_a_paragraph_break(self) -> None:
+        # YAML folds a blank line into a newline, not a space, and keeps the breaks
+        # around a line indented past the block. Joining everything with spaces read
+        #     run: >
+        #       pip install
+        #
+        #       tool==9.9.9
+        # as one invocation and reported a pin, when the workflow runs `pip install`
+        # with no package and then a command named `tool==9.9.9`. A workflow that
+        # installs nothing was read as one that installs the right thing.
+        for label, body in (
+            ("blank line", "          pip install\n\n          tool==9.9.9\n"),
+            ("more indented", "          pip install\n            tool==9.9.9\n"),
+        ):
+            with self.subTest(label=label), TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                self.workspace(root, f"        run: >\n{body}")
+
+                self.assertEqual(self.check(root), [])
+
+    def test_a_plain_scalar_breaks_at_a_blank_line_too(self) -> None:
+        # The value on the key's line is the scalar's first line, so it folds with the
+        # rest. Pasting it onto the front of the folded result instead let a blank line
+        # after it be swallowed.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.workspace(root, "        run: pip install\n\n          tool==9.9.9\n")
+
+            self.assertEqual(self.check(root), [])
+
     def test_a_run_value_this_cannot_resolve_is_reported(self) -> None:
         # The same hole the token readers had, one layer up: a `run:` value read as
         # something smaller and plausible rather than reported as unread. An alias has
