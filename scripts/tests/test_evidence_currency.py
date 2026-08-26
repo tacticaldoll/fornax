@@ -54,7 +54,7 @@ def write(root: Path, registry: str, document: str = DOCUMENT) -> None:
 def run_check(root: Path) -> tuple[bool, str]:
     """Everything `main` runs, because a caller wants every fact from one pass.
 
-    The three used to be one function under a docstring naming one of them. They are
+    They used to be one function under a docstring naming one of them. They are
     separate now, and this drives all of them so a case does not silently stop covering
     the phase it was written for.
     """

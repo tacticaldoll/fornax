@@ -49,10 +49,11 @@ from skill_yaml import (
 
 FRONTMATTER_PATTERN = re.compile(r"^---\s*\r?\n(.*?)\r?\n---", re.DOTALL)
 # One line, one pattern, two questions: whether the contract line is there, and what it
-# says. They were two patterns, the shorter a strict prefix of the longer, so a change
-# to how the label may be written had to be made twice and nothing said the split was
-# deliberate. The remainder is optional because the rule is presence: AGENTS.md
-# prescribes what follows the label, and the validator requires the label.
+# says. There was a pattern for the presence and another for the content, the shorter a
+# strict prefix of the longer, so a change to how the label may be written had to be
+# made in both and nothing said the split was deliberate. The remainder is optional
+# because the rule is presence: AGENTS.md prescribes what follows the label, and the
+# validator requires the label.
 #
 # The **Input**: line is Markdown, not YAML. It borrowed skill_yaml.declares_key, which
 # now reads a parsed mapping and would answer about a SKILL.md body as though the body

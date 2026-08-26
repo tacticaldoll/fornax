@@ -10,9 +10,9 @@ Zero seams is a clean answer, not a failure. A check that failed on none would b
 reason to keep a seam alive, which is the opposite of what this is for.
 
 **What this does not observe.** It does not judge whether each element the producer emits is
-read, nor whether the consumer names an element the producer never writes. Those are the two
-defects this repository found by hand, and both were found by reading an inventory beside the
-prose that described it — not by an assertion a script could make without guessing which of a
+read, nor whether the consumer names an element the producer never writes. Those are the defects
+this repository found by hand, each of them by reading an inventory beside the prose that
+described it — not by an assertion a script could make without guessing which of a
 producer's fields a consumer is obliged to care about. The inventory is generated so that it
 cannot go stale while the prose beside it does; reconciling the two stays a human act.
 

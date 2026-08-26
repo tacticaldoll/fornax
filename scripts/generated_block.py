@@ -14,7 +14,7 @@ workspace during a test.
 
 This module owns one error convention: raise, and let ``dispatch`` print
 ``FAIL <file> - <reason>``. That is not a departure from the entry points keeping
-their own conventions — both consumers already share this one, and neither of the
+their own conventions — its consumers already share this one, and neither of the
 validators that must stay independently phrased is a consumer.
 
 Standard library only.

@@ -172,7 +172,7 @@ def spelled_inside(candidate: str) -> bool:
 
     Asked through `host_paths`, which owns the question and asks both host grammars.
     Answering it here with `Path` alone gave the POSIX reading only, so `C:/x` and
-    `..\\x` were spelled inside on this host — a third spelling of a path rule in a
+    `..\\x` were spelled inside on this host — another spelling of a path rule in a
     repository whose `skill_model.NAME_PATTERN` docstring already records what happens
     when one diverges.
     """
@@ -333,7 +333,7 @@ def check(root: Path, entries: tuple[Evidence, ...]) -> bool:
 
     One clause, now that it is one job. It used to verify each record was a file inside
     the tree and name every unaccounted scenario file as well, under this same sentence
-    — and the tree sweep is not about an entry at all. `main` calls all three.
+    — and the tree sweep is not about an entry at all. `main` calls each of them.
     """
     failed = False
     for entry in entries:

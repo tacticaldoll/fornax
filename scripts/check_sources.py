@@ -7,8 +7,8 @@ runs it rather than by a gate. The hook and the YAML are checked here; `node` is
 declared by the maintenance environment, so the plugin stays a CI step until it is.
 
 The YAML is checked because a `.yaml` extension is a claim, and this repository's own
-registries did not meet it: both carried a plain scalar holding ": ", which YAML
-forbids, so no parser could read either while the readers written for them could.
+registries did not meet it: each carried a plain scalar holding ": ", which YAML
+forbids, so no parser could read them while the readers written for them could.
 Nothing could see that, because nothing had ever asked a YAML parser to read them.
 Now something does, on every commit.
 

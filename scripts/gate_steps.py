@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate README.md's list of what the workspace gate runs, from the gate itself.
 
-The third consumer of the block protocol, which its module anticipated. The list this
+A consumer of the block protocol, which its module anticipated. The list this
 replaces was transcribed by hand and had gone stale: README named fewer checks than
 ran, and called some of the missing ones CI-only after the gate had absorbed them.
 Nothing could see the drift, because a count in prose is not a claim any check reads.

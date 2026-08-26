@@ -17,7 +17,7 @@ are ordinary text, and a wider rule would refuse prose the registry needs.
 
 A double-quoted scalar is admitted, and its content is read by the parser rather
 than unquoted here. The subset refused every quote, which left it unable to express
-values its own files needed: YAML forbids ": " inside a plain scalar, and both
+values its own files needed: YAML forbids ": " inside a plain scalar, and the
 registries carried some — a heading named "Gate 5: Responsibility & Boundaries",
 prose reading "settle it: the ...". They were stored as written and no YAML parser
 could read either file, which is the divergence the paragraph above says this module

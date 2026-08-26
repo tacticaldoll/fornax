@@ -32,7 +32,7 @@ class ListerTests(unittest.TestCase):
 
     def test_a_non_worktree_becomes_a_diagnostic_rather_than_a_traceback(self) -> None:
         # A release tarball or a `git archive` export is a directory a check can be
-        # pointed at legitimately, and both callers must report rather than crash.
+        # pointed at legitimately, and its callers must report rather than crash.
         with TemporaryDirectory() as tmp:
             found, error = workspace_files.listed(Path(tmp))
 

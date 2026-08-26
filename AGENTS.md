@@ -645,7 +645,7 @@ Keep scripts deterministic, portable, and easy to audit.
   does not apply, is worse than the authoring rule alone — it costs the same attention and its
   green means less than a reader assumes.
 
-  Applied backwards over the checks here: parsing every tracked YAML passes easily, because two
+  Applied backwards over the checks here: parsing every tracked YAML passes easily, because the
   registries were unreadable by any tool but this repository's own readers and the check needs no
   exemptions. Deriving README's gate list passes, because the transcribed list was already wrong
   and a derived block cannot go stale. The written-count pre-filter failed on both counts — no
@@ -660,7 +660,7 @@ Keep scripts deterministic, portable, and easy to audit.
 - **Do not write a count of what the repository contains.** Not how many skills, families, seams,
   consumers, generated blocks, gate steps, registry entries, modules or tests there are, not how
   many commits or forms a past repair took, and not how many files a past defect reached — that
-  last one is the same claim with a tense on it, and it went unreworded through two sweeps because
+  last one is the same claim with a tense on it, and it went unreworded sweep after sweep because
   neither the forbidden list nor the carve-out had named it.
 
   A number beside such a noun is a claim about the tree that nothing reads, and every one of
@@ -669,9 +669,19 @@ Keep scripts deterministic, portable, and easy to audit.
   by hand. Derive the number into a generated block, or say the thing without it — "form after
   form", "more than one check", "the consumers of one record identity".
 
+  A total spelled as a word is the same claim. "Both consumers", "either registry", "all three
+  phases" carry a number without writing one, and `generated_block` said "both consumers" while a
+  third consumer sat in the tree dispatching blocks. What decides is the referent, not the word: a
+  number over things the sentence itself names as language — three syntactic forms a matcher
+  strips, two conditions a guard refuses — cannot go stale against the tree and is not this rule's
+  subject. A number over the tree's own artifacts is.
+
   Not every number is one. A quantity a rule prescribes, a threshold, a configured value, a
   version, and the reps and arms a recorded measurement was taken under are all numbers that cannot
-  go stale against the tree; rewording the last of those falsifies the record it belongs to.
+  go stale against the tree; rewording the last of those falsifies the record it belongs to. A
+  Disposition Record under `docs/dispositions/` is exempt for that same reason and not by
+  courtesy — it is dated, it says what a range was found to contain when it was read, and editing
+  its numbers to satisfy a later rule makes it a worse record of that reading.
   Deciding which a number is needs the sentence, so this is a judgment and nothing checks it. A
   check was written for it and removed: it saw only a number standing immediately before one of
   those nouns, so a count with a word in between passed — one sat in `development-knowns.yaml`
