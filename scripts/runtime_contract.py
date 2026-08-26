@@ -43,6 +43,9 @@ REQUIREMENTS = Path("requirements-maintenance.txt")
 WORKFLOW = Path(".github/workflows/validate.yml")
 WORKFLOW_PIN = re.compile(r"(?<![\w.-])([A-Za-z0-9][A-Za-z0-9._-]*)==([A-Za-z0-9][^\s\"',;]*)")
 INSTALL_LINE = re.compile(r"(?<![\w-])pip(?:3)?\s+install(?![\w-])")
+RUN_KEY = re.compile(r"^(\s*(?:-\s+)?)run\s*:[ \t]*(.*?)\s*$")
+BLOCK_HEADER = re.compile(r"[|>][-+]?\d*")
+COMMENT = re.compile(r"(?:(?<=\s)|^)#")
 DECLARATION = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)==(.+)$")
 VERSION = re.compile(r"[0-9][0-9A-Za-z.!+*_-]*")
 SETUP = "run the maintenance environment setup from README.md"
@@ -103,67 +106,90 @@ def _read(path: Path, errors: list[str]) -> str | None:
 def workflow_pins(text: str) -> list[tuple[str, str]]:
     """Every exact pin the workflow actually installs, wherever on its line it sits.
 
-    Two failures bound this. Anchoring the whole match on `pip install ` read only the
-    first package and only one spelling, so `--upgrade`, a quoted spec, and a second
+    Three failures bound this. Anchoring the whole match on `pip install ` read only the
+    first package and only one spelling, so `--upgrade`, a quoted spec and a second
     package all passed unread. Dropping the anchor entirely read raw YAML, so a comment
-    or an `echo` became an install.
+    or an `echo` became an install. Reading every scalar in the file then made any key
+    executable — installation text under `env:` was reported as a pin the workflow
+    installs, and nothing runs an environment variable.
 
-    So the logical command decides whether it installs and the token decides what: a
-    command carrying a pip install invocation contributes every `name==version` in it,
-    and one that does not contributes none. A comment is not an install command — the
-    `#` ends it before the invocation, and a commented-out install is not one either.
+    So the run command decides whether it installs and the token decides what: a command
+    under a `run:` key and carrying a pip install invocation contributes every
+    `name==version` in it, and anything else contributes none.
 
-    Logical, not physical. A trailing backslash continues the command onto the next
-    line, which the ordinary way of writing a long pip invocation uses, and reading
-    physical lines missed the requirement entirely — the invocation on one line and the
-    pin on the next.
+    A comment is not an install command, but `#` only starts one at the beginning of a
+    word. Cutting at the first `#` anywhere discarded the rest of a command whose pip
+    URL carried a `#subdirectory=` fragment, so a pin after it went unread — a stale
+    workflow pin answering clean, the failure this check exists to catch.
     """
     found: list[tuple[str, str]] = []
-    for command in logical_commands(text):
-        executable = command.split("#", 1)[0]
+    for command in run_commands(text):
+        executable = COMMENT.split(command, maxsplit=1)[0]
         if not INSTALL_LINE.search(executable):
             continue
         found.extend(WORKFLOW_PIN.findall(executable))
     return found
 
 
-def logical_commands(text: str) -> list[str]:
+def run_commands(text: str) -> list[str]:
     """Return one string per command the workflow runs, however it is written.
 
-    Two joins, because two layers wrap the command. YAML folds a `>` scalar's lines
-    into one before the shell ever sees them, so `pip install` and its requirement can
-    sit on separate physical lines with no backslash at all — which a backslash joiner
-    read as two commands and matched in neither. The shell then continues a line with a
-    trailing backslash.
+    Only a `run:` value is a command. Every other scalar — a `name:`, an `env:` entry,
+    a `with:` input — is data the step is handed, and reading those as commands made a
+    documented pip invocation inside a help string count as an install.
 
-    A folded block is joined by indentation: the lines more indented than the key
-    introducing it belong to it. A literal `|` block keeps its newlines, so its lines
-    stay separate commands and only the backslash join applies to them.
+    Then two joins, because two layers wrap the command. YAML folds a `>` scalar's
+    lines into one before the shell ever sees them, so `pip install` and its requirement
+    can sit on separate physical lines with no backslash at all — which a backslash
+    joiner read as two commands and matched in neither. A literal `|` scalar keeps its
+    newlines, so its lines stay separate commands. The shell then continues either form
+    onto the next line with a trailing backslash.
+
+    A block's body is the lines indented past the `run` key, which is what ends it.
     """
+    lines = text.splitlines()
+    commands: list[str] = []
+    index = 0
+    while index < len(lines):
+        key = RUN_KEY.match(lines[index])
+        index += 1
+        if not key:
+            continue
+
+        depth, value = len(key.group(1)), key.group(2)
+        if not BLOCK_HEADER.fullmatch(value):
+            commands.extend(_continued([value]))
+            continue
+
+        body: list[str] = []
+        while index < len(lines):
+            line = lines[index]
+            if line.strip() and len(line) - len(line.lstrip()) <= depth:
+                break
+            body.append(line)
+            index += 1
+
+        if value.startswith(">"):
+            commands.append(" ".join(line.strip() for line in body if line.strip()))
+        else:
+            commands.extend(_continued(body))
+    return commands
+
+
+def _continued(lines: list[str]) -> list[str]:
+    """Join shell continuations, so a backslash-wrapped invocation is one command."""
     commands: list[str] = []
     pending = ""
-    folding: int | None = None
-    for line in text.splitlines():
-        indent = len(line) - len(line.lstrip())
-        if folding is not None:
-            if line.strip() and indent > folding:
-                pending += line.strip() + " "
-                continue
-            commands.append(pending.rstrip())
-            pending, folding = "", None
-        if re.search(r":\s*>[-+]?\s*$", line):
-            folding = indent
-            pending = ""
-            continue
-        stripped = line.rstrip()
+    for line in lines:
+        stripped = line.strip()
         if stripped.endswith("\\"):
             pending += stripped[:-1] + " "
             continue
-        commands.append(pending + line)
+        commands.append((pending + stripped).strip())
         pending = ""
     if pending:
-        commands.append(pending.rstrip())
-    return commands
+        commands.append(pending.strip())
+    return [command for command in commands if command]
 
 
 def check(

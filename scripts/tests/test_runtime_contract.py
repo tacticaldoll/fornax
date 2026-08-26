@@ -253,12 +253,36 @@ class WorkflowPinTests(unittest.TestCase):
             "        run: pip download tool==9.9.9\n",
             "        run: echo \\\\\n          tool==9.9.9\n",
             "        run: >\n          echo\n          tool==9.9.9\n",
+            # Nothing runs an environment variable, in either scalar form. Reading
+            # every scalar in the file made installation text under `env:` a pin.
+            "      - env:\n          HELP: pip install tool==9.9.9\n",
+            "      - env:\n          HELP: >\n            pip install tool==9.9.9\n",
+            "      - name: pip install tool==9.9.9\n",
+            "      - with:\n          args: pip install tool==9.9.9\n",
         ):
             with self.subTest(line=line.strip()), TemporaryDirectory() as tmp:
                 root = Path(tmp)
                 self.workspace(root, line)
 
                 self.assertEqual(self.check(root), [])
+
+    def test_a_pin_after_a_vcs_url_fragment_is_still_compared(self) -> None:
+        # `#` starts a shell comment only at the start of a word. Cutting at the first
+        # one anywhere threw away the rest of the command, so this pin went unread and
+        # a workflow installing 9.9.9 against a requirements file pinning 1.2.3 was
+        # reported clean — the exact miss this check exists to catch.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.workspace(
+                root,
+                '        run: pip install "a @ git+https://h/r.git@v1'
+                '#subdirectory=t" tool==9.9.9\n',
+            )
+
+            errors = self.check(root)
+
+            self.assertEqual(len(errors), 1, errors)
+            self.assertIn("9.9.9", errors[0])
 
     def test_a_requirements_file_reference_is_not_a_pin(self) -> None:
         with TemporaryDirectory() as tmp:
