@@ -4,12 +4,12 @@ import unittest
 
 from skill_yaml import (
     Shape,
-    clean_yaml_scalar,
     declares_key,
     declares_value,
     get_top_level_yaml_value,
     get_yaml_list,
     get_yaml_mapping_value,
+    unreadable,
 )
 
 
@@ -59,28 +59,29 @@ class ScalarTests(unittest.TestCase):
     def test_an_absent_top_level_key_reads_as_none(self) -> None:
         self.assertIsNone(get_top_level_yaml_value(MANIFEST, "compatibility"))
 
-    def test_a_matched_quote_pair_and_surrounding_space_are_removed(self) -> None:
-        for value, expected in (
+    def test_quoting_is_the_parser_s_and_a_plain_scalar_keeps_its_quotes(self) -> None:
+        # Trimming quote *characters* could not tell a quoted scalar from a plain one
+        # that happens to end in a quote, so `Use when the user asks "why"` came back
+        # without its closing quote. The parser that owns the grammar answers both.
+        for raw, expected in (
             ('"quoted"', "quoted"),
             ("'quoted'", "quoted"),
             ("  spaced  ", "spaced"),
             ("plain", "plain"),
-            ('""', ""),
-        ):
-            with self.subTest(value=value):
-                self.assertEqual(clean_yaml_scalar(value), expected)
-
-    def test_only_one_pair_is_removed_and_only_when_it_matches(self) -> None:
-        """Trimming characters lost the closing quote of a plain scalar that ends in one."""
-        for value, expected in (
             ('Use when the user asks "why"', 'Use when the user asks "why"'),
-            ("\"mismatched'", "\"mismatched'"),
-            ("''''value''''", "'''value'''"),
             ('He said "go" now', 'He said "go" now'),
-            ('"', '"'),
+            ('ends in a quote"', 'ends in a quote"'),
         ):
-            with self.subTest(value=value):
-                self.assertEqual(clean_yaml_scalar(value), expected)
+            with self.subTest(raw=raw):
+                read = get_top_level_yaml_value(f"description: {raw}\n", "description")
+                self.assertEqual(read, expected)
+
+    def test_quoting_that_does_not_close_is_refused_not_guessed(self) -> None:
+        # The cleaner returned these as declared, which reads a malformed manifest as
+        # though its text were the value. They are not YAML, so there is no value.
+        for raw in ("\"mismatched'", '"', "'"):
+            with self.subTest(raw=raw):
+                self.assertIsNotNone(unreadable(f"description: {raw}\n"))
 
 
 class MappingTests(unittest.TestCase):
@@ -165,10 +166,15 @@ class ListTests(unittest.TestCase):
 
         self.assertIs(read.shape, Shape.UNREAD)
 
-    def test_items_at_mixed_indentation_are_unread(self) -> None:
-        text = "triggers:\n  - two\n    - four\n"
+    def test_a_line_indented_past_the_items_continues_the_one_above(self) -> None:
+        # The hand-written reader called this mixed indentation and declined it. YAML
+        # folds a more-indented line into the plain scalar above, so it is one item
+        # reading "two - four" — and declining it refused a manifest every parser in
+        # the ecosystem accepts, which is the one thing this module must not do.
+        read = get_yaml_list("triggers:\n  - two\n    - four\n", "triggers")
 
-        self.assertIs(get_yaml_list(text, "triggers").shape, Shape.UNREAD)
+        self.assertIs(read.shape, Shape.READ)
+        self.assertEqual(read.items, ("two - four",))
 
     def test_a_nested_list_after_a_real_item_does_not_join_it(self) -> None:
         text = "triggers:\n  - real\n  nested:\n    - leaked\n"
@@ -239,12 +245,15 @@ class MappingReaderShapeTests(unittest.TestCase):
         self.assertIs(read.shape, Shape.READ)
         self.assertEqual(read.value, "helpers/")
 
-    def test_an_indented_line_without_a_colon_is_not_a_child(self) -> None:
+    def test_a_stray_line_beside_a_child_makes_the_document_unreadable(self) -> None:
+        # The hand-written reader skipped the line for having no colon and read the
+        # child beside it. A scalar and a mapping entry cannot be siblings, so this is
+        # not YAML at all, and reading a value out of it read past a malformed
+        # document rather than saying it was one.
         text = "resources:\n  stray\n  scripts: helpers/\n"
-        read = get_yaml_mapping_value(text, "resources", "scripts")
 
-        self.assertIs(read.shape, Shape.READ)
-        self.assertEqual(read.value, "helpers/")
+        self.assertIsNotNone(unreadable(text))
+        self.assertIs(get_yaml_mapping_value(text, "resources", "scripts").shape, Shape.UNREAD)
 
     def test_a_key_carrying_both_a_scalar_and_items_is_unread(self) -> None:
         # Without the same-line check the items alone would read as the key's list,
@@ -270,10 +279,21 @@ class ReaderContractTests(unittest.TestCase):
         self.assertIs(unread.shape, Shape.UNREAD)
         self.assertIs(absent.shape, Shape.ABSENT)
 
-    def test_a_scalar_cleaner_returns_text_it_cannot_parse_as_declared(self) -> None:
-        for value in ('ends in a quote"', "\"unmatched'", "'"):
-            with self.subTest(value=value):
-                self.assertEqual(clean_yaml_scalar(value), value)
+    def test_a_repeated_key_is_refused_rather_than_resolved(self) -> None:
+        # Both PyYAML loaders take the last one silently. The readers this replaced
+        # answered UNREAD for a repeated key, and adopting a parser must not lose a
+        # guarantee the hand-written code had. The refusal reaches nested keys too.
+        self.assertIsNotNone(unreadable("triggers:\n  - a\ntriggers:\n  - b\n"))
+        self.assertIsNotNone(unreadable("resources:\n  scripts: a\n  scripts: b\n"))
+
+    def test_yaml_1_1_types_do_not_change_what_a_manifest_says(self) -> None:
+        # safe_load reads a trigger written `1:1` as the integer 61, `no` as False and
+        # `007` as 7. A reader that changes what a manifest says is the substitution
+        # this module's contract forbids, arriving from the library instead of a regex.
+        read = get_yaml_list("triggers:\n  - 1:1\n  - no\n  - 007\n", "triggers")
+
+        self.assertIs(read.shape, Shape.READ)
+        self.assertEqual(read.items, ("1:1", "no", "007"))
 
     def test_declaration_readers_answer_about_declaration_only(self) -> None:
         text = "entrypoint:\ntriggers:\n  - user asks\n"

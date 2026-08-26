@@ -37,6 +37,8 @@ import enum
 import re
 from dataclasses import dataclass
 
+import yaml
+
 
 class Shape(enum.Enum):
     """What reading one key established.
@@ -84,16 +86,71 @@ def declares_value(text: str, key: str) -> bool:
     return bool(re.search(rf"^{re.escape(key)}[^\S\n]*:[^\S\n]*\S", text, re.MULTILINE))
 
 
-def get_top_level_yaml_value(content: str, key: str) -> str | None:
-    pattern = re.compile(
-        rf"^{re.escape(key)}[^\S\n]*:[^\S\n]*([^\n]+?)[^\S\n]*$", re.MULTILINE
-    )
-    match = pattern.search(content)
+def unreadable(content: str) -> str | None:
+    """Why this manifest is not a mapping this can read, or None when it is one.
 
-    if not match:
+    A caller has to ask this before reading fields. Every value reader answers UNREAD
+    for a document that will not parse, and a caller that guards each field with
+    `if value` then skips its checks one by one and reports nothing about why — which
+    is how an entrypoint carrying an escape sequence came to be validated by nothing at
+    all: the manifest was not YAML, the declaration reader still saw the key declared,
+    and the path check quietly did not run.
+    """
+    try:
+        document = yaml.load(content, Loader=_Loader)
+    except yaml.YAMLError as error:
+        return str(error).replace("\n", " ")
+    if document is None:
+        return "declares nothing"
+    if not isinstance(document, dict):
+        return "is not a mapping"
+    return None
+
+
+def _document(content: str) -> dict[str, object] | None:
+    """The manifest as a mapping, or None when it is not one this can read.
+
+    `BaseLoader` rather than `safe_load`, because YAML 1.1's implicit types answer a
+    different question than this schema asks. Every value here is a string or a list
+    of strings, and `safe_load` reads a trigger written `1:1` as the integer 61, `no`
+    as False and `007` as 7 — a reader that changes what a manifest says is the
+    substitution this module's contract forbids, and it would arrive from the library
+    rather than from a regex. `BaseLoader` applies no implicit resolver, so a scalar
+    is the text it was written as.
+
+    A repeated key is refused rather than resolved. Both loaders take the last one
+    silently; the readers this replaced answered UNREAD, and dropping that would have
+    lost a guarantee by adopting a parser. The refusal reaches nested keys too, which
+    the hand-written readers only managed for two cases.
+    """
+    if unreadable(content) is not None:
         return None
+    return yaml.load(content, Loader=_Loader)
 
-    return clean_yaml_scalar(match.group(1))
+
+class _Loader(yaml.BaseLoader):
+    """Scalars as written, and a repeated key refused."""
+
+    def construct_mapping(self, node: yaml.MappingNode, deep: bool = False) -> dict:
+        seen: set[object] = set()
+        for key_node, _ in node.value:
+            key = self.construct_object(key_node, deep=deep)
+            if key in seen:
+                raise yaml.constructor.ConstructorError(
+                    None, None, f"duplicate key {key!r}", key_node.start_mark
+                )
+            seen.add(key)
+        return super().construct_mapping(node, deep=deep)
+
+
+def get_top_level_yaml_value(content: str, key: str) -> str | None:
+    document = _document(content)
+    if document is None:
+        return None
+    value = document.get(key)
+    if not isinstance(value, str) or not value.strip():
+        return None
+    return value.strip()
 
 
 def get_yaml_mapping_value(content: str, parent_key: str, child_key: str) -> ScalarRead:
@@ -104,145 +161,40 @@ def get_yaml_mapping_value(content: str, parent_key: str, child_key: str) -> Sca
     block" as "never declared", so a resources key naming nothing was skipped in
     silence while the schema calls the value a relative path.
     """
-    in_parent = False
-    found: ScalarRead | None = None
+    document = _document(content)
+    if document is None:
+        return ScalarRead(Shape.UNREAD)
 
-    for line in content.splitlines():
-        if not line.strip() or line.lstrip().startswith("#"):
-            continue
-
-        if not line.startswith((" ", "\t")):
-            in_parent = line.split(":", 1)[0].strip() == parent_key
-            continue
-
-        if in_parent:
-            stripped = line.strip()
-
-            if ":" not in stripped:
-                continue
-
-            key, value = stripped.split(":", 1)
-
-            if key.strip() == child_key:
-                if found is not None:
-                    # Declared twice under one parent; which value is meant is not
-                    # readable. The list reader answers a repeated key the same way.
-                    return ScalarRead(Shape.UNREAD)
-                scalar = clean_yaml_scalar(value)
-                found = ScalarRead(Shape.READ, scalar) if scalar else ScalarRead(Shape.UNREAD)
-
-    if found is None:
+    parent = document.get(parent_key)
+    if parent is None and parent_key not in document:
         return ScalarRead(Shape.ABSENT)
+    if not isinstance(parent, dict) or child_key not in parent:
+        return ScalarRead(Shape.ABSENT if isinstance(parent, dict) else Shape.UNREAD)
 
-    return found
-
-
-def _declares_mapping(item: str) -> bool:
-    """Whether a list item's own text makes it a mapping rather than a string.
-
-    ``- name: x`` is a mapping in YAML while the schema calls triggers a list of
-    strings, so the item is a shape this reader declines. A colon not followed by
-    space or end of line keeps a plain scalar plain — ``1:1`` is text — and a
-    quoted item is a scalar however many colons it holds.
-    """
-    if item[:1] in "'\"":
-        return False
-    return bool(re.search(r":(\s|$)", item))
+    child = parent[child_key]
+    if not isinstance(child, str) or not child.strip():
+        return ScalarRead(Shape.UNREAD)
+    return ScalarRead(Shape.READ, child.strip())
 
 
 def get_yaml_list(content: str, key: str) -> ListRead:
-    """Read one key's block list, or say the key holds a shape this does not read.
+    """Read one key's list of strings, or say the key holds a shape this does not read.
 
-    A block list is every line under the key being a ``-`` item at one indentation
-    of spaces. Anything else — a nested mapping, items at mixed indentation, a
-    same-line scalar — is ``UNREAD`` rather than a shorter list, because attributing
-    a nested item to the key let a key that declares no list of its own satisfy a
-    rule that the schema states as "list of strings".
-
-    Indentation must be spaces: YAML forbids tabs for indentation, so a tab-indented
-    item is a shape this reader declines rather than one it silently accepts.
+    The schema calls these lists of strings, so a list holding a mapping is a shape
+    this declines rather than a shorter list: attributing a nested item to the key let
+    a key that declares no list of its own satisfy the rule.
     """
-    seen_key = False
-    in_key = False
-    items: list[str] = []
-    item_indent: str | None = None
-    unread = False
-
-    for line in content.splitlines():
-        if not line.strip() or line.lstrip().startswith("#"):
-            continue
-
-        if not line.startswith((" ", "\t")):
-            head, _, tail = line.partition(":")
-            in_key = head.strip() == key
-            if in_key:
-                if seen_key:
-                    # The key is declared twice; which list is meant is not readable.
-                    return ListRead(Shape.UNREAD, tuple(items))
-                seen_key = True
-                if tail.strip():
-                    unread = True
-            continue
-
-        if not in_key:
-            continue
-
-        stripped = line.lstrip()
-        indent = line[: len(line) - len(stripped)]
-
-        if "\t" in indent:
-            unread = True
-            continue
-
-        if stripped.startswith("- "):
-            if item_indent is None:
-                item_indent = indent
-            elif indent != item_indent:
-                unread = True
-                continue
-            item = stripped[2:].strip()
-            if _declares_mapping(item):
-                unread = True
-                continue
-            items.append(clean_yaml_scalar(item))
-            continue
-
-        # Not an item. Indented past the items, YAML folds this into the preceding
-        # plain scalar, so refusing it would reject an ordinary multi-line trigger.
-        # At or above their indentation it is a nested structure instead, and the
-        # key declares no list of its own. A plain scalar may not hold ": " on any
-        # of its lines, so a continuation that opens a mapping is not one.
-        if (
-            item_indent is not None
-            and items
-            and len(indent) > len(item_indent)
-            and not _declares_mapping(stripped)
-        ):
-            items[-1] = f"{items[-1]} {clean_yaml_scalar(stripped)}"
-            continue
-
-        unread = True
-
-    if not seen_key:
+    document = _document(content)
+    if document is None:
+        return ListRead(Shape.UNREAD)
+    if key not in document:
         return ListRead(Shape.ABSENT)
-    if unread or item_indent is None:
-        return ListRead(Shape.UNREAD, tuple(items))
-    return ListRead(Shape.READ, tuple(items))
 
+    value = document[key]
+    if not isinstance(value, list):
+        return ListRead(Shape.UNREAD)
 
-def clean_yaml_scalar(value: str) -> str:
-    """One scalar with surrounding space and at most one matched quote pair removed.
-
-    Trimming quote *characters* could not tell a quoted scalar from a plain one that
-    happens to end in a quote, so ``Use when the user asks "why"`` came back without
-    its closing quote, and mismatched or repeated quotes came back as though they had
-    been paired. Exactly one matched pair is removed; anything else is returned as
-    declared, so a malformed manifest fails on its own content rather than on this
-    reader's guess about it.
-    """
-    scalar = value.strip()
-
-    if len(scalar) >= 2 and scalar[0] in "'\"" and scalar[-1] == scalar[0]:
-        return scalar[1:-1]
-
-    return scalar
+    items = tuple(item.strip() for item in value if isinstance(item, str))
+    if len(items) != len(value):
+        return ListRead(Shape.UNREAD, items)
+    return ListRead(Shape.READ, items)

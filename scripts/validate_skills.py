@@ -43,6 +43,7 @@ from skill_yaml import (
     get_top_level_yaml_value,
     get_yaml_list,
     get_yaml_mapping_value,
+    unreadable,
 )
 
 
@@ -326,6 +327,14 @@ def validate_skill_manifest(
 ) -> tuple[bool, str | None, str | None]:
     """Validate one skill manifest and return values shared with SKILL.md checks."""
     failed = False
+
+    # Ask once whether there is a document, because every field reader answers UNREAD
+    # for one there is not, and a caller guarding each field with `if value` skips its
+    # checks one at a time and says nothing about why.
+    reason = unreadable(manifest)
+    if reason is not None:
+        fail(name, f"skill.yaml {reason}")
+        return True, None, None
 
     for field in REQUIRED_MANIFEST_FIELDS:
         if field in BLOCK_MANIFEST_FIELDS:

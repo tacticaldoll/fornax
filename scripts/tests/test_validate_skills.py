@@ -20,6 +20,7 @@ REVIEW_RECORD = f"{PUBLISHER}/review-record@1 text/markdown"
 
 NAME = "example-skill"
 MANIFEST = fixtures.manifest(NAME)
+TRIGGER_BLOCK = f"triggers:\n  - user asks for {NAME}\n"
 SKILL_MD = fixtures.skill_md(NAME)
 
 
@@ -459,13 +460,12 @@ class ValidateSkillTests(unittest.TestCase):
 
     def test_a_crafted_manifest_cannot_forge_the_report(self) -> None:
         # An escape sequence in a value rewrote the line it sat in, so a skill folder
-        # could bend its own FAIL toward looking like a pass. Asserted end to end
-        # rather than per sink, so it holds whichever sink prints.
+        # could bend its own FAIL toward looking like a pass.
         #
-        # The carriage return half of that attack never reaches the value: read_text
-        # uses universal newlines, so a lone CR becomes a line break and the value
-        # ends there. Only the escape sequence needed escaping. printable covers CR
-        # too, and test_diagnostic_text asserts that directly.
+        # It no longer reaches a value at all: YAML forbids C0 control characters, so
+        # the parser refuses the document and the manifest fails as unreadable. The
+        # end-to-end guard on the sink is carried by the right-to-left override below,
+        # which is a character YAML admits, and by test_diagnostic_text directly.
         forge = f"{chr(27)}[2Kquiet{chr(13)}OK   all good"
         with TemporaryDirectory() as tmp:
             text = MANIFEST.replace("entrypoint: SKILL.md", f"entrypoint: {forge}")
@@ -476,7 +476,7 @@ class ValidateSkillTests(unittest.TestCase):
         self.assertFalse(passed)
         self.assertNotIn(chr(27), output)
         self.assertNotIn(chr(13), output)
-        self.assertIn("\\x1b[2Kquiet", output)
+        self.assertIn("special characters are not allowed", output)
 
     def test_a_crafted_manifest_cannot_reverse_the_report(self) -> None:
         # An escape sequence rewrites a line; a right-to-left override reverses how the
@@ -495,8 +495,8 @@ class ValidateSkillTests(unittest.TestCase):
 
     def test_triggers_must_be_a_non_empty_list_of_strings(self) -> None:
         # The required-field check proved only that the key existed, so every shape
-        # below satisfied it while the schema calls triggers a list of strings.
-        block = f"triggers:\n  - user asks for {NAME}\n"
+        # below satisfied it while the schema calls triggers a list of strings. Each
+        # of these is a document that parses and declares the wrong shape.
         for label, variant in {
             "empty block": "triggers:\n",
             "scalar": "triggers: not-a-list\n",
@@ -505,14 +505,9 @@ class ValidateSkillTests(unittest.TestCase):
             # A nested mapping declares no list at the key's own level. The reader
             # used to attribute the nested item to the key, so this shape passed.
             "nested mapping": "triggers:\n  examples:\n    - user asks\n",
-            "nested list after a real item": (
-                f"triggers:\n  - user asks for {NAME}\n  examples:\n    - user asks\n"
-            ),
-            "mixed indentation": f"triggers:\n  - user asks for {NAME}\n    - deeper\n",
-            "tab indentation": "triggers:\n\t- user asks\n",
         }.items():
             with self.subTest(label=label), TemporaryDirectory() as tmp:
-                text = MANIFEST.replace(block, variant)
+                text = MANIFEST.replace(TRIGGER_BLOCK, variant)
                 self.assertNotEqual(text, MANIFEST, "the triggers block must be replaced")
                 skill_dir = fixtures.write_skill(Path(tmp), NAME, manifest_text=text)
 
@@ -520,6 +515,44 @@ class ValidateSkillTests(unittest.TestCase):
 
                 self.assertFalse(passed)
                 self.assertIn("skill.yaml triggers must be a non-empty list", output)
+
+    def test_a_manifest_that_is_not_yaml_is_refused_whole(self) -> None:
+        # Not one field at a time. Every value reader answers UNREAD for a document
+        # that will not parse, so guarding each field with `if value` skipped its
+        # checks one by one and reported nothing about why — which left an entrypoint
+        # carrying an escape sequence validated by nothing at all.
+        for label, variant in {
+            "a list item where a mapping continues": (
+                f"triggers:\n  - user asks for {NAME}\n  examples:\n    - user asks\n"
+            ),
+            "tab indentation": "triggers:\n\t- user asks\n",
+        }.items():
+            with self.subTest(label=label), TemporaryDirectory() as tmp:
+                text = MANIFEST.replace(TRIGGER_BLOCK, variant)
+                self.assertNotEqual(text, MANIFEST, "the triggers block must be replaced")
+                skill_dir = fixtures.write_skill(Path(tmp), NAME, manifest_text=text)
+
+                passed, output = check(skill_dir)
+
+                self.assertFalse(passed)
+                self.assertIn("skill.yaml ", output)
+                self.assertNotIn("missing", output)
+
+    def test_a_continuation_line_is_read_the_way_yaml_reads_it(self) -> None:
+        # A line indented past the items continues the plain scalar above it, so this
+        # is one trigger and not two. The hand-written reader declined the shape, which
+        # refused a manifest every parser in the ecosystem accepts — the one thing this
+        # reader's contract says it must not do.
+        with TemporaryDirectory() as tmp:
+            text = MANIFEST.replace(
+                TRIGGER_BLOCK, f"triggers:\n  - user asks for {NAME}\n    and then some\n"
+            )
+            self.assertNotEqual(text, MANIFEST, "the triggers block must be replaced")
+            skill_dir = fixtures.write_skill(Path(tmp), NAME, manifest_text=text)
+
+            passed, output = check(skill_dir)
+
+            self.assertTrue(passed, output)
 
     def test_a_windows_absolute_entrypoint_is_not_portable(self) -> None:
         # PosixPath does not read "C:/..." as absolute, so the running host's grammar

@@ -13,13 +13,14 @@ authors = [{ name = "tacticaldoll" }]
 dependencies = [
   "agent-skill-deployer @ git+https://github.com/tacticaldoll/agent-skill-deployer.git@v0.1.2",
   # Nothing under fornax_cli/ imports these. Snapshot validation shells out to
-  # scripts/validate_skills.py, which parses Markdown links, so the interpreter
-  # running fornax must be able to import them. Pinned to the same versions as
-  # requirements-maintenance.txt — a deployment tool that validates one pinned tag
-  # should not validate it with a different library each run — and a test asserts
-  # the two declarations agree.
+  # scripts/validate_skills.py, which parses Markdown links and reads a skill
+  # manifest as YAML, so the interpreter running fornax must be able to import them.
+  # Pinned to the same versions as requirements-maintenance.txt — a deployment tool
+  # that validates one pinned tag should not validate it with a different library
+  # each run — and a test asserts the two declarations agree.
   "markdown-it-py==4.2.0",
   "mdurl==0.1.2",
+  "pyyaml==6.0.3",
 ]
 
 [project.scripts]
