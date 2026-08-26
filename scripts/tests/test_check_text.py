@@ -14,16 +14,21 @@ def check(*files: Path) -> list[check_text.Diagnostic]:
 
 
 class TextHygiene(unittest.TestCase):
-    def test_invalid_utf8_markdown_fails(self) -> None:
-        with TemporaryDirectory() as tmp:
-            path = Path(tmp) / "fixture.md"
-            path.write_bytes(b"# invalid \xff\n")
+    def test_invalid_utf8_in_any_tracked_text_file_fails(self) -> None:
+        # Not only Markdown. check_sources skips a YAML it cannot read under a comment
+        # saying text hygiene owns it, and that deferral was correct only if this read
+        # the file — it read `.md` alone, so a tracked `.yaml` holding invalid UTF-8 was
+        # reported by nothing and the gate said the same thing either way.
+        for name in ("fixture.md", "registry.yaml", "module.py", "config.toml"):
+            with self.subTest(name=name), TemporaryDirectory() as tmp:
+                path = Path(tmp) / name
+                path.write_bytes(b"# invalid \xff\n")
 
-            errors = check(path)
+                errors = check(path)
 
-        self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0].path, path)
-        self.assertEqual(errors[0].message, "Markdown file must use UTF-8")
+                self.assertEqual(len(errors), 1, errors)
+                self.assertEqual(errors[0].path, path)
+                self.assertEqual(errors[0].message, "text file must use UTF-8")
 
     def test_missing_terminal_newline_fails(self) -> None:
         with TemporaryDirectory() as tmp:

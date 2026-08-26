@@ -39,7 +39,7 @@ def check(files: list[Path], root: Path) -> list[Diagnostic]:
 
         errors.extend(_hygiene(path, data))
         content = _decoded(path, data, errors)
-        if content is not None:
+        if content is not None and path.suffix.lower() == ".md":
             errors.extend(_markdown_links(path, content, boundary))
     return errors
 
@@ -80,13 +80,21 @@ def _hygiene(path: Path, data: bytes) -> list[Diagnostic]:
 
 
 def _decoded(path: Path, data: bytes, errors: list[Diagnostic]) -> str | None:
-    """The Markdown text whose links are resolved below."""
-    if b"\0" in data or path.suffix.lower() != ".md":
+    """The text of any tracked text file, or a report that it is not readable as text.
+
+    Every suffix, not only `.md`. Two checks defer to this one for that report —
+    `check_sources` skips a YAML it cannot read under a comment saying text hygiene
+    owns it, and `evidence_currency` does the same for a record — and both deferrals
+    were correct only if this actually read the file. It read `.md` alone, so a tracked
+    `.yaml` holding invalid UTF-8 was reported by nothing, and the gate said the same
+    thing whether it had parsed the file or never opened it.
+    """
+    if b"\0" in data:
         return None
     try:
         return data.decode("utf-8")
     except UnicodeDecodeError:
-        errors.append(Diagnostic(path, "Markdown file must use UTF-8"))
+        errors.append(Diagnostic(path, "text file must use UTF-8"))
         return None
 
 
