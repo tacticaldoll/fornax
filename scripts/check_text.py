@@ -50,77 +50,111 @@ class Diagnostic:
 
 
 def check(files: list[Path], root: Path) -> list[Diagnostic]:
+    """Read each tracked file once and hand its bytes to the policies that judge them.
+
+    Reading is this function's job; judging is not. It owned path containment, file
+    reads, encoding and newline policy, the written-count pre-filter and Markdown link
+    resolution in one body, and a body whose job takes four clauses to state is a body
+    nobody can review one clause at a time.
+    """
     errors: list[Diagnostic] = []
     boundary = Boundary.at(root)
     for path in files:
-        tracked = resolve_within(path, boundary)
-        if tracked.verdict is Verdict.UNRESOLVABLE:
+        data = _bytes(path, boundary, errors)
+        if data is None:
+            continue
+
+        errors.extend(_hygiene(path, data))
+        content = _decoded(path, data, errors)
+        if content is None:
+            continue
+
+        errors.extend(_written_counts(path, path.relative_to(root).as_posix(), content))
+        if path.suffix.lower() == ".md":
+            errors.extend(_markdown_links(path, content, boundary))
+    return errors
+
+
+def _bytes(path: Path, boundary: Boundary, errors: list[Diagnostic]) -> bytes | None:
+    """The file's bytes, or nothing plus whatever stopped this from reading them."""
+    tracked = resolve_within(path, boundary)
+    if tracked.verdict is Verdict.UNRESOLVABLE:
+        errors.append(Diagnostic(path, f"tracked path could not be resolved: {tracked.error}"))
+        return None
+    if tracked.verdict is Verdict.OUTSIDE:
+        errors.append(Diagnostic(path, "tracked path leaves repository"))
+        return None
+    if tracked.verdict is Verdict.ABSENT:
+        return None  # git already reports the deletion, and there is no text to read
+    if not path.is_file():
+        return None
+    try:
+        data = path.read_bytes()
+    except OSError as error:
+        errors.append(Diagnostic(path, str(error)))
+        return None
+    return data or None
+
+
+def _hygiene(path: Path, data: bytes) -> list[Diagnostic]:
+    """Whether the bytes are text at all, and whether they end as text should."""
+    if b"\0" in data:
+        # A binary file is not this check's subject, but a .md holding a NUL is a
+        # Markdown file that is not text, and skipping it in silence hid every link in
+        # it. Invalid UTF-8 in a .md is reported by the decode below.
+        if path.suffix.lower() == ".md":
+            return [Diagnostic(path, "Markdown file must be text")]
+        return []
+    if not data.endswith(b"\n"):
+        return [Diagnostic(path, "text file must end with a newline")]
+    return []
+
+
+def _decoded(path: Path, data: bytes, errors: list[Diagnostic]) -> str | None:
+    """The text, for the suffixes whose contents are judged below."""
+    if b"\0" in data or path.suffix.lower() not in COUNTED_SUFFIXES:
+        return None
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError:
+        if path.suffix.lower() == ".md":
+            errors.append(Diagnostic(path, "Markdown file must use UTF-8"))
+        return None
+
+
+def _written_counts(path: Path, relative: str, content: str) -> list[Diagnostic]:
+    """The plainest written counts, which is all this pre-filter claims to see."""
+    if relative.startswith(COUNT_FREE):
+        return []
+    found = []
+    for line, text in enumerate(content.splitlines(), 1):
+        counted = COUNTED.search(text)
+        if counted:
+            found.append(Diagnostic(path, f"line {line} writes a count: {counted.group(0)}"))
+    return found
+
+
+def _markdown_links(path: Path, content: str, boundary: Boundary) -> list[Diagnostic]:
+    """Every repository-local Markdown link that does not resolve inside the tree."""
+    errors: list[Diagnostic] = []
+    for link in iter_markdown_links(content):
+        target = local_target(link.destination)
+        if target is None:
+            continue
+        if is_absolute_anywhere(target):
             errors.append(
-                Diagnostic(path, f"tracked path could not be resolved: {tracked.error}")
+                Diagnostic(path, f"absolute Markdown link is not allowed: {link.shown_target}")
             )
             continue
-        if tracked.verdict is Verdict.OUTSIDE:
-            errors.append(Diagnostic(path, "tracked path leaves repository"))
-            continue
-        if tracked.verdict is Verdict.ABSENT:
-            continue  # git already reports the deletion, and there is no text to read
-        if not path.is_file():
-            continue
-        try:
-            data = path.read_bytes()
-        except OSError as error:
-            errors.append(Diagnostic(path, str(error)))
-            continue
-        if not data:
-            continue
-        if b"\0" in data:
-            # A binary file is not this check's subject, but a .md holding a NUL is
-            # a Markdown file that is not text, and skipping it in silence hid every
-            # link in it. Invalid UTF-8 in a .md is already reported below.
-            if path.suffix.lower() == ".md":
-                errors.append(Diagnostic(path, "Markdown file must be text"))
-            continue
-        if not data.endswith(b"\n"):
-            errors.append(Diagnostic(path, "text file must end with a newline"))
-        if path.suffix.lower() not in COUNTED_SUFFIXES:
-            continue
-        try:
-            content = data.decode("utf-8")
-        except UnicodeDecodeError:
-            if path.suffix.lower() == ".md":
-                errors.append(Diagnostic(path, "Markdown file must use UTF-8"))
-            continue
-        relative = path.relative_to(root).as_posix()
-        if not relative.startswith(COUNT_FREE):
-            for line, text in enumerate(content.splitlines(), 1):
-                found = COUNTED.search(text)
-                if found:
-                    errors.append(
-                        Diagnostic(path, f"line {line} writes a count: {found.group(0)}")
-                    )
-        if path.suffix.lower() != ".md":
-            continue
-        for link in iter_markdown_links(content):
-            target = local_target(link.destination)
-            if target is None:
-                continue
-            if is_absolute_anywhere(target):
-                errors.append(
-                    Diagnostic(path, f"absolute Markdown link is not allowed: {link.shown_target}")
-                )
-                continue
-            found = resolve_within(path.parent / target, boundary)
-            if found.verdict is Verdict.UNRESOLVABLE:
-                errors.append(
-                    Diagnostic(
-                        path,
-                        f"link could not be resolved: {link.shown_target} ({found.error})",
-                    )
-                )
-            elif found.verdict is Verdict.OUTSIDE:
-                errors.append(Diagnostic(path, f"link leaves repository: {link.shown_target}"))
-            elif found.verdict is Verdict.ABSENT:
-                errors.append(Diagnostic(path, f"link not found: {link.shown_target}"))
+        found = resolve_within(path.parent / target, boundary)
+        if found.verdict is Verdict.UNRESOLVABLE:
+            errors.append(
+                Diagnostic(path, f"link could not be resolved: {link.shown_target} ({found.error})")
+            )
+        elif found.verdict is Verdict.OUTSIDE:
+            errors.append(Diagnostic(path, f"link leaves repository: {link.shown_target}"))
+        elif found.verdict is Verdict.ABSENT:
+            errors.append(Diagnostic(path, f"link not found: {link.shown_target}"))
     return errors
 
 
