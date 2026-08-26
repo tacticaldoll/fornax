@@ -30,6 +30,15 @@ class MarkdownLink:
     destination: str
 
 
+@dataclass(frozen=True)
+class MarkedBlock:
+    """A fenced code block and the HTML comment that introduces it."""
+
+    marker: str
+    info: str
+    content: str
+
+
 def _markdown_link(token: Token, attribute: str) -> Optional[MarkdownLink]:
     encoded_destination = token.attrGet(attribute)
     if encoded_destination is None:
@@ -109,6 +118,35 @@ def heading_texts(text: str, depths: Iterable[int] = (2, 3)) -> list[str]:
         if index + 1 < len(tokens):
             found.append(tokens[index + 1].content.strip())
     return found
+
+
+def marked_code_blocks(text: str) -> list[MarkedBlock]:
+    """Every fenced code block introduced by an HTML comment, in document order.
+
+    A third operation that needs the grammar, here for the reason the module docstring
+    gives. `seam_contract` read the fence itself, with `^```markdown\n(.*?)^```` and
+    `DOTALL`: the body ended at the first line opening with three backticks, so a
+    template fenced as `~~~markdown` was not found at all and one fenced with four
+    backticks around a three-backtick example was cut at the example — measured, the
+    declared shape lost its last section and the caller saw a shorter shape rather than
+    a read it could not make.
+
+    The fence's extent is the parser's answer here. What the parser cannot answer is
+    intent: CommonMark closes a fence at the first line of at least as many backticks,
+    so a template fenced with three backticks around a three-backtick example truncates
+    for the parser exactly as it did for the regex, because that is what the document
+    says. `development-knowns.yaml` records that residue.
+    """
+    tokens = list(PARSER.parse(text))
+    blocks = []
+    for index, token in enumerate(tokens):
+        if token.type != "fence" or index == 0:
+            continue
+        introduction = tokens[index - 1]
+        if introduction.type != "html_block":
+            continue
+        blocks.append(MarkedBlock(introduction.content.strip(), token.info, token.content))
+    return blocks
 
 
 def local_target(destination: str) -> Optional[str]:

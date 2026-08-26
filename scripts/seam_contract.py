@@ -34,7 +34,8 @@ from pathlib import Path
 
 import generated_block
 from generated_block import BlockError, Markers, Rendered
-from markdown_links import heading_texts
+from read_whole import Unread, whole
+from markdown_links import heading_texts, marked_code_blocks
 from skill_interface import (
     INTERFACE_FILE,
     InterfaceError,
@@ -49,12 +50,12 @@ CONTRACT = Path("docs/review-record-contract.md")
 MARKERS = Markers("SEAM-INVENTORY", "scripts/seam_contract.py")
 LABEL = "seam inventory"
 
+MARKER_PREFIX = "<!-- OUTPUT-TEMPLATE:"
 OUTPUT_TEMPLATE = re.compile(
-    r"^<!-- OUTPUT-TEMPLATE: ([a-z0-9]+(?:-[a-z0-9]+)*)@([1-9][0-9]*) "
-    r"([a-z0-9][a-z0-9!#$&^_.+-]*/[a-z0-9][a-z0-9!#$&^_.+-]*) -->\n"
-    r"```markdown\n(.*?)^```",
-    re.MULTILINE | re.DOTALL,
+    r"<!-- OUTPUT-TEMPLATE: ([a-z0-9]+(?:-[a-z0-9]+)*)@([1-9][0-9]*) "
+    r"([a-z0-9][a-z0-9!#$&^_.+-]*/[a-z0-9][a-z0-9!#$&^_.+-]*) -->"
 )
+TEMPLATE_LANGUAGE = "markdown"
 HEADER_FIELD = re.compile(r"^\*\*([^*]+)\*\*\s*:", re.MULTILINE)
 
 RecordShape = list[tuple[str, str]]
@@ -84,11 +85,28 @@ def elements(skill_md: str, record: RecordIdentity) -> RecordShape:
 
     Read only the explicitly marked output template for this record. Other Markdown
     examples cannot silently become the contract merely by appearing first.
+
+    The marker's own fields are read here; the fence around the template is read by
+    `markdown_links`, which owns the CommonMark parser. A marker whose fields this
+    cannot read whole, and a marked template fenced as anything but `markdown`, are
+    both corpus facts and both raise — where the hand-written fence pattern passed over
+    each in silence.
     """
     key = (record.record_type, str(record.major), record.media_type)
     templates: dict[tuple[str, str, str], list[str]] = {}
-    for found_type, major, media_type, template in OUTPUT_TEMPLATE.findall(skill_md):
-        templates.setdefault((found_type, major, media_type), []).append(template)
+    for block in marked_code_blocks(skill_md):
+        if not block.marker.startswith(MARKER_PREFIX):
+            continue
+        read = whole(block.marker, OUTPUT_TEMPLATE, "an output-template marker")
+        if isinstance(read, Unread):
+            raise SeamError(f"output template marker {read}")
+        if block.info != TEMPLATE_LANGUAGE:
+            raise SeamError(
+                f"{block.marker} must fence its template as "
+                f"`{TEMPLATE_LANGUAGE}`, not `{block.info}`"
+            )
+        found_type, major, media_type = read.match.groups()
+        templates.setdefault((found_type, major, media_type), []).append(block.content)
     if len(templates.get(key, [])) > 1:
         raise SeamError(
             f"duplicate marked output template for {record.record_type}@{record.major} "

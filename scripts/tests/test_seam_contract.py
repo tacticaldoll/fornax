@@ -209,6 +209,79 @@ class TemplateHeadingTests(unittest.TestCase):
             ],
         )
 
+    def test_a_four_backtick_template_keeps_a_three_backtick_example_inside_it(self) -> None:
+        """The control for reading the fence by hand rather than by the parser.
+
+        `^```markdown\\n(.*?)^```` with `DOTALL` ends the body at the first line
+        opening with three backticks, which the example's own fence satisfies. Measured
+        against the pattern: the shape came back without `Real Tail` and non-empty, so
+        nothing raised and the generated inventory under-reported the contract.
+        """
+        skill_md = (
+            f"<!-- OUTPUT-TEMPLATE: {MARKED} -->\n"
+            "````markdown\n"
+            "## Review Record\n\n"
+            "**Source**: [what was read]\n\n"
+            "```text\n"
+            "### Not A Section\n"
+            "```\n\n"
+            "### Real Tail\n"
+            "````\n"
+        )
+
+        shape = seam_contract.elements(skill_md, skill_interface.RecordIdentity.parse(RECORD))
+
+        self.assertEqual(
+            shape,
+            [("Source", "field"), ("Review Record", "section"), ("Real Tail", "section")],
+        )
+
+    def test_a_tilde_fenced_template_is_the_output_template(self) -> None:
+        """The second control: the hand-written pattern matched `` ```markdown `` alone.
+
+        A template fenced with tildes was not found at all, and the caller reported a
+        producer that declares no template — a true-sounding message about a document
+        that declares one. The existing heading test fences its inner example with
+        tildes for the same reason, which is the constraint being worked around.
+        """
+        skill_md = (
+            f"<!-- OUTPUT-TEMPLATE: {MARKED} -->\n"
+            "~~~markdown\n"
+            "## Review Record\n\n"
+            "**Source**: [what was read]\n"
+            "~~~\n"
+        )
+
+        shape = seam_contract.elements(skill_md, skill_interface.RecordIdentity.parse(RECORD))
+
+        self.assertEqual(shape, [("Source", "field"), ("Review Record", "section")])
+
+    def test_a_template_fenced_as_another_language_is_reported(self) -> None:
+        skill_md = (
+            f"<!-- OUTPUT-TEMPLATE: {MARKED} -->\n"
+            "```text\n"
+            "## Review Record\n"
+            "```\n"
+        )
+
+        with self.assertRaises(seam_contract.SeamError) as raised:
+            seam_contract.elements(skill_md, skill_interface.RecordIdentity.parse(RECORD))
+
+        self.assertIn("must fence its template as `markdown`", str(raised.exception))
+
+    def test_a_marker_whose_fields_cannot_be_read_whole_is_reported(self) -> None:
+        skill_md = (
+            "<!-- OUTPUT-TEMPLATE: review-record@1 text/markdown extra -->\n"
+            "```markdown\n"
+            "## Review Record\n"
+            "```\n"
+        )
+
+        with self.assertRaises(seam_contract.SeamError) as raised:
+            seam_contract.elements(skill_md, skill_interface.RecordIdentity.parse(RECORD))
+
+        self.assertIn("is not an output-template marker", str(raised.exception))
+
 
 class Staleness(unittest.TestCase):
     def test_check_fails_when_the_producer_moves(self):
