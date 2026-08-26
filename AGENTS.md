@@ -542,20 +542,6 @@ Prefer lightweight tests that match the risk of the change.
   `0.16.1`, matched the installed release and answered clean. `whole()` only calls `fullmatch` and
   is the only way to a `Whole`, so a grammar stated wrongly now yields an `Unread` the caller has
   to report. The guess stays a guess; what it can no longer do is pass.
-- **Do not write a count of what the repository contains.** Not how many skills, families, seams,
-  consumers, generated blocks, gate steps, registry entries, modules or tests there are, and not
-  how many commits or forms a past repair took. A number beside such a noun is a claim about the
-  tree that nothing reads, and every one of these nouns has carried a stale one: README named fewer
-  gate steps than the gate ran, `generated_block` named fewer consumers than dispatched blocks,
-  `PROJECT.md` kept seam counts by hand. Derive the number into a generated block, or describe the
-  thing without it — "form after form", "more than one check", "the consumers of one record
-  identity". `scripts/check_text.py` reports one, and the vocabulary it reads is the list of nouns
-  that have gone stale, so extending that list is how a new kind of count gets caught.
-  A quantity a rule *prescribes* is not this: "give a check three answers, not two" is a rule, a
-  scope threshold stated as a number of files is a threshold, and the reps and arms a scenario
-  record states are the parameters a measured result was taken under — rewording those falsifies
-  the record. Skills and scenario records are outside the check for that reason, which is also why
-  this check's own fixtures compose their counts from parts rather than earning an exemption.
 - After repairing a defect, sweep the repository for the same class before calling it fixed. Not by
   rereading the change — by enumerating the mechanism: every `re.compile`, every hand-written
   grammar, every place the same question is answered, then checking each against the property the
@@ -639,3 +625,41 @@ Keep scripts deterministic, portable, and easy to audit.
 - Do not add generated caches, local installs, or copied third-party skills unless the user asks
   to vendor them.
 - Run `git status --short` before final reporting so the user sees the actual change surface.
+- **Do not write a count of what the repository contains.** Not how many skills, families, seams,
+  consumers, generated blocks, gate steps, registry entries, modules or tests there are, and not
+  how many commits or forms a past repair took. A number beside such a noun is a claim about the
+  tree that nothing reads, and every one of these nouns has carried a stale one: README named fewer
+  gate steps than the gate ran, `generated_block` named fewer consumers than dispatched blocks,
+  `PROJECT.md` kept seam counts by hand, and had already had some removed for this very reason.
+  Derive the number into a generated block, or say the thing without it — "form after form", "more
+  than one check", "the consumers of one record identity".
+
+  `scripts/check_text.py` reports one. The vocabulary it reads is the list of nouns that have gone
+  stale, so extending that list is how a new kind of count gets caught, and the classification
+  below is what decides whether a number is one at all. Each row names where the suite shows the
+  check agreeing with it, because a category stated here that the check does not implement is the
+  same defect this rule is about.
+
+  | A number that... | Is it a count? |
+  |---|---|
+  | says how much of something the tree holds | **yes — remove it** |
+  | a rule prescribes, or states as a threshold | no |
+  | records the conditions a measured result was taken under | no, and rewording it falsifies it |
+  | configures a tool, or names a version | no |
+  | a check computes while it runs | no, it cannot go stale |
+
+  In `scripts/tests/test_check_text.py`, in that order:
+  `..._a_count_of_what_the_repository_contains_is_reported`,
+  `..._a_skill_states_thresholds_and_a_scenario_states_its_parameters` for the next two,
+  `..._a_configured_value_is_not_a_count`, and
+  `..._a_derived_number_in_output_is_not_written_down`.
+
+  Skills and scenario records sit outside the check because their numbers are the middle two kinds
+  almost everywhere. That exemption is by directory, which is coarse; a count of tree state inside
+  one would pass. Nothing better is available without reading intent, and this file is where that
+  limit is recorded rather than left to be rediscovered.
+
+  This check's own rule text and fixtures have to contain the pattern. They compose their numbers
+  from parts instead of earning an exemption: a check its own suite is exempt from is a check
+  nothing holds to its own rule.
+

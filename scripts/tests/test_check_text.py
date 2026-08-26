@@ -394,6 +394,38 @@ class WrittenCountTests(unittest.TestCase):
 
             self.assertEqual(check_text.check(paths, root), [])
 
+    def test_a_configured_value_is_not_a_count(self) -> None:
+        # A width, a target version, a schema number: none of them say how much of
+        # anything the tree holds, and none can go stale against it. Paired with a count
+        # in the same file kind, so this shows where the line falls and not merely that
+        # the check was quiet.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            allowed = [
+                self.workspace(
+                    root, "t.toml", f'line-length = 10{self.FIVE}\ntarget-version = "py310"\n'
+                ),
+                self.workspace(root, "s.yaml", f"schema: {self.FIVE}\n"),
+            ]
+            stated = self.workspace(root, "u.toml", f"# {self.TWO} consumers share it\n")
+
+            self.assertEqual(check_text.check(allowed, root), [])
+            self.assertEqual(len(check_text.check([stated], root)), 1)
+
+    def test_a_derived_number_in_output_is_not_written_down(self) -> None:
+        # The gate prints how many seams, knowns and steps it found. Those are counted
+        # while it runs, so they cannot disagree with the tree. The contrast is the
+        # point: computing the number is fine, stating it in the same file is not.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            computed = self.workspace(
+                root, "m.py", 'print(f"OK   inventory ({len(items)} seam(s))")\n'
+            )
+            stated = self.workspace(root, "n.py", f'"""The inventory holds {self.TWO} seams."""\n')
+
+            self.assertEqual(check_text.check([computed], root), [])
+            self.assertEqual(len(check_text.check([stated], root)), 1)
+
     def test_python_and_yaml_are_read_too(self) -> None:
         # The counts that went stale were in docstrings and in a registry entry, not
         # only in Markdown.

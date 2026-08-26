@@ -53,7 +53,9 @@ Settled; reopen only with a reason, not by default.
   a new seam appears in that inventory and in the diff rather than being counted by hand. The gate
   holds no number, and nothing should: zero seams is a clean answer there. What it removes is the
   drift the counts this decision used to carry were exposed to, kept by hand against a type
-  distinction no field records. A real seam opts into matching
+  distinction no field records. That was the first case of a rule now stated generally: AGENTS.md
+  under Repository Hygiene forbids writing a count of what the repository contains, and classifies
+  which numbers are not one. A real seam opts into matching
   `skill-interface.yaml` declarations, whose stable
   identity is publisher UUID, record type, major version, and media type. The sidecar
   supports local discovery and recommendation only; it carries no payload schema, eligibility rule,
