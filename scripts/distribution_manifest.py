@@ -20,6 +20,7 @@ from pathlib import Path
 from uuid import UUID
 
 from diagnostic_text import printable
+from read_whole import Unread, whole
 from skill_model import NAME_PATTERN
 from workspace_files import listed
 
@@ -129,33 +130,39 @@ def validate_projected_descriptions(root: Path, canonical: str) -> bool:
 
 WORD_QUOTES = "\"'`"
 SHELL_BREAK = set(" \t\r\n;|&<>()") | set(WORD_QUOTES)
+# git-check-ref-format forbids these anywhere in a ref name. A closed set,
+# specified by git, rather than a guess about what a document puts next.
+RELEASE_REF = re.compile(r"v[^\s~^:?*\[\\]+")
 
 
-def install_refs(text: str, repository: str) -> list[str]:
+def install_refs(text: str, repository: str) -> tuple[list[str], list[Unread]]:
     """Every release ref the text documents installing from *repository*, read whole.
 
-    Four forms of this tried to prove where the ref ended by saying what could follow
-    it, and each list was short by a character a later document used: `+`, then `;`,
-    `|` and `>`, then `_` and `/`. The fourth said it had stopped guessing because it
-    compared the whole ref for equality, but it still ended the capture at a delimiter
-    list, and that fails in the dangerous direction — `;` is legal inside a Git ref, so
-    a documented `@v1.2.3;other` was read as `v1.2.3`, equalled the expected tag and
-    passed as current.
+    Four forms of this said where a ref ends by listing what may follow it, and each
+    list was short by a character a later document used: `+`, then `;`, `|` and `>`,
+    then `_` and `/`. Each shortfall shortened a ref into one that equalled the
+    expected tag and passed as current — a stale pin answering clean.
 
-    So the enclosing token is parsed rather than the ref's end guessed. The ref sits in
-    a shell word, and the word's extent is decided by quoting: every install command in
-    this repository's documents wraps its URL in double quotes, and an unquoted word
-    ends at whitespace or a shell operator. Both are the shell's own grammar rather
-    than a list of what a document might put next. Pip's VCS URL grammar then ends the
-    ref at the `#` beginning the fragment, which is how `@v0.4.1#subdirectory=tools/`
-    names a ref and a subdirectory in one URL.
+    So the enclosing token is parsed rather than the ref's end guessed. The token is a
+    quoted string, and both grammars these documents use agree on what closes one: all
+    five install commands here wrap the URL in `"`, whether the surrounding text is a
+    shell command or the JSON of an editor config. `"` is a real closing delimiter, not
+    a guess about what a document may put next. An unquoted URL ends at whitespace or a
+    shell operator, which is the shell's own grammar.
 
-    Nothing is trimmed afterwards. A ref that reads as `v1.2.3,` is reported as not
-    being `v1.2.3` rather than shortened until it matches — deciding a trailing
-    character was not part of the ref is the guess that failed four times.
+    `shlex` owns shell words and is used for the workflow, but not here: this input is
+    Markdown, so a line may hold prose, an apostrophe, or JSON, and a shell lexer reads
+    those as unterminated quotes. The grammar that actually bounds the token in all
+    three is the quoted string.
+
+    Pip's VCS URL grammar then ends the ref at the `#` beginning the fragment, which is
+    how `@v0.4.1#subdirectory=tools/` names a ref and a subdirectory in one URL. What is
+    left is read whole through `whole()` or reported unread — nothing is trimmed to the
+    part that happened to match.
     """
     marker = re.compile(re.escape(repository) + r"\.git[@#]")
     refs: list[str] = []
+    unreadable: list[Unread] = []
     for match in marker.finditer(text):
         index = match.start() - 1
         while index >= 0 and text[index] not in " \t\r\n" + WORD_QUOTES:
@@ -163,18 +170,23 @@ def install_refs(text: str, repository: str) -> list[str]:
         opening = text[index] if index >= 0 and text[index] in WORD_QUOTES else ""
 
         ends = set(opening + " \t\r\n") if opening else SHELL_BREAK
-        ref: list[str] = []
+        token: list[str] = []
         for char in text[match.end() :]:
             if char == "#" or char in ends:
                 break
-            ref.append(char)
+            token.append(char)
 
         # A ref carrying no version is a documented form, not a stale pin: tracking a
         # branch is deliberate, and only a ref already naming a release is a claim
         # about which one to install.
-        if ref and ref[0] == "v":
-            refs.append("".join(ref))
-    return refs
+        if not token or token[0] != "v":
+            continue
+        read = whole("".join(token), RELEASE_REF, "a release ref")
+        if isinstance(read, Unread):
+            unreadable.append(read)
+        else:
+            refs.append(read.value)
+    return refs, unreadable
 
 
 def validate_install_pins(root: Path, repository: str, version: str) -> bool:
@@ -216,10 +228,13 @@ def validate_install_pins(root: Path, repository: str, version: str) -> bool:
             text = path.read_text(encoding="utf-8")
         except (OSError, UnicodeError):
             continue  # text hygiene owns unreadable files and reports them there
-        refs = install_refs(text, repository)
+        refs, unreadable = install_refs(text, repository)
+        relative_path = path.relative_to(root).as_posix()
+        for unread in unreadable:
+            print(printable(f"FAIL {relative_path} - install ref {unread}"))
+            failed = True
         if not refs:
             continue
-        relative_path = path.relative_to(root).as_posix()
         carrying.add(relative_path)
         for stale in sorted(set(refs) - {expected}):
             print(f"FAIL {relative_path} - install ref {stale} must be {expected}")

@@ -1105,13 +1105,28 @@ class ProjectedDescriptionTests(unittest.TestCase):
             ("REPO@main", []),
         ):
             with self.subTest(text=text):
-                self.assertEqual(
-                    distribution_manifest.install_refs(
-                        text.replace("REPO", "git+https://x.invalid/r.git"),
-                        "https://x.invalid/r",
-                    ),
-                    expected,
+                refs, unreadable = distribution_manifest.install_refs(
+                    text.replace("REPO", "git+https://x.invalid/r.git"),
+                    "https://x.invalid/r",
                 )
+
+                self.assertEqual(refs, expected)
+                self.assertEqual(unreadable, [])
+
+    def test_a_ref_git_forbids_is_reported_rather_than_shortened(self) -> None:
+        # `whole()` is what stands between a token and a value here, and the alphabet
+        # it checks is git's own: git-check-ref-format forbids these characters in a
+        # ref name anywhere, so a token carrying one is not a ref this can read.
+        for text in ('"REPO@v1.2.3^"', '"REPO@v1.2.3~1"', '"REPO@v1.2.3:x"'):
+            with self.subTest(text=text):
+                refs, unreadable = distribution_manifest.install_refs(
+                    text.replace("REPO", "git+https://x.invalid/r.git"),
+                    "https://x.invalid/r",
+                )
+
+                self.assertEqual(refs, [])
+                self.assertEqual(len(unreadable), 1, unreadable)
+                self.assertIn("is not a release ref", str(unreadable[0]))
 
     def test_an_unpinned_install_ref_is_left_alone(self) -> None:
         # Tracking the default branch is a documented form, not a stale pin. Judging it
