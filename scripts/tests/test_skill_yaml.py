@@ -3,7 +3,9 @@ from __future__ import annotations
 import unittest
 
 from skill_yaml import (
+    Document,
     Shape,
+    Unreadable,
     declares_key,
     declares_value,
     get_top_level_yaml_value,
@@ -25,6 +27,28 @@ MANIFEST = (
     "resources:\n"
     "  references: references/\n"
 )
+
+
+class DocumentStateTests(unittest.TestCase):
+    def test_a_document_holds_a_mapping_or_a_reason_and_never_both(self) -> None:
+        # The pair of optional fields was freely constructible, so both of these were
+        # states the type admitted and no code meant.
+        with self.assertRaises(ValueError):
+            Document(None, None)
+        with self.assertRaises(ValueError):
+            Document({}, "error")
+
+    def test_reaching_the_mapping_of_an_unreadable_document_raises(self) -> None:
+        # The docstring said a caller holding the result could not skip the failure.
+        # It could: skill_graph read a family straight out of an unreadable manifest
+        # and reported the family missing. A reader gets no answer now.
+        document = parse('name: "unterminated\n')
+
+        self.assertIsNotNone(document.reason)
+        with self.assertRaises(Unreadable):
+            declares_key(document, "name")
+        with self.assertRaises(Unreadable):
+            get_yaml_list(document, "triggers")
 
 
 class DeclarationTests(unittest.TestCase):
@@ -140,12 +164,13 @@ class MappingTests(unittest.TestCase):
             Shape.UNREAD,
         )
 
-    def test_a_child_declared_twice_is_unread_as_the_list_reader_answers_it(self) -> None:
+    def test_a_child_declared_twice_makes_the_document_unreadable(self) -> None:
+        # A repeated key is a fact about the document, not the shape of one key, and
+        # answering it as a key's Shape is the conflation that let a reader speak for
+        # a document that does not parse.
         text = "resources:\n  scripts: first/\n  scripts: second/\n"
-        read = get_yaml_mapping_value(parse(text), "resources", "scripts")
 
-        self.assertIs(read.shape, Shape.UNREAD)
-        self.assertIsNone(read.value)
+        self.assertIsNotNone(parse(text).reason)
 
 
 class ListTests(unittest.TestCase):
@@ -195,27 +220,25 @@ class ListTests(unittest.TestCase):
         self.assertIs(read.shape, Shape.READ)
         self.assertEqual(read.items, ("two - four",))
 
-    def test_a_nested_list_after_a_real_item_does_not_join_it(self) -> None:
+    def test_a_nested_list_after_a_real_item_makes_the_document_unreadable(self) -> None:
+        # A sequence entry and a mapping entry cannot be siblings, so nothing here is
+        # a list whose items could leak — the document is what fails.
         text = "triggers:\n  - real\n  nested:\n    - leaked\n"
-        read = get_yaml_list(parse(text), "triggers")
 
-        self.assertIs(read.shape, Shape.UNREAD)
-        self.assertNotIn("leaked", read.items)
+        self.assertIsNotNone(parse(text).reason)
 
     def test_a_same_line_scalar_is_not_a_list(self) -> None:
         found = get_yaml_list(parse("triggers: one string\n"), "triggers")
 
         self.assertIs(found.shape, Shape.UNREAD)
 
-    def test_a_tab_indented_item_is_unread_because_yaml_forbids_tab_indentation(self) -> None:
-        found = get_yaml_list(parse("triggers:\n\t- tabbed\n"), "triggers")
+    def test_a_tab_indented_item_makes_the_document_unreadable(self) -> None:
+        self.assertIsNotNone(parse("triggers:\n\t- tabbed\n").reason)
 
-        self.assertIs(found.shape, Shape.UNREAD)
-
-    def test_a_key_declared_twice_is_unread(self) -> None:
+    def test_a_key_declared_twice_makes_the_document_unreadable(self) -> None:
         text = "triggers:\n  - first\ntriggers:\n  - second\n"
 
-        self.assertIs(get_yaml_list(parse(text), "triggers").shape, Shape.UNREAD)
+        self.assertIsNotNone(parse(text).reason)
 
     def test_an_empty_block_is_unread_rather_than_an_empty_list(self) -> None:
         text = "triggers:\nentrypoint: SKILL.md\n"
@@ -231,11 +254,11 @@ class ListTests(unittest.TestCase):
         self.assertIs(read.shape, Shape.READ)
         self.assertEqual(read.items, ("a very long trigger that continues on the next line",))
 
-    def test_a_continuation_that_opens_a_mapping_is_unread(self) -> None:
+    def test_a_continuation_that_opens_a_mapping_makes_the_document_unreadable(self) -> None:
         """A plain scalar may not hold ": " on any line, so this is not a continuation."""
         text = "triggers:\n  - a very long trigger\n    including: dates\n"
 
-        self.assertIs(get_yaml_list(parse(text), "triggers").shape, Shape.UNREAD)
+        self.assertIsNotNone(parse(text).reason)
 
     def test_an_item_that_is_a_mapping_is_unread(self) -> None:
         """The schema calls triggers a list of strings, and `- name: x` is a mapping."""
@@ -276,9 +299,6 @@ class MappingReaderShapeTests(unittest.TestCase):
         text = "resources:\n  stray\n  scripts: helpers/\n"
 
         self.assertIsNotNone(parse(text).reason)
-        child = get_yaml_mapping_value(parse(text), "resources", "scripts")
-
-        self.assertIs(child.shape, Shape.UNREAD)
 
     def test_a_key_carrying_both_a_scalar_and_items_is_unread(self) -> None:
         # Without the same-line check the items alone would read as the key's list,
@@ -318,7 +338,6 @@ class ReaderContractTests(unittest.TestCase):
         # Testing set membership with it raised TypeError out of a function whose
         # caller was promised a reason.
         self.assertIsNotNone(parse("? [a, b]\n: value\n").reason)
-        self.assertIs(get_yaml_list(parse("? [a, b]\n: value\n"), "triggers").shape, Shape.UNREAD)
 
     def test_yaml_1_1_types_do_not_change_what_a_manifest_says(self) -> None:
         # safe_load reads a trigger written `1:1` as the integer 61, `no` as False and

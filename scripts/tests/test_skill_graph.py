@@ -91,6 +91,13 @@ class ReaderAgreementTests(unittest.TestCase):
         with self.assertRaisesRegex(BlockError, "family must be"):
             self.family_of("family: invented")
 
+    def test_a_manifest_that_does_not_parse_reports_the_parser(self) -> None:
+        # It reported the family missing. The reader was handed a document that does not
+        # exist and answered about it, and the parser's reason was thrown away — which
+        # is what the parse result was introduced to prevent and did not.
+        with self.assertRaisesRegex(BlockError, "quoted-skill.*unterminated|quoted scalar"):
+            self.family_of('family: "unterminated')
+
     def test_a_quoted_family_still_reads(self) -> None:
         self.assertEqual(self.family_of("family: 'meta'"), "meta")
 

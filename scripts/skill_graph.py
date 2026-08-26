@@ -64,6 +64,11 @@ def load(skills_dir: Path):
 
     for name in names:
         manifest = parse(read(skills_dir / name / "skill.yaml"))
+        if manifest.reason is not None:
+            # Asked before reading, because a reader handed an unreadable document used
+            # to answer about it: a malformed manifest reported its family missing, and
+            # the reason the parser gave was thrown away.
+            raise BlockError(f"skills/{name}/skill.yaml - {manifest.reason}")
         declared = get_top_level_yaml_value(manifest, "family")
         if declared not in FAMILIES:
             # Not an omission. render() places a skill by matching its family against

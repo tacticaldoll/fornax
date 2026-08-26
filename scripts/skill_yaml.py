@@ -80,24 +80,39 @@ class ScalarRead:
 class Document:
     """One parse of one YAML document: the mapping it holds, or why it holds none.
 
-    Every accessor used to take the text and parse it again, so a manifest was parsed
-    once per required field, once per resource key and once for the version check —
-    and `_document` parsed twice on its own, once to ask whether it could and once to
-    do it. Reading is one act, and its outcome is a value the readers are handed.
+    Exactly one of the two, checked here. The pair of optional fields was freely
+    constructible, so `Document(None, None)` and `Document({}, "error")` were both
+    states the type admitted and no code meant — and a type that admits a state nobody
+    means is the shape this repository has been removing all round.
 
-    Carrying the reason is what closes the other half. Collapsing every parser failure
-    to "no mapping" left the caller to remember a separate preflight call, and the
-    SKILL.md frontmatter caller did not: an unterminated quote in the description made
-    a present `name` report itself as missing. A caller holding this cannot skip the
-    question, because the reason is in its hand.
+    Every accessor used to take the text and parse it again, so a manifest was parsed
+    once per required field, once per resource key and once for the version check.
+    Reading is one act, and its outcome is a value the readers are handed.
+
+    Carrying the reason was supposed to make the failure unskippable, and the docstring
+    said so, and it was not: `skill_graph` read a family straight out of an unreadable
+    manifest and reported the family missing. So the mapping is reached through
+    `require`, which raises when there is none. A caller that does not ask about
+    `reason` first now fails loudly instead of being handed an answer about a document
+    that does not exist.
     """
 
     mapping: dict[str, object] | None
     reason: str | None
 
-    @property
-    def readable(self) -> bool:
-        return self.mapping is not None
+    def __post_init__(self) -> None:
+        if (self.mapping is None) == (self.reason is None):
+            raise ValueError("a document holds a mapping or a reason, never both or neither")
+
+    def require(self) -> dict[str, object]:
+        """The mapping, for a caller that has already dealt with `reason`."""
+        if self.mapping is None:
+            raise Unreadable(self.reason or "")
+        return self.mapping
+
+
+class Unreadable(ValueError):
+    """A reader was asked about a document that did not parse."""
 
 
 def parse(content: str) -> Document:
@@ -146,7 +161,7 @@ def declares_key(document: Document, key: str) -> bool:
     this module's contract forbids, made by the very functions the contract had named
     as having nothing to substitute.
     """
-    return document.mapping is not None and key in document.mapping
+    return key in document.require()
 
 
 def declares_value(document: Document, key: str) -> bool:
@@ -163,16 +178,12 @@ def declares_value(document: Document, key: str) -> bool:
     line beneath it, and an empty frontmatter name passed by matching "description:".
     Neither is reachable from a parsed mapping.
     """
-    if document.mapping is None:
-        return False
-    value = document.mapping.get(key)
+    value = document.require().get(key)
     return isinstance(value, str) and bool(value.strip())
 
 
 def get_top_level_yaml_value(document: Document, key: str) -> str | None:
-    if document.mapping is None:
-        return None
-    value = document.mapping.get(key)
+    value = document.require().get(key)
     if not isinstance(value, str) or not value.strip():
         return None
     return value.strip()
@@ -186,11 +197,10 @@ def get_yaml_mapping_value(document: Document, parent_key: str, child_key: str) 
     block" as "never declared", so a resources key naming nothing was skipped in
     silence while the schema calls the value a relative path.
     """
-    if document.mapping is None:
-        return ScalarRead(Shape.UNREAD)
+    mapping = document.require()
 
-    parent = document.mapping.get(parent_key)
-    if parent is None and parent_key not in document.mapping:
+    parent = mapping.get(parent_key)
+    if parent is None and parent_key not in mapping:
         return ScalarRead(Shape.ABSENT)
     if not isinstance(parent, dict) or child_key not in parent:
         return ScalarRead(Shape.ABSENT if isinstance(parent, dict) else Shape.UNREAD)
@@ -208,12 +218,11 @@ def get_yaml_list(document: Document, key: str) -> ListRead:
     this declines rather than a shorter list: attributing a nested item to the key let
     a key that declares no list of its own satisfy the rule.
     """
-    if document.mapping is None:
-        return ListRead(Shape.UNREAD)
-    if key not in document.mapping:
+    mapping = document.require()
+    if key not in mapping:
         return ListRead(Shape.ABSENT)
 
-    value = document.mapping[key]
+    value = mapping[key]
     if not isinstance(value, list):
         return ListRead(Shape.UNREAD)
 
