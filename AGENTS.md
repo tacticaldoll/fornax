@@ -636,9 +636,11 @@ Keep scripts deterministic, portable, and easy to audit.
   Applied backwards over the checks here: parsing every tracked YAML passes easily, because two
   registries were unreadable by any tool but this repository's own readers and the check needs no
   exemptions. Deriving README's gate list passes, because the transcribed list was already wrong
-  and a derived block cannot go stale. The written-count pre-filter does not pass on its own terms
-  — no failure it prevents ever left the workspace, and it needs a directory exemption — which is
-  why it is kept small, described as a pre-filter, and not written up as a guarantee.
+  and a derived block cannot go stale. The written-count pre-filter failed on both counts — no
+  failure it prevented ever left the workspace, and it needed a directory exemption — and it was
+  removed. It was kept for one round after this rule condemned it, softened to a pre-filter rather
+  than deleted, which is what applying a rule to everything except the thing that prompted it
+  looks like.
 
   The corollary is that removing is a repair. A check that overclaims, a claim nothing reads, a
   helper nothing calls: each is worse than its absence, and deleting one closes a finding as
@@ -655,8 +657,9 @@ Keep scripts deterministic, portable, and easy to audit.
   Not every number is one. A quantity a rule prescribes, a threshold, a configured value, a
   version, and the reps and arms a recorded measurement was taken under are all numbers that cannot
   go stale against the tree; rewording the last of those falsifies the record it belongs to.
-  Deciding which a number is needs the sentence, so this is an authoring judgment and the sweep for
-  it is done by reading. `scripts/check_text.py` catches the plainest form only — a number standing
-  immediately before one of those nouns — and is a pre-filter, not the rule. A count phrased around
-  it passes, which is how one sat in `development-knowns.yaml` while the commit adding the check
-  said counts had stopped.
+  Deciding which a number is needs the sentence, so this is a judgment and nothing checks it. A
+  check was written for it and removed: it saw only a number standing immediately before one of
+  those nouns, so a count with a word in between passed — one sat in `development-knowns.yaml`
+  while the commit adding the check said counts had stopped — and its green read as though counts
+  had been checked. The sweep that removed the counts was done by reading, which is the only thing
+  that does it.

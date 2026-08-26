@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Check workspace text-file hygiene, repository-local Markdown links, and written counts."""
+"""Check workspace text-file hygiene and repository-local Markdown links."""
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -16,32 +15,6 @@ from workspace_files import listed
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# Nouns naming something the repository contains. A number written next to one of
-# these is a claim about the tree that nothing reads, and each of these nouns has
-# carried a stale one: README named fewer gate steps than ran, generated_block named
-# fewer consumers than dispatched blocks, PROJECT.md kept seam counts by hand.
-#
-# A pre-filter, not the rule. It sees a number standing immediately before one of
-# these nouns, which is the plainest form and the one every stale count here had
-# taken; a count with a word in between, or beside a noun not listed, passes. The rule
-# is an authoring judgment and AGENTS.md states it as one — the sweep that removed
-# these was done by reading, and this caught the plainest of them.
-INVENTORY = (
-    "arms|cases|checks|commits|consumers|controls|copies|entries|families|files|findings|"
-    "forms|generators|grammars|knowns|layers|matchers|modules|readers|rounds|seams|skills|"
-    "steps|tests|ways"
-)
-COUNTED = re.compile(
-    r"\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|"
-    r"fourteen|fifteen|twenty|twenty-two)[ \t]+(?:" + INVENTORY + r")\b",
-    re.IGNORECASE,
-)
-# Where a number beside one of those nouns is not a claim about the tree: a skill
-# states rules and thresholds, and a scenario record states the parameters a measured
-# result was taken under, which cannot be reworded without falsifying the record.
-COUNT_FREE = ("skills/", "scripts/tests/scenarios/", "docs/dispositions/")
-COUNTED_SUFFIXES = (".md", ".py", ".yaml", ".yml", ".toml")
-
 
 @dataclass(frozen=True)
 class Diagnostic:
@@ -53,9 +26,9 @@ def check(files: list[Path], root: Path) -> list[Diagnostic]:
     """Read each tracked file once and hand its bytes to the policies that judge them.
 
     Reading is this function's job; judging is not. It owned path containment, file
-    reads, encoding and newline policy, the written-count pre-filter and Markdown link
-    resolution in one body, and a body whose job takes four clauses to state is a body
-    nobody can review one clause at a time.
+    reads, encoding and newline policy and Markdown link resolution in one body, and a
+    body whose job takes four clauses to state is a body nobody can review one clause
+    at a time.
     """
     errors: list[Diagnostic] = []
     boundary = Boundary.at(root)
@@ -66,11 +39,7 @@ def check(files: list[Path], root: Path) -> list[Diagnostic]:
 
         errors.extend(_hygiene(path, data))
         content = _decoded(path, data, errors)
-        if content is None:
-            continue
-
-        errors.extend(_written_counts(path, path.relative_to(root).as_posix(), content))
-        if path.suffix.lower() == ".md":
+        if content is not None:
             errors.extend(_markdown_links(path, content, boundary))
     return errors
 
@@ -111,27 +80,14 @@ def _hygiene(path: Path, data: bytes) -> list[Diagnostic]:
 
 
 def _decoded(path: Path, data: bytes, errors: list[Diagnostic]) -> str | None:
-    """The text, for the suffixes whose contents are judged below."""
-    if b"\0" in data or path.suffix.lower() not in COUNTED_SUFFIXES:
+    """The Markdown text whose links are resolved below."""
+    if b"\0" in data or path.suffix.lower() != ".md":
         return None
     try:
         return data.decode("utf-8")
     except UnicodeDecodeError:
-        if path.suffix.lower() == ".md":
-            errors.append(Diagnostic(path, "Markdown file must use UTF-8"))
+        errors.append(Diagnostic(path, "Markdown file must use UTF-8"))
         return None
-
-
-def _written_counts(path: Path, relative: str, content: str) -> list[Diagnostic]:
-    """The plainest written counts, which is all this pre-filter claims to see."""
-    if relative.startswith(COUNT_FREE):
-        return []
-    found = []
-    for line, text in enumerate(content.splitlines(), 1):
-        counted = COUNTED.search(text)
-        if counted:
-            found.append(Diagnostic(path, f"line {line} writes a count: {counted.group(0)}"))
-    return found
 
 
 def _markdown_links(path: Path, content: str, boundary: Boundary) -> list[Diagnostic]:
@@ -172,7 +128,7 @@ def main() -> int:
         print(printable(f"FAIL {shown}: {error.message}"))
     if errors:
         return 1
-    print("OK   workspace text hygiene, local Markdown links, and plainly written counts")
+    print("OK   workspace text hygiene and local Markdown links")
     return 0
 
 
