@@ -191,7 +191,18 @@ class WorkflowPinTests(unittest.TestCase):
         if workflow is not None:
             path = root / ".github" / "workflows" / "validate.yml"
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(workflow, encoding="utf-8")
+            # Wrapped into a real workflow, because the reader walks jobs → steps →
+            # run rather than picking out every key named `run`. A bare fragment is
+            # not a shape any workflow has, and a fixture that is not the thing it
+            # models cannot show that the walk is right.
+            path.write_text(f"jobs:\n  gate:\n    steps:\n      -\n{workflow}", encoding="utf-8")
+
+    def raw_workspace(self, root: Path, document: str) -> None:
+        """A workflow written whole, for cases about the document's own shape."""
+        self.workspace(root, None)
+        path = root / ".github" / "workflows" / "validate.yml"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(document, encoding="utf-8")
 
     def check(self, root: Path) -> list[str]:
         return runtime_contract.check(root, running=(3, 10), installed=lambda name: "1.2.3")
@@ -428,6 +439,40 @@ class WorkflowPinTests(unittest.TestCase):
 
                 self.assertEqual(len(errors), 1, f"{label}: {errors}")
                 self.assertIn("9.9.9", errors[0])
+
+    def test_a_run_key_that_is_not_a_step_is_not_a_command(self) -> None:
+        # Selecting every key named `run` made a mapping under `env:` or a matrix entry
+        # into a command the workflow runs. Nothing executes those, and the pin one of
+        # them mentions is not a pin the workflow installs.
+        for label, document in (
+            (
+                "under env",
+                "jobs:\n  gate:\n    steps:\n      - env:\n          run: pip install t==9.9.9\n",
+            ),
+            ("in matrix metadata", "x:\n  matrix:\n    run: pip install t==9.9.9\n"),
+            ("at the top level", "run: pip install t==9.9.9\n"),
+            (
+                "in a job outside steps",
+                "jobs:\n  gate:\n    run: pip install t==9.9.9\n",
+            ),
+        ):
+            with self.subTest(label=label), TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                self.raw_workspace(root, document)
+
+                self.assertEqual(self.check(root), [])
+
+    def test_a_composite_action_states_its_steps_under_runs(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.raw_workspace(
+                root, "runs:\n  using: composite\n  steps:\n    - run: pip install tool==9.9.9\n"
+            )
+
+            errors = self.check(root)
+
+            self.assertEqual(len(errors), 1, errors)
+            self.assertIn("9.9.9", errors[0])
 
     def test_a_document_yaml_cannot_parse_is_reported(self) -> None:
         # `>x` is not a block header, so there is no document to read commands from.

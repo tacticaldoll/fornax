@@ -242,18 +242,35 @@ def run_commands(text: str) -> tuple[list[str], list[str]]:
     return commands, unresolved
 
 
-def _run_values(node: object) -> list[object]:
-    """Every value a `run` key carries, wherever in the document it sits."""
+def _run_values(document: object) -> list[object]:
+    """Every value a step's `run` key carries, by where it sits and not by its name.
+
+    Selecting every key named `run` anywhere in the document made a mapping under
+    `env:` or a matrix entry into a command the workflow runs. Nothing executes those,
+    and the pin one of them mentions is not a pin the workflow installs.
+
+    So the shape is walked: `jobs`, each job, its `steps`, each step, and that step's
+    `run`. A composite action states the same thing under `runs`, which is why both
+    roots are read. A step whose `run` is not a string is returned as it is, and the
+    caller reports it rather than skipping it.
+    """
     found: list[object] = []
-    if isinstance(node, dict):
-        for key, value in node.items():
-            if key == "run":
-                found.append(value)
-            else:
-                found.extend(_run_values(value))
-    elif isinstance(node, list):
-        for item in node:
-            found.extend(_run_values(item))
+    if not isinstance(document, dict):
+        return found
+
+    jobs = document.get("jobs")
+    containers = list(jobs.values()) if isinstance(jobs, dict) else []
+    containers.append(document.get("runs"))
+
+    for container in containers:
+        if not isinstance(container, dict):
+            continue
+        steps = container.get("steps")
+        if not isinstance(steps, list):
+            continue
+        for step in steps:
+            if isinstance(step, dict) and "run" in step:
+                found.append(step["run"])
     return found
 
 
