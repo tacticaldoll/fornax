@@ -323,6 +323,48 @@ class WorkflowPinTests(unittest.TestCase):
                 self.assertEqual(len(errors), 1, errors)
                 self.assertIn("9.9.9", errors[0])
 
+    def test_every_scalar_category_a_workflow_may_use(self) -> None:
+        # The category the previous round left untested. A plain scalar folds onto its
+        # more-indented lines, which the docstring said and the code did not: the body
+        # went through the shell's backslash rule, so `pip install` and `tool==9.9.9`
+        # became two commands and the pin was lost with no error.
+        for label, workflow in (
+            ("plain inline", "        run: pip install tool==9.9.9\n"),
+            ("plain multiline", "        run: pip install\n          tool==9.9.9\n"),
+            ("plain over three", "        run: pip\n          install\n          tool==9.9.9\n"),
+            ("folded", "        run: >\n          pip install\n          tool==9.9.9\n"),
+            ("folded indented", "        run: >2-\n          pip install\n          tool==9.9.9\n"),
+            ("literal", "        run: |\n          pip install tool==9.9.9\n"),
+            (
+                "literal continued",
+                "        run: |\n          pip install \\\n            tool==9.9.9\n",
+            ),
+            ("double quoted", '        run: "pip install tool==9.9.9"\n'),
+            ("single quoted", "        run: 'pip install tool==9.9.9'\n"),
+        ):
+            with self.subTest(label=label), TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                self.workspace(root, workflow)
+
+                errors = self.check(root)
+
+                self.assertEqual(len(errors), 1, f"{label}: {errors}")
+                self.assertIn("9.9.9", errors[0])
+
+    def test_quoting_this_is_not_sure_of_is_reported_not_guessed(self) -> None:
+        # Total, not complete: a quoted scalar carrying an escape or spanning lines is
+        # YAML this reader does not resolve, and saying so beats stripping the quotes
+        # and hoping. Handing the quotes through made the whole command one shell word.
+        for value in ('"echo \\"hi\\""', '"pip install'):
+            with self.subTest(value=value), TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                self.workspace(root, f"        run: {value}\n          tool==9.9.9\n")
+
+                errors = self.check(root)
+
+                self.assertEqual(len(errors), 1, errors)
+                self.assertIn("cannot be read", errors[0])
+
     def test_a_run_value_this_cannot_resolve_is_reported(self) -> None:
         # The same hole the token readers had, one layer up: a `run:` value read as
         # something smaller and plausible rather than reported as unread. An alias has

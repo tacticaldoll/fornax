@@ -48,6 +48,9 @@ RUN_KEY = re.compile(r"^(\s*(?:-\s+)?)run\s*:[ \t]*(.*?)\s*$")
 # in either order, so `>2-` and `>-2` are both valid and mean the same thing.
 BLOCK_HEADER = re.compile(r"[|>](?:[1-9][-+]?|[-+][1-9]?)?")
 UNRESOLVED = re.compile(r"[|>*&]")
+# A quoted scalar whose content this is sure of: no escape to interpret and no
+# interior quote of the kind that closes it. Any other quoting is not resolved.
+QUOTED = re.compile("\"([^\"\\\\]*)\"|'([^']*)'")
 REQUIREMENT = re.compile(r"([A-Za-z0-9][A-Za-z0-9._-]*)==([0-9][0-9A-Za-z.!+*_-]*)")
 SETUP = "run the maintenance environment setup from README.md"
 
@@ -161,9 +164,12 @@ def run_commands(text: str) -> tuple[list[str], list[str]]:
     lines into one before the shell ever sees them, so `pip install` and its requirement
     can sit on separate physical lines with no backslash at all. A literal `|` scalar
     keeps its newlines, so its lines stay separate commands. A plain scalar folds onto
-    its more-indented lines the same way `>` does. The shell then continues any of them
-    onto the next line with a trailing backslash. A block's body is the lines indented
-    past the `run` key, which is also what ends it.
+    its more-indented lines the same way `>` does — this said so before it did so, and
+    routed the plain body through the shell's backslash rule instead, so `pip install`
+    on the key's line and `tool==9.9.9` beneath it became two commands and the pin was
+    lost with no error. The shell then continues what YAML hands it onto the next line
+    with a trailing backslash. A block's body is the lines indented past the `run` key,
+    which is also what ends it.
 
     What this cannot resolve, it says so about. `>2-` is a valid block header — the
     indentation and chomping indicators come in either order — and matching only one
@@ -194,14 +200,30 @@ def run_commands(text: str) -> tuple[list[str], list[str]]:
 
         if BLOCK_HEADER.fullmatch(value):
             if value.startswith(">"):
-                commands.append(" ".join(line.strip() for line in body if line.strip()))
+                commands.append(_folded(body))
             else:
                 commands.extend(_continued(body))
         elif UNRESOLVED.match(value):
             unresolved.append(f"run: {value}")
+        elif value[:1] in "\"'":
+            # YAML's quoting, which the shell never sees: `run: "echo hi"` runs
+            # `echo hi`. Handing the quotes on made the whole command one shell word,
+            # so it read as a requirement it could not parse and reported a valid
+            # workflow as unreadable.
+            quoted = QUOTED.fullmatch(value)
+            if quoted is None or body:
+                unresolved.append(f"run: {value}")
+            else:
+                single = quoted.group(1) if quoted.group(1) is not None else quoted.group(2)
+                commands.extend(_continued([single]))
         else:
-            commands.extend(_continued([value, *body]))
+            commands.extend(_continued([_folded([value, *body])]))
     return commands, unresolved
+
+
+def _folded(lines: list[str]) -> str:
+    """Join lines the way YAML folds a scalar: one space, blank lines dropped."""
+    return " ".join(line.strip() for line in lines if line.strip())
 
 
 def _continued(lines: list[str]) -> list[str]:
