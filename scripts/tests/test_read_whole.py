@@ -37,6 +37,27 @@ class WholeTests(unittest.TestCase):
         self.assertFalse(hasattr(read, "value"))
 
 
+class ConstructionTests(unittest.TestCase):
+    def test_a_prefix_match_cannot_be_made_into_a_whole(self) -> None:
+        # The module claimed this was impossible because only whole() built a Whole.
+        # That was a convention, and a convention is what the rounds before it had:
+        # the dataclass constructor took a prefix match and reported it as a complete
+        # read. The invariant is checked where it is stated now.
+        with self.assertRaises(ValueError) as raised:
+            read_whole.Whole(PIN.match("ruff==0.16.1|x"))
+
+        self.assertIn("not all of it", str(raised.exception))
+
+    def test_a_match_from_the_middle_of_a_subject_is_not_a_whole(self) -> None:
+        # search() and finditer() produce these, and either would have reported the
+        # token it found as the whole of the text it was given.
+        with self.assertRaises(ValueError):
+            read_whole.Whole(PIN.search("install ruff==0.16.1 now"))
+
+    def test_a_full_match_is_accepted(self) -> None:
+        self.assertEqual(read_whole.Whole(PIN.fullmatch("ruff==0.16.1")).value, "ruff==0.16.1")
+
+
 class ShellWordTests(unittest.TestCase):
     def test_quoting_bounds_a_word_and_operators_end_one(self) -> None:
         for command, expected in (

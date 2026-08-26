@@ -40,9 +40,24 @@ class Unread:
 
 @dataclass(frozen=True)
 class Whole:
-    """A token read to its end. Construct it through `whole()`, never directly."""
+    """A token read to its end, which is checked here rather than promised elsewhere.
+
+    Saying "construct this through `whole()`" is a convention, and a convention is
+    what the five rounds already had. `Whole(PATTERN.match(text))` built a prefix and
+    reported its `.value` as a complete read, which is the defect this module claims
+    to make inexpressible — expressible, through the door the dataclass opens for free.
+
+    So the invariant is enforced where it is stated: a match that does not span its
+    whole subject is not a `Whole`, whoever built it and whichever method produced it.
+    """
 
     match: re.Match[str]
+
+    def __post_init__(self) -> None:
+        if self.match.start() != 0 or self.match.end() != len(self.match.string):
+            raise ValueError(
+                f"{self.match.group(0)!r} is part of {self.match.string!r}, not all of it"
+            )
 
     @property
     def value(self) -> str:
