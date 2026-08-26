@@ -36,7 +36,7 @@ from pathlib import Path
 import generated_block
 from generated_block import BlockError, Markers, Rendered
 from skill_model import FAMILIES, HANDOFF, listed
-from skill_yaml import get_top_level_yaml_value
+from skill_yaml import get_top_level_yaml_value, parse
 
 ROOT = Path(__file__).resolve().parent.parent
 MARKERS = Markers("SKILL-MAPS", "scripts/skill_graph.py")
@@ -63,7 +63,8 @@ def load(skills_dir: Path):
     family: dict[str, str] = {}
 
     for name in names:
-        declared = get_top_level_yaml_value(read(skills_dir / name / "skill.yaml"), "family")
+        manifest = parse(read(skills_dir / name / "skill.yaml"))
+        declared = get_top_level_yaml_value(manifest, "family")
         if declared not in FAMILIES:
             # Not an omission. render() places a skill by matching its family against
             # FAMILIES, so anything else dropped it from every chart and still exited

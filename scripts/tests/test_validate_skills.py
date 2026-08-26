@@ -516,6 +516,28 @@ class ValidateSkillTests(unittest.TestCase):
                 self.assertFalse(passed)
                 self.assertIn("skill.yaml triggers must be a non-empty list", output)
 
+    def test_frontmatter_that_is_not_yaml_reports_the_parser_not_a_missing_field(self) -> None:
+        # The manifest asked whether it parsed; the frontmatter did not, and every reader
+        # answers about a document that did not parse as though the key were absent. So
+        # an unterminated quote in the description made a `name` plainly present on the
+        # line above report itself as missing.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            skill_dir = fixtures.write_skill(Path(tmp), NAME)
+            document = skill_dir / "SKILL.md"
+            document.write_text(
+                f'---\nname: {NAME}\ndescription: "unterminated\n---\n\n**Input**: a thing\n',
+                encoding="utf-8",
+            )
+
+            passed, output = check(skill_dir)
+
+            self.assertFalse(passed)
+            self.assertIn("SKILL.md frontmatter", output)
+            self.assertIn("quoted scalar", output)
+            self.assertNotIn("missing name", output)
+            self.assertIn(str(root), str(skill_dir))
+
     def test_a_manifest_that_is_not_yaml_is_refused_whole(self) -> None:
         # Not one field at a time. Every value reader answers UNREAD for a document
         # that will not parse, so guarding each field with `if value` skipped its

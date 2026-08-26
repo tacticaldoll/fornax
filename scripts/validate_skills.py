@@ -43,7 +43,7 @@ from skill_yaml import (
     get_top_level_yaml_value,
     get_yaml_list,
     get_yaml_mapping_value,
-    unreadable,
+    parse,
 )
 
 
@@ -332,32 +332,32 @@ def validate_skill_manifest(
     """Validate one skill manifest and return values shared with SKILL.md checks."""
     failed = False
 
-    # Ask once whether there is a document, because every field reader answers UNREAD
-    # for one there is not, and a caller guarding each field with `if value` skips its
-    # checks one at a time and says nothing about why.
-    reason = unreadable(manifest)
-    if reason is not None:
-        fail(name, f"skill.yaml {reason}")
+    # Parsed once, and the readers are handed the result. A caller guarding each field
+    # with `if value` would otherwise skip its checks one at a time and say nothing
+    # about why, because every reader answers UNREAD for a document there is not.
+    document = parse(manifest)
+    if document.reason is not None:
+        fail(name, f"skill.yaml {document.reason}")
         return True, None, None
 
     for field in REQUIRED_MANIFEST_FIELDS:
         if field in BLOCK_MANIFEST_FIELDS:
-            if not declares_key(manifest, field):
+            if not declares_key(document, field):
                 fail(name, f"skill.yaml missing {field}")
                 failed = True
             else:
                 # Present is not enough: a scalar, an empty block, a flow list, a
                 # nested mapping and a list of empty items all declare the key. The
                 # read must be a block list, and one item must carry text.
-                read = get_yaml_list(manifest, field)
+                read = get_yaml_list(document, field)
                 if read.shape is not Shape.READ or not any(read.items):
                     fail(name, f"skill.yaml {field} must be a non-empty list of strings")
                     failed = True
-        elif not declares_value(manifest, field):
+        elif not declares_value(document, field):
             fail(name, f"skill.yaml missing {field}")
             failed = True
 
-    if declares_key(manifest, "version"):
+    if declares_key(document, "version"):
         fail(
             name,
             "skill.yaml must not set version; release versioning is the collection's "
@@ -365,9 +365,9 @@ def validate_skill_manifest(
         )
         failed = True
 
-    manifest_name = get_top_level_yaml_value(manifest, "name")
-    manifest_status = get_top_level_yaml_value(manifest, "status")
-    entrypoint = get_top_level_yaml_value(manifest, "entrypoint")
+    manifest_name = get_top_level_yaml_value(document, "name")
+    manifest_status = get_top_level_yaml_value(document, "status")
+    entrypoint = get_top_level_yaml_value(document, "entrypoint")
 
     if manifest_name and manifest_name != name and not allow_template_placeholders:
         fail(name, f"skill.yaml name '{manifest_name}' must match folder name")
@@ -377,7 +377,7 @@ def validate_skill_manifest(
         fail(name, f"skill.yaml status must be {listed(STATUSES)}")
         failed = True
 
-    manifest_family = get_top_level_yaml_value(manifest, "family")
+    manifest_family = get_top_level_yaml_value(document, "family")
 
     if manifest_family and manifest_family not in FAMILIES:
         fail(name, f"skill.yaml family must be {listed(FAMILIES)}")
@@ -391,7 +391,7 @@ def validate_skill_manifest(
     for resource_key in ("scripts", "references", "assets"):
         # Declared without a same-line path is not the same as never declared, and
         # reading the first as the second skipped a malformed key in silence.
-        resource = get_yaml_mapping_value(manifest, "resources", resource_key)
+        resource = get_yaml_mapping_value(document, "resources", resource_key)
 
         if resource.shape is Shape.UNREAD:
             fail(name, f"resources.{resource_key} must name a path")
@@ -401,7 +401,7 @@ def validate_skill_manifest(
         ):
             failed = True
 
-    return failed, manifest_name, get_top_level_yaml_value(manifest, "description")
+    return failed, manifest_name, get_top_level_yaml_value(document, "description")
 
 
 def validate_skill_document(
@@ -414,9 +414,19 @@ def validate_skill_document(
 ) -> bool:
     """Validate SKILL.md metadata and its required Input contract."""
     failed = False
-    frontmatter_name = get_top_level_yaml_value(frontmatter, "name")
 
-    if not declares_value(frontmatter, "name"):
+    # Asked here for the same reason the manifest asks it: an unterminated quote in the
+    # description made a `name` that is plainly there report itself as missing, because
+    # every reader answers about a document that did not parse as though the key were
+    # absent. The parser's own reason is the diagnostic.
+    document = parse(frontmatter)
+    if document.reason is not None:
+        fail(name, f"SKILL.md frontmatter {document.reason}")
+        return True
+
+    frontmatter_name = get_top_level_yaml_value(document, "name")
+
+    if not declares_value(document, "name"):
         fail(name, "frontmatter missing name")
         failed = True
 
@@ -428,11 +438,11 @@ def validate_skill_document(
         fail(name, "skill.yaml name and SKILL.md frontmatter name must match")
         failed = True
 
-    if not declares_value(frontmatter, "description"):
+    if not declares_value(document, "description"):
         fail(name, "frontmatter missing description")
         failed = True
 
-    frontmatter_description = get_top_level_yaml_value(frontmatter, "description")
+    frontmatter_description = get_top_level_yaml_value(document, "description")
 
     if (
         manifest_description

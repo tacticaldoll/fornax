@@ -76,80 +76,41 @@ class ScalarRead:
     value: str | None = None
 
 
-def declares_key(text: str, key: str) -> bool:
-    """Whether the document declares this key at all, whatever it is written as.
+@dataclass(frozen=True)
+class Document:
+    """One parse of one YAML document: the mapping it holds, or why it holds none.
 
-    Read from the parsed mapping, not from the source. A regex over the source line said
-    absent for `"name": example`, which is an ordinary quoted key every parser reads —
-    and "declared as something else" reported as "never declared" is the substitution
-    this module's contract forbids, made by the two functions the contract had named
-    as having nothing to substitute.
+    Every accessor used to take the text and parse it again, so a manifest was parsed
+    once per required field, once per resource key and once for the version check —
+    and `_document` parsed twice on its own, once to ask whether it could and once to
+    do it. Reading is one act, and its outcome is a value the readers are handed.
+
+    Carrying the reason is what closes the other half. Collapsing every parser failure
+    to "no mapping" left the caller to remember a separate preflight call, and the
+    SKILL.md frontmatter caller did not: an unterminated quote in the description made
+    a present `name` report itself as missing. A caller holding this cannot skip the
+    question, because the reason is in its hand.
     """
-    document = _document(text)
-    return document is not None and key in document
+
+    mapping: dict[str, object] | None
+    reason: str | None
+
+    @property
+    def readable(self) -> bool:
+        return self.mapping is not None
 
 
-def declares_value(text: str, key: str) -> bool:
-    """Whether the key declares a non-empty scalar, which is what its callers require.
-
-    Scalar on purpose. Every field asked about here — a name, a family, a description,
-    an entrypoint — is one in the schema, and answering yes for a key holding a block
-    would put the caller back where it was: declaration seen, `get_top_level_yaml_value`
-    returning None because the value is not a string, and the check after it silently
-    skipped. A block under one of these keys is a shape the field does not have, and
-    saying so is the same answer as saying it declares nothing usable.
-
-    An empty entrypoint once reported itself as "not found: triggers:" by matching the
-    line beneath it, and an empty frontmatter name passed by matching "description:".
-    Neither is reachable from a parsed mapping.
-    """
-    document = _document(text)
-    if document is None:
-        return False
-    value = document.get(key)
-    return isinstance(value, str) and bool(value.strip())
-
-
-def unreadable(content: str) -> str | None:
-    """Why this manifest is not a mapping this can read, or None when it is one.
-
-    A caller has to ask this before reading fields. Every value reader answers UNREAD
-    for a document that will not parse, and a caller that guards each field with
-    `if value` then skips its checks one by one and reports nothing about why — which
-    is how an entrypoint carrying an escape sequence came to be validated by nothing at
-    all: the manifest was not YAML, the declaration reader still saw the key declared,
-    and the path check quietly did not run.
-    """
+def parse(content: str) -> Document:
+    """Parse one document once."""
     try:
-        document = yaml.load(content, Loader=_Loader)
+        loaded = yaml.load(content, Loader=_Loader)
     except yaml.YAMLError as error:
-        return str(error).replace("\n", " ")
-    if document is None:
-        return "declares nothing"
-    if not isinstance(document, dict):
-        return "is not a mapping"
-    return None
-
-
-def _document(content: str) -> dict[str, object] | None:
-    """The manifest as a mapping, or None when it is not one this can read.
-
-    `BaseLoader` rather than `safe_load`, because YAML 1.1's implicit types answer a
-    different question than this schema asks. Every value here is a string or a list
-    of strings, and `safe_load` reads a trigger written `1:1` as the integer 61, `no`
-    as False and `007` as 7 — a reader that changes what a manifest says is the
-    substitution this module's contract forbids, and it would arrive from the library
-    rather than from a regex. `BaseLoader` applies no implicit resolver, so a scalar
-    is the text it was written as.
-
-    A repeated key is refused rather than resolved. Both loaders take the last one
-    silently; the readers this replaced answered UNREAD, and dropping that would have
-    lost a guarantee by adopting a parser. The refusal reaches nested keys too, which
-    the hand-written readers reached only where the key sat at the top level.
-    """
-    if unreadable(content) is not None:
-        return None
-    return yaml.load(content, Loader=_Loader)
+        return Document(None, str(error).replace("\n", " "))
+    if loaded is None:
+        return Document(None, "declares nothing")
+    if not isinstance(loaded, dict):
+        return Document(None, "is not a mapping")
+    return Document(loaded, None)
 
 
 class _Loader(yaml.BaseLoader):
@@ -176,17 +137,48 @@ class _Loader(yaml.BaseLoader):
         return super().construct_mapping(node, deep=deep)
 
 
-def get_top_level_yaml_value(content: str, key: str) -> str | None:
-    document = _document(content)
-    if document is None:
+def declares_key(document: Document, key: str) -> bool:
+    """Whether the document declares this key at all, whatever it is written as.
+
+    Read from the parsed mapping, not from the source. A regex over the source line said
+    absent for `"name": example`, which is an ordinary quoted key every parser reads —
+    and "declared as something else" reported as "never declared" is the substitution
+    this module's contract forbids, made by the two functions the contract had named
+    as having nothing to substitute.
+    """
+    return document.mapping is not None and key in document.mapping
+
+
+def declares_value(document: Document, key: str) -> bool:
+    """Whether the key declares a non-empty scalar, which is what its callers require.
+
+    Scalar on purpose. Every field asked about here — a name, a family, a description,
+    an entrypoint — is one in the schema, and answering yes for a key holding a block
+    would put the caller back where it was: declaration seen, `get_top_level_yaml_value`
+    returning None because the value is not a string, and the check after it silently
+    skipped. A block under one of these keys is a shape the field does not have, and
+    saying so is the same answer as saying it declares nothing usable.
+
+    An empty entrypoint once reported itself as "not found: triggers:" by matching the
+    line beneath it, and an empty frontmatter name passed by matching "description:".
+    Neither is reachable from a parsed mapping.
+    """
+    if document.mapping is None:
+        return False
+    value = document.mapping.get(key)
+    return isinstance(value, str) and bool(value.strip())
+
+
+def get_top_level_yaml_value(document: Document, key: str) -> str | None:
+    if document.mapping is None:
         return None
-    value = document.get(key)
+    value = document.mapping.get(key)
     if not isinstance(value, str) or not value.strip():
         return None
     return value.strip()
 
 
-def get_yaml_mapping_value(content: str, parent_key: str, child_key: str) -> ScalarRead:
+def get_yaml_mapping_value(document: Document, parent_key: str, child_key: str) -> ScalarRead:
     """Read one child scalar under a parent key, or say the child holds a block.
 
     A child declared with no same-line scalar is ``UNREAD``, not absent. Returning
@@ -194,12 +186,11 @@ def get_yaml_mapping_value(content: str, parent_key: str, child_key: str) -> Sca
     block" as "never declared", so a resources key naming nothing was skipped in
     silence while the schema calls the value a relative path.
     """
-    document = _document(content)
-    if document is None:
+    if document.mapping is None:
         return ScalarRead(Shape.UNREAD)
 
-    parent = document.get(parent_key)
-    if parent is None and parent_key not in document:
+    parent = document.mapping.get(parent_key)
+    if parent is None and parent_key not in document.mapping:
         return ScalarRead(Shape.ABSENT)
     if not isinstance(parent, dict) or child_key not in parent:
         return ScalarRead(Shape.ABSENT if isinstance(parent, dict) else Shape.UNREAD)
@@ -210,20 +201,19 @@ def get_yaml_mapping_value(content: str, parent_key: str, child_key: str) -> Sca
     return ScalarRead(Shape.READ, child.strip())
 
 
-def get_yaml_list(content: str, key: str) -> ListRead:
+def get_yaml_list(document: Document, key: str) -> ListRead:
     """Read one key's list of strings, or say the key holds a shape this does not read.
 
     The schema calls these lists of strings, so a list holding a mapping is a shape
     this declines rather than a shorter list: attributing a nested item to the key let
     a key that declares no list of its own satisfy the rule.
     """
-    document = _document(content)
-    if document is None:
+    if document.mapping is None:
         return ListRead(Shape.UNREAD)
-    if key not in document:
+    if key not in document.mapping:
         return ListRead(Shape.ABSENT)
 
-    value = document[key]
+    value = document.mapping[key]
     if not isinstance(value, list):
         return ListRead(Shape.UNREAD)
 
