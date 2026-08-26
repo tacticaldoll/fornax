@@ -60,7 +60,7 @@ def requirement(token: str) -> tuple[str, str] | Unread | None:
     None if it states no exact pin at all.
 
     PEP 508 is `packaging`'s grammar and this is `packaging` reading it. Commits in
-    this range wrote that grammar by hand and were wrong in the same direction twice: a
+    this range wrote that grammar by hand and were wrong in the same direction each time: a
     terminator list ran past `|`, then the version's own alphabet stopped there and kept
     the prefix, turning a declaration that failed its comparison loudly into one that
     passes. A third omitted the `_` PEP 440 admits in a local version.

@@ -638,9 +638,8 @@ Keep scripts deterministic, portable, and easy to audit.
   exemptions. Deriving README's gate list passes, because the transcribed list was already wrong
   and a derived block cannot go stale. The written-count pre-filter failed on both counts — no
   failure it prevented ever left the workspace, and it needed a directory exemption — and it was
-  removed. It was kept for one round after this rule condemned it, softened to a pre-filter rather
-  than deleted, which is what applying a rule to everything except the thing that prompted it
-  looks like.
+  removed. It was kept after this rule condemned it, softened to a pre-filter rather than deleted,
+  which is what applying a rule to everything except the thing that prompted it looks like.
 
   The corollary is that removing is a repair. A check that overclaims, a claim nothing reads, a
   helper nothing calls: each is worse than its absence, and deleting one closes a finding as
@@ -663,3 +662,9 @@ Keep scripts deterministic, portable, and easy to audit.
   while the commit adding the check said counts had stopped — and its green read as though counts
   had been checked. The sweep that removed the counts was done by reading, which is the only thing
   that does it.
+
+  Reading catches the forms a pattern never will, and those are the ones that keep landing: an
+  adverb rather than a noun phrase — "wrong twice", "said so twice", "diverged twice" — and a noun
+  no list would have held, like the clauses a function's job takes to state. Each of those was
+  written into the very commits that removed the check and claimed the sweep had been re-run; what
+  had been re-run was the dead matcher's pattern.

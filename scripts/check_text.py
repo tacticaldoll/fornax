@@ -27,8 +27,8 @@ def check(files: list[Path], root: Path) -> list[Diagnostic]:
 
     Reading is this function's job; judging is not. It owned path containment, file
     reads, encoding and newline policy and Markdown link resolution in one body, and a
-    body whose job takes four clauses to state is a body nobody can review one clause
-    at a time.
+    body whose job takes a list of clauses to state is a body nobody can review one
+    clause at a time.
     """
     errors: list[Diagnostic] = []
     boundary = Boundary.at(root)

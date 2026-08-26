@@ -93,11 +93,12 @@ class Document:
     Reading is one act, and its outcome is a value the readers are handed.
 
     Carrying the reason was supposed to make the failure unskippable, and this said so
-    twice while it was not. First `skill_graph` read a family straight out of an
-    unreadable manifest and reported the family missing; then the mapping was routed
-    through `require` and this said it was reached that way, while the field stayed
-    public and any caller could still take it. Checking a state is not the same as
-    enforcing how it is reached, and the second sentence was the first mistake again.
+    while it was not — then said it again after the first repair. `skill_graph` read a
+    family straight out of an unreadable manifest and reported the family missing; the
+    mapping was then routed through `require` and this said it was reached that way,
+    while the field stayed public and any caller could still take it. Checking a state
+    is not the same as enforcing how it is reached, and saying so was the same mistake
+    a layer along.
 
     So the payload is private and `require` is the only way to it. `reason` stays
     public because asking about it is the thing a caller is supposed to do.

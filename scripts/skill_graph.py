@@ -12,7 +12,7 @@ the skill from every chart at exit 0, and `--check` agreed because the committed
 block recorded the same absence.
 
 The manifest read goes through skill_yaml rather than a pattern kept here. A
-private one diverged from it twice: ``\\s`` around the colon crossed the newline, so
+private one diverged from it more than once: ``\\s`` around the colon crossed the newline, so
 an empty `family:` read the line beneath it, and trimming quote *characters* could
 not tell a quoted scalar from a plain one, so `family: "meta'` read as `meta` here
 while the validator refused the manifest. Readers disagreeing about one key is
