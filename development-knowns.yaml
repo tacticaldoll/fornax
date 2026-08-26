@@ -25,21 +25,23 @@ knowns:
       - Run an arm with no gates.md at all, which would measure an invented gate rather than this one.
     verification: scripts/evidence_currency.py --check ties this result to the exact Gate 5 text it measured and fails when that text moves.
     updated: 2026-08-25
-  - id: hand-written-grammars-without-an-owner
-    statement: Three grammars this repository validates are read by hand-written matchers because no parser for them is installed on the maintenance floor.
+  - id: shell-command-structure-read-by-hand
+    statement: The shell is the one grammar this repository validates that it still reads without the parser that owns it.
     kind: debt
     treatment: accept
-    rationale: The recurring defect was silent truncation, which read_whole now makes inexpressible, so what remains is a wrong reading that reports itself rather than one that passes; the parsers that would remove the hand-writing cost a dependency each and would be read by five install refs, three pins and five inline run commands.
+    rationale: The parser is refused on licensing, not on value. bashlex parses bash to a syntax tree and answers every question runtime_contract asks of a command, but it is GPLv3+ and this repository is MIT, and its last release was January 2023. So shlex tokenizes and the command structure above it — where one command ends, whether pip sits in command position — stays hand-written, which is a narrower surface than the two grammars this entry used to cover.
     evidence:
-      - PEP 440 and PEP 508 are owned by packaging, which is not installed; runtime_contract.REQUIREMENT states that grammar by hand.
-      - TOML is owned by tomllib, which arrives in Python 3.11 while .python-version declares 3.10; runtime_contract.pins strips a pyproject dependency's quoting by hand and RUFF_TARGET reads ruff.toml with a quoted-string match.
-      - GitHub Actions YAML is owned by PyYAML, which is not installed; runtime_contract.run_commands reads run keys and block scalars by hand.
-      - CommonMark is owned by markdown-it-py, which is installed and is used, so heading grammars are not hand-written anywhere.
-      - The shell is owned by shlex in the standard library and is used, except for its comment rule, which ends a word at any hash where the shell does not.
+      - GitHub Actions YAML is owned by PyYAML, which is now installed and used; the hand-written reader it replaced took six commits in this range and was wrong once per layer.
+      - PEP 440 and PEP 508 are owned by packaging, which is now installed and used; the hand-written matcher it replaced took three commits and was wrong twice in the same direction.
+      - The shell's words are owned by shlex in the standard library and are used, except for its comment rule, which ends a word at any hash where bash does not.
+      - Command structure has no owner here. runtime_contract splits the word stream at control operators and requires pip in command position after any leading assignments; bashlex would answer both, and does, and cannot be taken.
+      - CommonMark is owned by markdown-it-py, which is installed and used, so no heading grammar is hand-written.
+      - TOML is owned by tomllib, which arrives in Python 3.11 while .python-version declares 3.10. Two readings stay hand-written for it and both stop at a quoted string's closing quote rather than at a guess.
       - A URL's fragment is split by hand in markdown_links.local_target because urlsplit answers a different question, returning the path without the scheme that the Windows-drive and external-scheme tests below it read.
     declined-changes:
-      - Add packaging or PyYAML so these grammars are parsed rather than matched, which buys exactness this corpus cannot exercise at the price of two pinned dependencies.
-    verification: Each grammar has its own failure channel and its own test, because one sentence over three mechanisms was false of two of them. The token grammars reach their value through read_whole.whole, whose Whole rejects any match not spanning its subject, so a wrongly stated alphabet yields an Unread the caller reports; test_read_whole.py fails when that check is removed. The YAML reader returns the run values it cannot resolve alongside the commands it can, so a form it does not know is reported rather than folded into a smaller command; test_runtime_contract.py fails when that channel is removed. That channel covers what the reader does not recognize, and a recognized form it reads wrongly stays silent, which is why every scalar category a workflow may write — plain inline, plain over two and three lines, folded with and without an indentation indicator, literal with and without a shell continuation, double and single quoted — is a case in that file rather than a claim here. The category left untested was the one that failed: a plain scalar was routed through the shell's continuation rule instead of being folded, and its pin disappeared. RUFF_TARGET has neither and needs neither: it reads to a quoted string's closing quote, and check requires exactly one match in ruff.toml, so a misread yields some other number of matches and fails rather than a shorter target-version.
+      - Add bashlex, which would take a GPLv3+ dependency into an MIT repository for a development tool, and one whose last release predates this entry by three and a half years.
+      - Add tomli so ruff.toml and a pyproject dependency string are parsed rather than matched, for two readings that have never been wrong and that a move to Python 3.11 makes free.
+    verification: Each grammar states the channel it has. The two parsed ones are total by their libraries — Requirement consumes the string or raises, safe_load parses the document or raises, and runtime_contract reports what raised rather than reading fewer commands. The token grammars reach their value through read_whole.whole, whose Whole rejects any match not spanning its subject; test_read_whole.py fails when that check is removed. Command structure is covered by cases rather than by a guarantee, because a structure this reads wrongly is silent: echoed text, another program whose name starts with pip, the wrong verb, an install after a control operator, after assignments, through the module, and by path are each a case in test_runtime_contract.py. The case that was missing was the one that failed. RUFF_TARGET needs no channel: check requires exactly one match in ruff.toml, so a misread changes the count and fails.
     updated: 2026-08-26
   - id: evidence-entry-model-splits-by-hand
     statement: A result measured against two documents is registered as two evidence entries only because a maintainer remembers to split it.
