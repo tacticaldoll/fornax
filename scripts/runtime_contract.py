@@ -43,28 +43,44 @@ REQUIREMENTS = Path("requirements-maintenance.txt")
 WORKFLOW = Path(".github/workflows/validate.yml")
 WORKFLOW_PIN = re.compile(r"(?<![\w.-])([A-Za-z0-9][A-Za-z0-9._-]*)==([A-Za-z0-9][^\s\"',;]*)")
 INSTALL_LINE = re.compile(r"(?<![\w-])pip(?:3)?\s+install(?![\w-])")
-PIN = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)==([0-9][0-9A-Za-z.!+*-]*)")
+DECLARATION = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)==(.+)$")
+VERSION = re.compile(r"[0-9][0-9A-Za-z.!+*_-]*")
 SETUP = "run the maintenance environment setup from README.md"
 
 
-def pins(text: str) -> dict[str, str]:
-    """Every ``name==version`` a declaration states, comments and markers dropped.
+def pins(text: str) -> tuple[dict[str, str], list[str]]:
+    """Every ``name==version`` a declaration states, and every one that does not parse.
 
     A requirements line may carry a trailing comment or an environment marker, and a
-    pyproject dependency arrives wrapped in quotes and a comma. All three are legal
-    and all three otherwise end up inside the version string.
+    pyproject dependency arrives wrapped in quotes and a comma. All three are legal and
+    all three otherwise end up inside the version, so each is removed before it is read.
 
-    The version is bounded by its own alphabet rather than by a list of what may follow
-    it — `[^\\s;#]+` did not stop at `|` or `>`, so a malformed declaration produced
-    `0.16.1|x` and was then compared against an installed version as if it were one.
-    Same correction as the install ref: describe the closed side.
+    What is left must then be a version *entirely* — `fullmatch`, not a prefix. Matching
+    a prefix of the version's own alphabet was the previous form, and it was worse than
+    the terminator list it replaced: `ruff==0.16.1|x` had produced `0.16.1|x`, which
+    failed its comparison loudly, and became `0.16.1`, which passes. An alphabet is a
+    guess about which characters a version may hold — it omitted the `_` that PEP 440
+    admits in a local version — and consuming the whole declaration is what checks the
+    guess held. A line that declares an exact pin and does not parse as one is returned
+    as malformed, because the alternative is to compare the part that happened to match.
+
+    A line that declares no exact pin is not malformed. `-r base.txt`, a range, a bare
+    name and a comment are all legal in a requirements file and none of them is a claim
+    this function failed to read.
     """
     found: dict[str, str] = {}
+    malformed: list[str] = []
     for line in text.splitlines():
-        match = PIN.match(line.strip().strip('",'))
-        if match:
-            found[match.group(1)] = match.group(2)
-    return found
+        stated = line.split("#", 1)[0].split(";", 1)[0].strip().strip('",').strip()
+        declaration = DECLARATION.match(stated)
+        if not declaration:
+            continue
+        name, version = declaration.groups()
+        if VERSION.fullmatch(version):
+            found[name] = version
+        else:
+            malformed.append(stated)
+    return found, malformed
 
 
 def _default_installed(name: str) -> str | None:
@@ -185,7 +201,9 @@ def check(
 
     requirements_text = _read(root / REQUIREMENTS, errors)
     if requirements_text is not None:
-        declared = pins(requirements_text)
+        declared, malformed = pins(requirements_text)
+        for line in malformed:
+            errors.append(f"{REQUIREMENTS.name} states {printable(line)}, which is not a pin")
         if not declared:
             errors.append(f"{REQUIREMENTS.name} must pin at least one name==version")
         for name, pinned in sorted(declared.items()):
@@ -200,7 +218,7 @@ def check(
     # missing workflow contradicts a standing decision rather than describing a state.
     workflow_text = _read(root / WORKFLOW, errors)
     if workflow_text is not None and requirements_text is not None:
-        declared = pins(requirements_text)
+        declared, _ = pins(requirements_text)
         for name, pinned in sorted(set(workflow_pins(workflow_text))):
             if name not in declared:
                 errors.append(

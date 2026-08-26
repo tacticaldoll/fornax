@@ -126,32 +126,54 @@ class RuntimeContractTests(unittest.TestCase):
             errors, ["requirements-maintenance.txt must pin at least one name==version"]
         )
 
-    def test_pins_reads_past_a_comment_a_marker_and_pyproject_quoting(self) -> None:
-        for line in (
-            "markdown-it-py==4.2.0",
-            "markdown-it-py==4.2.0  # pinned for CommonMark",
-            'markdown-it-py==4.2.0 ; python_version >= "3.10"',
-            '  "markdown-it-py==4.2.0",',
-        ):
-            with self.subTest(line=line):
-                self.assertEqual(runtime_contract.pins(line), {"markdown-it-py": "4.2.0"})
-
 
 class DeclaredPinTests(unittest.TestCase):
-    def test_a_version_is_bounded_by_its_own_alphabet(self) -> None:
-        # `[^\\s;#]+` did not stop at `|` or `>`, so a malformed declaration produced
-        # `0.16.1|x` and was compared against an installed version as if it were one.
-        for line, expected in (
-            ("ruff==0.16.1", {"ruff": "0.16.1"}),
-            ("ruff==0.16.1  # comment", {"ruff": "0.16.1"}),
-            ('ruff==0.16.1; python_version>"3.9"', {"ruff": "0.16.1"}),
-            ('"markdown-it-py==4.2.0",', {"markdown-it-py": "4.2.0"}),
-            ("ruff==0.16.1|x", {"ruff": "0.16.1"}),
-            ("ruff==0.16.1>y", {"ruff": "0.16.1"}),
-            ("ruff==x.y.z", {}),
+    def test_a_declaration_is_read_whole_or_reported(self) -> None:
+        # Two forms of this matcher shipped and both were wrong in the same direction.
+        # `[^\\s;#]+` ran past `|`, and the version alphabet that replaced it stopped
+        # there and kept the prefix — turning `0.16.1|x`, which failed its comparison
+        # loudly, into `0.16.1`, which passes it. Neither is a wider alphabet away: a
+        # prefix match cannot tell a version from the start of something else.
+        for line, expected, malformed in (
+            ("ruff==0.16.1", {"ruff": "0.16.1"}, []),
+            ("ruff==0.16.1  # comment", {"ruff": "0.16.1"}, []),
+            ('ruff==0.16.1; python_version>"3.9"', {"ruff": "0.16.1"}, []),
+            ('  "markdown-it-py==4.2.0",', {"markdown-it-py": "4.2.0"}, []),
+            # Near-miss sharing the accepted prefix: it must not become the prefix.
+            ("ruff==0.16.1|x", {}, ["ruff==0.16.1|x"]),
+            ("ruff==0.16.1>y", {}, ["ruff==0.16.1>y"]),
+            ("ruff==x.y.z", {}, ["ruff==x.y.z"]),
+            # Valid alternate spelling: PEP 440 admits `_` in a local version, which
+            # the alphabet omitted and therefore truncated to a version that installs.
+            ("tool==1.0+ubuntu_1", {"tool": "1.0+ubuntu_1"}, []),
+            ("tool==1.0.*", {"tool": "1.0.*"}, []),
+            # Not a pin declaration at all, so not this function's to report.
+            ("-r base.txt", {}, []),
+            ("ruff>=0.16", {}, []),
+            ("# ruff==nonsense", {}, []),
         ):
             with self.subTest(line=line):
-                self.assertEqual(runtime_contract.pins(line), expected)
+                self.assertEqual(runtime_contract.pins(line), (expected, malformed))
+
+    def test_a_malformed_declaration_fails_the_check(self) -> None:
+        # The prefix form let this reach the comparison as `1.2.3`, match the installed
+        # release and answer clean. It has to surface as an error, not as a silent pass.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".python-version").write_text("3.10\n", encoding="utf-8")
+            (root / "ruff.toml").write_text('target-version = "py310"\n', encoding="utf-8")
+            (root / "requirements-maintenance.txt").write_text(
+                "tool==1.2.3|x\n", encoding="utf-8"
+            )
+            workflow = root / ".github" / "workflows" / "validate.yml"
+            workflow.parent.mkdir(parents=True, exist_ok=True)
+            workflow.write_text("        run: pip install tool==1.2.3\n", encoding="utf-8")
+
+            errors = runtime_contract.check(
+                root, running=(3, 10), installed=lambda name: "1.2.3"
+            )
+
+            self.assertTrue(any("which is not a pin" in error for error in errors), errors)
 
 
 class WorkflowPinTests(unittest.TestCase):
@@ -277,12 +299,13 @@ class SharedPinTests(unittest.TestCase):
 
     def test_shared_dependencies_name_the_same_version(self) -> None:
         root = Path(__file__).resolve().parents[2]
-        maintenance = runtime_contract.pins(
+        maintenance, loose = runtime_contract.pins(
             (root / "requirements-maintenance.txt").read_text(encoding="utf-8")
         )
-        cli = runtime_contract.pins(
+        cli, unread = runtime_contract.pins(
             (root / "tools/fornax-cli/pyproject.toml").read_text(encoding="utf-8")
         )
+        self.assertEqual((loose, unread), ([], []))
         shared = maintenance.keys() & cli.keys()
 
         self.assertTrue(shared, "no dependency is shared, so this asserts nothing")
