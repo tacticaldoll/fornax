@@ -250,19 +250,22 @@ def _run_values(document: object) -> list[object]:
     and the pin one of them mentions is not a pin the workflow installs.
 
     So the shape is walked: `jobs`, each job, its `steps`, each step, and that step's
-    `run`. A composite action states the same thing under `runs`, which is why both
-    roots are read. A step whose `run` is not a string is returned as it is, and the
-    caller reports it rather than skipping it.
+    `run`. A step whose `run` is not a string is returned as it is, and the caller
+    reports it rather than skipping it.
+
+    Only a workflow's shape. A composite action states its steps under a top-level
+    `runs`, and reading that here made a workflow carrying one — which no runner
+    executes, because a workflow has no such key — contribute pins. The one caller
+    passes `.github/workflows/validate.yml` and nothing else, so the second root was
+    an input this never receives and a shape it should not accept. A composite action
+    would need its own manifests found and its own kind stated, not a branch here.
     """
     found: list[object] = []
     if not isinstance(document, dict):
         return found
 
     jobs = document.get("jobs")
-    containers = list(jobs.values()) if isinstance(jobs, dict) else []
-    containers.append(document.get("runs"))
-
-    for container in containers:
+    for container in jobs.values() if isinstance(jobs, dict) else ():
         if not isinstance(container, dict):
             continue
         steps = container.get("steps")

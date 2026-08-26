@@ -462,17 +462,17 @@ class WorkflowPinTests(unittest.TestCase):
 
                 self.assertEqual(self.check(root), [])
 
-    def test_a_composite_action_states_its_steps_under_runs(self) -> None:
+    def test_a_root_level_runs_key_is_not_a_workflow_step(self) -> None:
+        # A composite action states its steps there; a workflow has no such key, so a
+        # runner executes none of it. Reading it here accepted a shape the one caller
+        # never passes — the file it reads is always a workflow.
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             self.raw_workspace(
-                root, "runs:\n  using: composite\n  steps:\n    - run: pip install tool==9.9.9\n"
+                root, "runs:\n  using: composite\n  steps:\n    - run: pip install t==9.9.9\n"
             )
 
-            errors = self.check(root)
-
-            self.assertEqual(len(errors), 1, errors)
-            self.assertIn("9.9.9", errors[0])
+            self.assertEqual(self.check(root), [])
 
     def test_a_document_yaml_cannot_parse_is_reported(self) -> None:
         # `>x` is not a block header, so there is no document to read commands from.
