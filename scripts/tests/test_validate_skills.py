@@ -1134,26 +1134,27 @@ class ProjectedDescriptionTests(unittest.TestCase):
                 self.assertFalse(passed)
                 self.assertIn(f"install ref v1.2.3{suffix} must be v1.2.3", output)
 
-    def test_a_ref_is_read_to_the_end_of_its_shell_word(self) -> None:
-        # Form after form of this ended the capture at a delimiter list and each was one
-        # character short. The word's extent now comes from quoting, so the controls
-        # below are the ones that matter: a ref containing a character the old list
-        # treated as a terminator, and a ref spelled with characters a version cannot
-        # hold. Both used to shorten silently into something that equalled the tag.
+    def test_nothing_but_a_grammar_that_owns_the_question_ends_a_ref(self) -> None:
+        # Form after form said where a ref ends by listing what may follow it. Then the
+        # list moved rather than going away: whole() was handed a slice this function
+        # had already cut at a set of shell operators, so it proved the slice complete
+        # and said nothing about the token. Every character below is legal in a git ref
+        # name, and each one shortened a ref into the shipped tag.
         for text, expected in (
             ('"REPO@v1.2.3"', ["v1.2.3"]),
             ('"REPO@v1.2.3#subdirectory=tools/cli"', ["v1.2.3"]),
             ('"fornax@REPO#v1.2.3"', ["v1.2.3"]),
             ("REPO@v1.2.3 \\", ["v1.2.3"]),
-            ("REPO@v1.2.3; echo done", ["v1.2.3"]),
-            ("REPO@v1.2.3|tee out", ["v1.2.3"]),
-            ("REPO@v1.2.3>out", ["v1.2.3"]),
-            ("REPO@v1.2.3)", ["v1.2.3"]),
-            ("REPO@v1.2.3&&y", ["v1.2.3"]),
-            # Near-miss sharing the accepted prefix: quoted, so `;` is inside the ref.
-            ('"REPO@v1.2.3;other"', ["v1.2.3;other"]),
-            # Valid alternate spelling: a Git ref admits `_` and `/`, a version does not.
+            # Near-miss on the accepted prefix: each of these used to answer v1.2.3.
+            ("REPO@v1.2.3;old x", ["v1.2.3;old"]),
+            ("REPO@v1.2.3(rc) x", ["v1.2.3(rc)"]),
+            ("REPO@v1.2.3&next x", ["v1.2.3&next"]),
+            ("REPO@v1.2.3>old x", ["v1.2.3>old"]),
+            ("REPO@v1.2.3|tee x", ["v1.2.3|tee"]),
+            # The same ref quoted and unquoted reads the same, which is the alternate
+            # spelling control: nothing about the surroundings changes the token.
             ('"REPO@v1.2.3_rc/1"', ["v1.2.3_rc/1"]),
+            ("REPO@v1.2.3_rc/1 x", ["v1.2.3_rc/1"]),
             # Not trimmed to the part that matches: reported, not silently shortened.
             ("see REPO@v1.2.3, then run", ["v1.2.3,"]),
             # No release named, so no claim about which one to install.

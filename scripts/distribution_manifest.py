@@ -129,36 +129,43 @@ def validate_projected_descriptions(root: Path, canonical: str) -> bool:
 
 
 WORD_QUOTES = "\"'`"
-SHELL_BREAK = set(" \t\r\n;|&<>()") | set(WORD_QUOTES)
-# git-check-ref-format forbids these anywhere in a ref name. A closed set,
-# specified by git, rather than a guess about what a document puts next.
+# git-check-ref-format forbids these anywhere in a ref name, and forbids whitespace,
+# which is what bounds an unquoted one below. A set git specifies, not a guess about
+# what a document puts next.
 RELEASE_REF = re.compile(r"v[^\s~^:?*\[\\]+")
 
 
 def install_refs(text: str, repository: str) -> tuple[list[str], list[Unread]]:
     """Every release ref the text documents installing from *repository*, read whole.
 
-    Form after form of this said where a ref ends by listing what may follow it, and each
-    list was short by a character a later document used: `+`, then `;`, `|` and `>`,
-    then `_` and `/`. Each shortfall shortened a ref into one that equalled the
+    Form after form of this said where a ref ends by listing what may follow it, and
+    each list was short by a character a later document used: `+`, then `;`, `|` and
+    `>`, then `_` and `/`. Each shortfall shortened a ref into one that equalled the
     expected tag and passed as current — a stale pin answering clean.
 
-    So the enclosing token is parsed rather than the ref's end guessed. The token is a
-    quoted string, and both grammars these documents use agree on what closes one: all
-    every install command here wraps the URL in `"`, whether the surrounding text is a
-    shell command or the JSON of an editor config. `"` is a real closing delimiter, not
-    a guess about what a document may put next. An unquoted URL ends at whitespace or a
-    shell operator, which is the shell's own grammar.
+    Then the list moved rather than going away. `whole()` was called on a slice this
+    function had already cut at a set of shell operators, so it proved the slice was
+    complete and said nothing about the token: `@v0.4.1;old`, `@v0.4.1(rc)`,
+    `@v0.4.1&next` and `@v0.4.1>old` each came back as `v0.4.1` and compared equal to
+    the shipped tag. Every one of those characters is legal in a git ref name. A
+    guarantee over a string the caller chose the end of is not a guarantee.
 
-    `shlex` owns shell words and is used for the workflow, but not here: this input is
+    So nothing here decides where a ref stops except grammars that own the question.
+    A quoted ref ends at its closing quote — every install command in these documents
+    wraps the URL in `"`, whether the surrounding text is a shell command or the JSON
+    of an editor config, and `"` is a real closing delimiter. An unquoted one ends at
+    whitespace, which git forbids inside a ref name. Pip's VCS URL grammar ends it at
+    the `#` beginning the fragment, which is how `@v0.4.1#subdirectory=tools/` names a
+    ref and a subdirectory in one URL.
+
+    An unquoted `@v0.4.1; echo done` therefore reads as `v0.4.1;` and is reported. The
+    shell would have cut it at the `;` and so would a reader, but a ref may hold one
+    and this cannot tell which was meant — so it says so instead of choosing the
+    reading that passes.
+
+    `shlex` owns shell words and reads the workflow, but not this: the input is
     Markdown, so a line may hold prose, an apostrophe, or JSON, and a shell lexer reads
-    those as unterminated quotes. The grammar that actually bounds the token in all
-    three is the quoted string.
-
-    Pip's VCS URL grammar then ends the ref at the `#` beginning the fragment, which is
-    how `@v0.4.1#subdirectory=tools/` names a ref and a subdirectory in one URL. What is
-    left is read whole through `whole()` or reported unread — nothing is trimmed to the
-    part that happened to match.
+    those as unterminated quotes.
     """
     marker = re.compile(re.escape(repository) + r"\.git[@#]")
     refs: list[str] = []
@@ -169,7 +176,7 @@ def install_refs(text: str, repository: str) -> tuple[list[str], list[Unread]]:
             index -= 1
         opening = text[index] if index >= 0 and text[index] in WORD_QUOTES else ""
 
-        ends = set(opening + " \t\r\n") if opening else SHELL_BREAK
+        ends = set(opening + " \t\r\n") if opening else set(" \t\r\n")
         token: list[str] = []
         for char in text[match.end() :]:
             if char == "#" or char in ends:
