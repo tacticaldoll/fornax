@@ -39,7 +39,7 @@ def check(files: list[Path], root: Path) -> list[Diagnostic]:
 
         errors.extend(_hygiene(path, data))
         content = _decoded(path, data, errors)
-        if content is not None and path.suffix.lower() == ".md":
+        if content is not None:
             errors.extend(_markdown_links(path, content, boundary))
     return errors
 
@@ -82,12 +82,16 @@ def _hygiene(path: Path, data: bytes) -> list[Diagnostic]:
 def _decoded(path: Path, data: bytes, errors: list[Diagnostic]) -> str | None:
     """The text of any tracked text file, or a report that it is not readable as text.
 
-    Every suffix, not only `.md`. Two checks defer to this one for that report —
-    `check_sources` skips a YAML it cannot read under a comment saying text hygiene
-    owns it, and `evidence_currency` does the same for a record — and both deferrals
-    were correct only if this actually read the file. It read `.md` alone, so a tracked
-    `.yaml` holding invalid UTF-8 was reported by nothing, and the gate said the same
-    thing whether it had parsed the file or never opened it.
+    Every suffix, not only `.md`. `check_sources` and `distribution_manifest` both skip
+    a file they cannot read under a comment saying text hygiene owns it, and both
+    deferrals were correct only if this actually read the file. It read `.md` alone, so
+    a tracked `.yaml` holding invalid UTF-8 was reported by nothing, and the gate said
+    the same thing whether it had parsed the file or never opened it.
+
+    The first version of this paragraph named `evidence_currency`, which does not defer
+    here at all, and omitted `distribution_manifest`, which does — a docstring listing
+    its own callers from memory, wrong in both directions on the day it was written.
+    `grep "text hygiene" scripts/` is what settles it.
     """
     if b"\0" in data:
         return None
@@ -99,7 +103,15 @@ def _decoded(path: Path, data: bytes, errors: list[Diagnostic]) -> str | None:
 
 
 def _markdown_links(path: Path, content: str, boundary: Boundary) -> list[Diagnostic]:
-    """Every repository-local Markdown link that does not resolve inside the tree."""
+    """Every repository-local Markdown link that does not resolve inside the tree.
+
+    Which files have links is this policy's own question. Widening `_decoded` to every
+    suffix left its `.md` test with no home and it went up into `check`, whose docstring
+    says judging is not its job — and whose split exists to stop it holding a list of
+    policies.
+    """
+    if path.suffix.lower() != ".md":
+        return []
     errors: list[Diagnostic] = []
     for link in iter_markdown_links(content):
         target = local_target(link.destination)

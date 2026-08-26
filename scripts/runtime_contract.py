@@ -140,9 +140,8 @@ def workflow_pins(text: str) -> tuple[list[tuple[str, str]], list[str]]:
 
     Each earlier form failed differently. Anchoring the whole match on `pip install `
     read only the first package and only one spelling. Dropping the anchor read raw
-    YAML, so a comment and an `echo` became installs. Reading every scalar made any
-    key executable, so
-    installation text under `env:` was reported as a pin.
+    YAML, so a comment and an `echo` became installs. Reading every scalar made any key
+    executable, so installation text under `env:` was reported as a pin.
 
     So a run command decides whether it installs and its words decide what. The words
     come from `shlex`, which owns the shell's quoting: an operator ends a word, a quote
