@@ -19,7 +19,7 @@ import argparse
 from pathlib import Path
 
 import generated_block
-from check_workspace import STEPS
+from check_workspace import STEPS, Step
 from generated_block import Markers, Rendered
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -28,7 +28,7 @@ MARKERS = Markers("GATE-STEPS", "scripts/gate_steps.py")
 LABEL = "gate step list"
 
 
-def render(steps: tuple[object, ...]) -> Rendered:
+def render(steps: tuple[Step, ...]) -> Rendered:
     """The numbered list, in the order the gate runs them."""
     lines = [MARKERS.start, ""]
     lines.extend(f"{number}. {step.description}" for number, step in enumerate(steps, 1))

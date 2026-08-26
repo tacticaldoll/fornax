@@ -63,9 +63,6 @@ class Whole:
     def value(self) -> str:
         return self.match.group(0)
 
-    def group(self, index: int | str) -> str:
-        return self.match.group(index)
-
 
 Read = Whole | Unread
 

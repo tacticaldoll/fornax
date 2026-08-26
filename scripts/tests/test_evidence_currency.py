@@ -476,5 +476,18 @@ class RegistryTests(unittest.TestCase):
                     self.assertTrue((evidence_currency.ROOT / entry.get(field)).is_file())
 
 
+class SpelledInsideTests(unittest.TestCase):
+    def test_both_host_grammars_are_asked(self) -> None:
+        # Answered with Path alone, this gave the POSIX reading only, so a Windows
+        # drive and a backslash parent segment were spelled inside on this host. The
+        # question belongs to host_paths, which asks both.
+        for candidate in ("C:/x", "C:x", "..\\x", "../x", "/abs", ""):
+            with self.subTest(candidate=candidate):
+                self.assertFalse(evidence_currency.spelled_inside(candidate))
+
+    def test_a_relative_path_is_spelled_inside(self) -> None:
+        self.assertTrue(evidence_currency.spelled_inside("scripts/tests/scenarios/x/README.md"))
+
+
 if __name__ == "__main__":
     unittest.main()

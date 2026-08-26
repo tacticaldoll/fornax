@@ -14,7 +14,6 @@ class WholeTests(unittest.TestCase):
 
         self.assertIsInstance(read, read_whole.Whole)
         self.assertEqual(read.value, "ruff==0.16.1")
-        self.assertEqual((read.group(1), read.group(2)), ("ruff", "0.16.1"))
 
     def test_a_token_the_pattern_covers_partly_is_unread_not_shortened(self) -> None:
         # The whole point. Every one of these has a prefix the pattern matches, and

@@ -38,6 +38,7 @@ from pathlib import Path
 
 from constrained_yaml import raw_scalar
 from diagnostic_text import printable
+from host_paths import has_parent_segment_anywhere, is_absolute_anywhere
 from markdown_links import heading_section
 from path_boundary import Boundary, Verdict, resolve_within
 
@@ -167,12 +168,17 @@ def spelled_inside(candidate: str) -> bool:
 
     The entry model can judge spelling without a filesystem, which is what lets the
     registry be validated against any root. An absolute path or a parent segment names
-    something outside whatever it resolves to, so both are refused here.
+    something outside whatever it resolves to, so both are refused.
+
+    Asked through `host_paths`, which owns the question and asks both host grammars.
+    Answering it here with `Path` alone gave the POSIX reading only, so `C:/x` and
+    `..\\x` were spelled inside on this host — a third spelling of a path rule in a
+    repository whose `skill_model.NAME_PATTERN` docstring already records what happens
+    when one diverges.
     """
     if not candidate:
         return False
-    path = Path(candidate)
-    return not path.is_absolute() and ".." not in path.parts
+    return not is_absolute_anywhere(candidate) and not has_parent_segment_anywhere(candidate)
 
 
 def resolved_inside(candidate: str, root: Path) -> bool:

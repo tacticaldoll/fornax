@@ -327,6 +327,7 @@ def check(
             target = targets[0]
 
     requirements_text = _read(root / REQUIREMENTS, errors)
+    declared: dict[str, str] = {}
     if requirements_text is not None:
         declared, unreadable = pins(requirements_text)
         for line in unreadable:
@@ -345,7 +346,6 @@ def check(
     # missing workflow contradicts a standing decision rather than describing a state.
     workflow_text = _read(root / WORKFLOW, errors)
     if workflow_text is not None and requirements_text is not None:
-        declared, _ = pins(requirements_text)
         installs, unreadable = workflow_pins(workflow_text)
         for line in unreadable:
             errors.append(f"{WORKFLOW.name} states {printable(line)}, which cannot be read")
