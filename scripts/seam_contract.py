@@ -17,7 +17,8 @@ producer's fields a consumer is obliged to care about. The inventory is generate
 cannot go stale while the prose beside it does; reconciling the two stays a human act.
 
 The block lives in docs/review-record-contract.md between the SEAM-INVENTORY markers.
-Standard library only.
+Reaches markdown-it-py through markdown_links, which owns CommonMark here, and
+PyYAML through skill_interface's scalar rules.
 
 Usage:
     .venv/bin/python scripts/seam_contract.py            # print the block to stdout

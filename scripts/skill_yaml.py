@@ -27,8 +27,6 @@ declared when it cannot parse a quote pair. ``get_top_level_yaml_value`` is **no
 yet** three-state: it returns ``None`` both for an absent key and for one declared
 without a same-line scalar. No defect has been reported against that, and it is
 recorded here rather than left to be rediscovered as an oversight.
-
-Standard library only.
 """
 
 from __future__ import annotations
