@@ -172,7 +172,7 @@ def main() -> int:
         print(printable(f"FAIL {shown}: {error.message}"))
     if errors:
         return 1
-    print("OK   workspace text hygiene, local Markdown links, and written counts")
+    print("OK   workspace text hygiene, local Markdown links, and plainly written counts")
     return 0
 
 
