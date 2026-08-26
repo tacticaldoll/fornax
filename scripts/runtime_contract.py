@@ -31,12 +31,13 @@ import re
 import sys
 
 import yaml
+from packaging.requirements import InvalidRequirement, Requirement
 from importlib.metadata import PackageNotFoundError, version as installed_version
 from pathlib import Path
 from typing import Callable
 
 from diagnostic_text import printable
-from read_whole import COMMENT, Read, Unread, shell_words, whole
+from read_whole import COMMENT, Unread, shell_words
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -51,26 +52,34 @@ PYTHON = re.compile(r"(?:.*/)?python[0-9.]*")
 # GitHub's expression language, which nothing here parses: what it expands to
 # is decided at run time and may well be an install.
 EXPRESSION = re.compile(r"\$\{\{")
-REQUIREMENT = re.compile(r"([A-Za-z0-9][A-Za-z0-9._-]*)==([0-9][0-9A-Za-z.!+*_-]*)")
 SETUP = "run the maintenance environment setup from README.md"
 
 
-def requirement(token: str) -> Read | None:
-    """The exact pin a token states — unread if it states one this cannot read whole,
-    and None if it states none at all.
+def requirement(token: str) -> tuple[str, str] | Unread | None:
+    """The exact pin a token states — unread if it states one that will not parse, and
+    None if it states no exact pin at all.
 
-    The two callers used to answer this question with two different matchers. The
-    workflow's version ended at a list of characters that may follow it and the
-    requirements file's at the version's own alphabet, and each was wrong in its own
-    way about the same grammar. One reader, and it truncates neither: `whole()` is the
-    only way to a value here, and `whole()` only calls `fullmatch`.
+    PEP 508 is `packaging`'s grammar and this is `packaging` reading it. Two commits in
+    this range wrote that grammar by hand and were wrong in the same direction twice: a
+    terminator list ran past `|`, then the version's own alphabet stopped there and kept
+    the prefix, turning a declaration that failed its comparison loudly into one that
+    passes. A third omitted the `_` PEP 440 admits in a local version.
 
-    A token carrying no `==` states no exact pin. A range, an `-r`, a bare name and a
-    plain word are all legal where these are read, and none of them is a failed read.
+    `Requirement` is total the way `whole()` is, and for the same reason: it consumes
+    the string or raises, and there is no answer in between for a caller to compare
+    against something. A range, a bare name and an `-r` line state no exact pin, which
+    is not a failed read.
     """
     if "==" not in token:
         return None
-    return whole(token, REQUIREMENT, "an exact pin")
+    try:
+        parsed = Requirement(token)
+    except InvalidRequirement as error:
+        return Unread(token, f"is not a requirement: {str(error).splitlines()[0]}")
+    stated = list(parsed.specifier)
+    if len(stated) != 1 or stated[0].operator != "==":
+        return None
+    return parsed.name, stated[0].version
 
 
 def pins(text: str) -> tuple[dict[str, str], list[str]]:
@@ -80,26 +89,31 @@ def pins(text: str) -> tuple[dict[str, str], list[str]]:
     pyproject dependency arrives wrapped in quotes and a comma. All three are legal and
     all three otherwise end up inside the version, so each is removed before it is read.
 
-    The comment cut follows the shell's rule, which is pip's: `#` starts one at the
-    beginning of a word, not wherever it appears. Cutting at the first `#` read
-    `tool==1.0#x` as `1.0`. The marker cut needs no such care — `;` cannot occur inside
-    a version, so ending there cannot end early.
-
-    Neither PEP 440 nor TOML has a parser available on this floor, so the grammar here
-    is hand-written, and `development-knowns.yaml` records that with the owner it does
-    not use. What the hand-written part cannot do is truncate.
+    An environment marker needs no handling: `packaging` owns PEP 508 and reads the
+    marker as part of the requirement. What is left here belongs to two formats it does
+    not own. The comment cut is pip's requirements-file rule, which is the shell's — a
+    `#` starts one at the beginning of a word, not wherever it appears, and cutting at
+    the first one read `tool==1.0#x` as `1.0`. The quote and comma stripping is TOML's,
+    for a pyproject dependency string; `tomllib` owns that grammar and arrives in
+    Python 3.11, which `.python-version` does not declare, so it stays hand-written and
+    `development-knowns.yaml` records it.
     """
     found: dict[str, str] = {}
     unreadable: list[str] = []
     for line in text.splitlines():
-        stated = COMMENT.split(line, maxsplit=1)[0].split(";", 1)[0].strip().strip('",').strip()
+        stated = COMMENT.split(line, maxsplit=1)[0].strip().rstrip(",").strip()
+        # A pyproject dependency arrives as a quoted TOML string. Unwrap only when the
+        # line is one: stripping a trailing quote unconditionally cut the closing quote
+        # off an environment marker, which PEP 508 puts inside the requirement.
+        if len(stated) > 1 and stated[0] == stated[-1] and stated[0] in "\"'":
+            stated = stated[1:-1]
         read = requirement(stated)
         if read is None:
             continue
         if isinstance(read, Unread):
             unreadable.append(read.text)
             continue
-        found[read.group(1)] = read.group(2)
+        found[read[0]] = read[1]
     return found, unreadable
 
 
@@ -150,7 +164,7 @@ def workflow_pins(text: str) -> tuple[list[tuple[str, str]], list[str]]:
                 if isinstance(read, Unread):
                     unreadable.append(read.text)
                 else:
-                    found.append((read.group(1), read.group(2)))
+                    found.append(read)
     return found, unreadable
 
 

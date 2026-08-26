@@ -150,6 +150,10 @@ class DeclaredPinTests(unittest.TestCase):
             # the alphabet omitted and therefore truncated to a version that installs.
             ("tool==1.0+ubuntu_1", {"tool": "1.0+ubuntu_1"}, []),
             ("tool==1.0.*", {"tool": "1.0.*"}, []),
+            # Spellings PEP 508 admits that the hand-written matcher rejected: an
+            # extras list, and whitespace around the operator.
+            ("tool [extra] ==1.0", {"tool": "1.0"}, []),
+            ("tool == 1.0", {"tool": "1.0"}, []),
             # Not a pin declaration at all, so not this function's to report.
             ("-r base.txt", {}, []),
             ("ruff>=0.16", {}, []),
