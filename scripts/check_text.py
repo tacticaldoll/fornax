@@ -66,14 +66,20 @@ def _bytes(path: Path, boundary: Boundary, errors: list[Diagnostic]) -> bytes | 
 
 
 def _hygiene(path: Path, data: bytes) -> list[Diagnostic]:
-    """Whether the bytes are text at all, and whether they end as text should."""
+    """Whether the bytes are text at all, and whether they end as text should.
+
+    Every tracked file, because this repository tracks no binary one: `git grep -I`
+    finds nothing binary among its tracked files, and the policy in AGENTS.md is that
+    adding one is a deliberate change to this check rather than a file it passes over.
+
+    Passing over a NUL was written for a binary file that does not exist here and it
+    exempted the files that do. A `.md` holding a NUL was reported and a `.py` or a
+    `.yaml` holding one was reported by nothing at all — the same shape as `_decoded`
+    reading `.md` alone, in the function beside it, left standing when that was
+    repaired because the sweep read the diff instead of the mechanism.
+    """
     if b"\0" in data:
-        # A binary file is not this check's subject, but a .md holding a NUL is a
-        # Markdown file that is not text, and skipping it in silence hid every link in
-        # it. Invalid UTF-8 in a .md is reported by the decode below.
-        if path.suffix.lower() == ".md":
-            return [Diagnostic(path, "Markdown file must be text")]
-        return []
+        return [Diagnostic(path, "tracked file must be text")]
     if not data.endswith(b"\n"):
         return [Diagnostic(path, "text file must end with a newline")]
     return []

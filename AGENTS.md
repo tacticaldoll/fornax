@@ -631,6 +631,12 @@ Keep scripts deterministic, portable, and easy to audit.
 - Do not add generated caches, local installs, or copied third-party skills unless the user asks
   to vendor them.
 - Run `git status --short` before final reporting so the user sees the actual change surface.
+- **Every file in this workspace is text.** Nothing binary is tracked, and the text-hygiene
+  check reads every file rather than exempting the ones that hold a NUL byte. That exemption
+  was written for binary assets this repository does not have, and it covered every suffix but
+  `.md`, so a `.py` or a `.yaml` holding a NUL was reported by nothing. Adding a binary asset
+  is therefore a deliberate change to `check_text._hygiene`, weighed like any other check
+  change, and not a file that quietly passes.
 - **Before adding a check, say what it would have caught and what it costs per change.** Name the
   failure in this repository's history it would have stopped, and whether that failure reached a
   user or stopped at a contributor. Then name the standing cost: the exemptions it needs, the prose

@@ -177,17 +177,32 @@ class TextHygiene(unittest.TestCase):
         self.assertEqual(errors[0].path, path)
         self.assertEqual(errors[0].message, "text file must end with a newline")
 
-    def test_valid_text_and_binary_files_pass(self) -> None:
+    def test_valid_text_files_pass(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             target = root / "target.md"
             target.write_text("target\n", encoding="utf-8")
             source = root / "source.md"
             source.write_text("See [target](target.md).\n", encoding="utf-8")
-            binary = root / "image.bin"
-            binary.write_bytes(b"not text\0without newline")
-            errors = check(source, target, binary)
+            errors = check(source, target)
         self.assertEqual(errors, [])
+
+    def test_a_binary_file_in_the_workspace_is_reported(self) -> None:
+        """This case asserted the opposite, which is the exemption being withdrawn.
+
+        A file exempt for holding a NUL passed whatever else was wrong with it, and the
+        exemption reached far past binary assets: it covered every non-Markdown suffix,
+        so a tracked `.py` or `.yaml` holding a NUL was reported by nothing. Nothing
+        binary is tracked here, and AGENTS.md says adding one is a change to this check
+        rather than a file it passes over.
+        """
+        with TemporaryDirectory() as tmp:
+            binary = Path(tmp) / "image.bin"
+            binary.write_bytes(b"not text\0without newline")
+
+            errors = check(binary)
+
+        self.assertEqual([error.message for error in errors], ["tracked file must be text"])
 
     def test_a_link_holding_an_encoded_null_is_reported_not_raised(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -224,17 +239,28 @@ class TextHygiene(unittest.TestCase):
 
             self.assertEqual(check(folder), [])
 
-    def test_a_markdown_file_holding_a_nul_is_reported_not_skipped(self) -> None:
-        # Skipping it in silence hid every link in the file, while invalid UTF-8 in
-        # the same position was reported.
-        with TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            document = root / "document.md"
-            document.write_bytes(b"# doc\x00\nSee [missing](gone.md).\n")
+    def test_any_tracked_file_holding_a_nul_is_reported_not_skipped(self) -> None:
+        # Skipping it in silence hid every link in a .md, while invalid UTF-8 in the
+        # same position was reported. The repair covered .md and left the exemption
+        # standing for every other suffix: a tracked .py or .yaml holding a NUL was
+        # reported by nothing, and the gate said the same thing whether it had read the
+        # file or never opened it.
+        for name, data in (
+            ("document.md", b"# doc\x00\nSee [missing](gone.md).\n"),
+            ("registry.yaml", b"key: va\x00lue\n"),
+            ("module.py", b"x = 1\x00\n"),
+            ("Makefile", b"all:\x00\n"),
+        ):
+            with self.subTest(name=name), TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                document = root / name
+                document.write_bytes(data)
 
-            errors = check(document)
+                errors = check(document)
 
-        self.assertEqual([error.message for error in errors], ["Markdown file must be text"])
+                self.assertEqual(
+                    [error.message for error in errors], ["tracked file must be text"]
+                )
 
     def test_parent_link_that_remains_in_the_repository_passes(self) -> None:
         with TemporaryDirectory() as tmp:
