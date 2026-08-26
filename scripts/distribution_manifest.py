@@ -127,24 +127,54 @@ def validate_projected_descriptions(root: Path, canonical: str) -> bool:
     return failed
 
 
-def install_ref_pattern(repository: str) -> re.Pattern[str]:
-    """Match a documented install ref and capture the whole ref, not a prefix of it.
+WORD_QUOTES = "\"'`"
+SHELL_BREAK = set(" \t\r\n;|&<>()") | set(WORD_QUOTES)
 
-    Fourth form of this boundary, and the first that does not try to prove where
-    something ends. Excluding `[\\w.-]` missed `+`. Permitting a punctuation set missed
-    `;`, `|` and `>`. Modelling SemVer's alphabet missed `_` and `/` — because the thing
-    being matched is a Git ref, and a ref admits characters a version does not, so
-    proving the version ended proved nothing about the ref.
 
-    A whole token compared for equality cannot be one character short. The delimiter set
-    is still a list, and still open in principle — but it now bounds only *where the
-    token stops*, and a wrong guess there makes the token longer and therefore unequal,
-    which is reported. Under the previous forms a wrong guess made the match silently
-    absent, which was not. The failure mode moved from missing to noisy.
+def install_refs(text: str, repository: str) -> list[str]:
+    """Every release ref the text documents installing from *repository*, read whole.
+
+    Four forms of this tried to prove where the ref ended by saying what could follow
+    it, and each list was short by a character a later document used: `+`, then `;`,
+    `|` and `>`, then `_` and `/`. The fourth said it had stopped guessing because it
+    compared the whole ref for equality, but it still ended the capture at a delimiter
+    list, and that fails in the dangerous direction — `;` is legal inside a Git ref, so
+    a documented `@v1.2.3;other` was read as `v1.2.3`, equalled the expected tag and
+    passed as current.
+
+    So the enclosing token is parsed rather than the ref's end guessed. The ref sits in
+    a shell word, and the word's extent is decided by quoting: every install command in
+    this repository's documents wraps its URL in double quotes, and an unquoted word
+    ends at whitespace or a shell operator. Both are the shell's own grammar rather
+    than a list of what a document might put next. Pip's VCS URL grammar then ends the
+    ref at the `#` beginning the fragment, which is how `@v0.4.1#subdirectory=tools/`
+    names a ref and a subdirectory in one URL.
+
+    Nothing is trimmed afterwards. A ref that reads as `v1.2.3,` is reported as not
+    being `v1.2.3` rather than shortened until it matches — deciding a trailing
+    character was not part of the ref is the guess that failed four times.
     """
-    return re.compile(
-        re.escape(repository) + r"\.git[@#](v[^\s\"'`#,)\]|;&><]+)"
-    )
+    marker = re.compile(re.escape(repository) + r"\.git[@#]")
+    refs: list[str] = []
+    for match in marker.finditer(text):
+        index = match.start() - 1
+        while index >= 0 and text[index] not in " \t\r\n" + WORD_QUOTES:
+            index -= 1
+        opening = text[index] if index >= 0 and text[index] in WORD_QUOTES else ""
+
+        ends = set(opening + " \t\r\n") if opening else SHELL_BREAK
+        ref: list[str] = []
+        for char in text[match.end() :]:
+            if char == "#" or char in ends:
+                break
+            ref.append(char)
+
+        # A ref carrying no version is a documented form, not a stale pin: tracking a
+        # branch is deliberate, and only a ref already naming a release is a claim
+        # about which one to install.
+        if ref and ref[0] == "v":
+            refs.append("".join(ref))
+    return refs
 
 
 def validate_install_pins(root: Path, repository: str, version: str) -> bool:
@@ -171,7 +201,6 @@ def validate_install_pins(root: Path, repository: str, version: str) -> bool:
     was described as only a gain. It was not.
     """
     failed = False
-    pattern = install_ref_pattern(repository)
     expected = f"v{version}"
     carrying: set[str] = set()
 
@@ -187,7 +216,7 @@ def validate_install_pins(root: Path, repository: str, version: str) -> bool:
             text = path.read_text(encoding="utf-8")
         except (OSError, UnicodeError):
             continue  # text hygiene owns unreadable files and reports them there
-        refs = pattern.findall(text)
+        refs = install_refs(text, repository)
         if not refs:
             continue
         relative_path = path.relative_to(root).as_posix()

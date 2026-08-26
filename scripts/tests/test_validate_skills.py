@@ -1079,26 +1079,39 @@ class ProjectedDescriptionTests(unittest.TestCase):
                 self.assertFalse(passed)
                 self.assertIn(f"install ref v1.2.3{suffix} must be v1.2.3", output)
 
-    def test_every_documented_terminator_still_matches(self) -> None:
-        # The alternate-spelling control. An excluded-character list stopped `.999` and
-        # let `+build.5` through; stating the permitted terminators has to keep every
-        # form the real documents use, which is what this pins.
-        pattern = distribution_manifest.install_ref_pattern("https://x.invalid/r")
-        for ref in (
-            ".git@v1.2.3",
-            ".git@v1.2.3#subdirectory=tools/cli",
-            '.git@v1.2.3"',
-            ".git@v1.2.3 \\",
-            '.git#v1.2.3"',
-            ".git@v1.2.3; echo done",
-            ".git@v1.2.3|tee out",
-            ".git@v1.2.3>out",
-            ".git@v1.2.3)",
-            ".git@v1.2.3,",
-            ".git@v1.2.3&&y",
+    def test_a_ref_is_read_to_the_end_of_its_shell_word(self) -> None:
+        # Four forms of this ended the capture at a delimiter list and each list was one
+        # character short. The word's extent now comes from quoting, so the two controls
+        # below are the ones that matter: a ref containing a character the old list
+        # treated as a terminator, and a ref spelled with characters a version cannot
+        # hold. Both used to shorten silently into something that equalled the tag.
+        for text, expected in (
+            ('"REPO@v1.2.3"', ["v1.2.3"]),
+            ('"REPO@v1.2.3#subdirectory=tools/cli"', ["v1.2.3"]),
+            ('"fornax@REPO#v1.2.3"', ["v1.2.3"]),
+            ("REPO@v1.2.3 \\", ["v1.2.3"]),
+            ("REPO@v1.2.3; echo done", ["v1.2.3"]),
+            ("REPO@v1.2.3|tee out", ["v1.2.3"]),
+            ("REPO@v1.2.3>out", ["v1.2.3"]),
+            ("REPO@v1.2.3)", ["v1.2.3"]),
+            ("REPO@v1.2.3&&y", ["v1.2.3"]),
+            # Near-miss sharing the accepted prefix: quoted, so `;` is inside the ref.
+            ('"REPO@v1.2.3;other"', ["v1.2.3;other"]),
+            # Valid alternate spelling: a Git ref admits `_` and `/`, a version does not.
+            ('"REPO@v1.2.3_rc/1"', ["v1.2.3_rc/1"]),
+            # Not trimmed to the part that matches: reported, not silently shortened.
+            ("see REPO@v1.2.3, then run", ["v1.2.3,"]),
+            # No release named, so no claim about which one to install.
+            ("REPO@main", []),
         ):
-            with self.subTest(ref=ref):
-                self.assertEqual(pattern.findall("https://x.invalid/r" + ref), ["v1.2.3"])
+            with self.subTest(text=text):
+                self.assertEqual(
+                    distribution_manifest.install_refs(
+                        text.replace("REPO", "git+https://x.invalid/r.git"),
+                        "https://x.invalid/r",
+                    ),
+                    expected,
+                )
 
     def test_an_unpinned_install_ref_is_left_alone(self) -> None:
         # Tracking the default branch is a documented form, not a stale pin. Judging it
