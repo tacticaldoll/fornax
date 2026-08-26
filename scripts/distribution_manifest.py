@@ -153,8 +153,14 @@ def install_refs(text: str, repository: str) -> tuple[list[str], list[Unread]]:
     So nothing here decides where a ref stops except grammars that own the question.
     A quoted ref ends at its closing quote — every install command in these documents
     wraps the URL in `"`, whether the surrounding text is a shell command or the JSON
-    of an editor config, and `"` is a real closing delimiter. An unquoted one ends at
-    whitespace, which git forbids inside a ref name. Pip's VCS URL grammar ends it at
+    of an editor config, and `"` is a real closing delimiter. It ends there and nowhere
+    else: whitespace was in the quoted token's end set as well, which is what an
+    unquoted ref ends at, so `"…@v0.4.1 old"` read as `v0.4.1` and compared equal to
+    the shipped tag — the same truncation as the operator lists above, arriving through
+    a delimiter this docstring already claimed to be waiting for. An opening quote
+    nothing closes is not a ref read to its end either, and is reported as one that
+    cannot be read. An unquoted ref ends at whitespace, which git forbids inside a ref
+    name. Pip's VCS URL grammar ends it at
     the `#` beginning the fragment, which is how `@v0.4.1#subdirectory=tools/` names a
     ref and a subdirectory in one URL.
 
@@ -176,10 +182,12 @@ def install_refs(text: str, repository: str) -> tuple[list[str], list[Unread]]:
             index -= 1
         opening = text[index] if index >= 0 and text[index] in WORD_QUOTES else ""
 
-        ends = set(opening + " \t\r\n") if opening else set(" \t\r\n")
+        ends = {opening, "#"} if opening else set(" \t\r\n#")
         token: list[str] = []
+        closed = False
         for char in text[match.end() :]:
-            if char == "#" or char in ends:
+            if char in ends:
+                closed = True
                 break
             token.append(char)
 
@@ -187,6 +195,11 @@ def install_refs(text: str, repository: str) -> tuple[list[str], list[Unread]]:
         # branch is deliberate, and only a ref already naming a release is a claim
         # about which one to install.
         if not token or token[0] != "v":
+            continue
+        if opening and not closed:
+            unreadable.append(
+                Unread("".join(token), f"opens with {opening} that nothing closes")
+            )
             continue
         read = whole("".join(token), RELEASE_REF, "a release ref")
         if isinstance(read, Unread):

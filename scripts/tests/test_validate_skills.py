@@ -1190,6 +1190,40 @@ class ProjectedDescriptionTests(unittest.TestCase):
                 self.assertEqual(len(unreadable), 1, unreadable)
                 self.assertIn("is not a release ref", str(unreadable[0]))
 
+    def test_a_quoted_ref_ends_at_its_quote_and_nowhere_else(self) -> None:
+        # Whitespace sat in the quoted token's end set beside the closing quote, so
+        # `"...@v1.2.3 old"` read as v1.2.3 and compared equal to the shipped tag. The
+        # same truncation as the operator lists above, arriving through the delimiter
+        # the docstring already claimed to be waiting for.
+        for text, unread in (
+            ('"REPO@v1.2.3 old"', "v1.2.3 old"),
+            ("'REPO@v1.2.3 old'", "v1.2.3 old"),
+            ('"REPO@v1.2.3\tnext"', "v1.2.3\tnext"),
+            ('"REPO@v1.2.3\nnext"', "v1.2.3\nnext"),
+        ):
+            with self.subTest(text=text):
+                refs, unreadable = distribution_manifest.install_refs(
+                    text.replace("REPO", "git+https://x.invalid/r.git"),
+                    "https://x.invalid/r",
+                )
+
+                self.assertEqual(refs, [])
+                self.assertEqual([item.text for item in unreadable], [unread])
+
+    def test_an_opening_quote_nothing_closes_leaves_the_ref_unread(self) -> None:
+        # A token that ran to the end of the document is not a token read to its end,
+        # whatever it happens to spell.
+        for text in ('"REPO@v1.2.3', "'REPO@v1.2.3"):
+            with self.subTest(text=text):
+                refs, unreadable = distribution_manifest.install_refs(
+                    text.replace("REPO", "git+https://x.invalid/r.git"),
+                    "https://x.invalid/r",
+                )
+
+                self.assertEqual(refs, [])
+                self.assertEqual(len(unreadable), 1, unreadable)
+                self.assertIn("that nothing closes", str(unreadable[0]))
+
     def test_an_unpinned_install_ref_is_left_alone(self) -> None:
         # Tracking the default branch is a documented form, not a stale pin. Judging it
         # would force a version onto the one command that deliberately carries none.
