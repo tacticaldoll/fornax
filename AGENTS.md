@@ -63,11 +63,11 @@ Chinese is allowed when it is task data, source material, domain reference conte
 examples, a maintainer-only micro-test rubric or its raw scores, or required by a specific NLP
 workflow. Keep executable instructions and trigger metadata in English whenever possible.
 
-The rubric class is written down because the lists above did not decide it and a review had to raise
-it as a judgment call. A rubric is executable — a maintainer runs it to reproduce a measurement — so
-"whenever possible" reaches it, while nothing installed or published reads it and the `README.md`
-that summarises each one is English. Decided in favour of leaving them as they are, recorded here so
-the next reader is not deciding again.
+The rubric class is written down because the lists above did not decide it and a review had to
+raise it as a judgment call. A rubric is executable — a maintainer runs it to reproduce a
+measurement — so "whenever possible" reaches it, while nothing installed or published reads it
+and the `README.md` that summarises each one is English. Decided in favour of leaving them as
+they are, recorded here so the next reader is not deciding again.
 
 ## Naming Convention
 
