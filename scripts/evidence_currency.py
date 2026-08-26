@@ -209,13 +209,18 @@ def scenario_root(record: str) -> Path | None:
     A root is `SCENARIOS/<name>[/...]`: relative, no parent segment, and at least one
     directory below the tree that holds it. The parent of the record is that root, and
     it is what decides which files the entry accounts for.
+
+    Whether the record is written inside a repository is asked through the sibling that
+    owns it. Asking here instead left one entry model answering to two path grammars —
+    `tests` gated through both host readings and `record` through the POSIX one alone,
+    so `scripts/tests/scenarios/..\\esc/README.md` came back as an ownership root that
+    escapes the scenario tree on a Windows host. The sweep that moved the other reading
+    to `host_paths` read the repair's diff instead of enumerating the mechanism, and
+    this sits in the same file, below the function it moved.
     """
-    if not record:
+    if not spelled_inside(record):
         return None
-    path = Path(record)
-    if path.is_absolute() or ".." in path.parts:
-        return None
-    parent = path.parent
+    parent = Path(record).parent
     if parent == SCENARIOS or not parent.is_relative_to(SCENARIOS):
         return None
     return parent

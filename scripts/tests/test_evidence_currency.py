@@ -488,6 +488,18 @@ class SpelledInsideTests(unittest.TestCase):
     def test_a_relative_path_is_spelled_inside(self) -> None:
         self.assertTrue(evidence_currency.spelled_inside("scripts/tests/scenarios/x/README.md"))
 
+    def test_the_record_field_asks_the_same_grammars_as_the_tests_field(self) -> None:
+        # One entry model answered to two path grammars: `tests` was gated through both
+        # host readings while `record` kept a local POSIX-only test 35 lines below, so
+        # a backslash parent segment came back as an ownership root that escapes the
+        # scenario tree on a Windows host.
+        self.assertIsNone(evidence_currency.scenario_root("scripts/tests/scenarios/..\\esc/README.md"))
+        self.assertIsNone(evidence_currency.scenario_root("C:/x/README.md"))
+        self.assertEqual(
+            evidence_currency.scenario_root("scripts/tests/scenarios/x/README.md"),
+            Path("scripts/tests/scenarios/x"),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
