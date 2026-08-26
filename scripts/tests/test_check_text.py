@@ -340,7 +340,7 @@ class WrittenCountTests(unittest.TestCase):
     # The counts below are composed from parts so this file does not carry the pattern
     # it tests for. An exemption would have been the other way, and a check its own
     # suite is exempt from is a check nothing holds to its own rule.
-    EIGHT, TWO, FOUR, FIVE, THREE = "eight", "Two", "four", "5", "three"
+    EIGHT, TWO, FIVE, THREE = "eight", "Two", "5", "three"
 
     def workspace(self, root: Path, relative: str, body: str) -> Path:
         path = root / relative
@@ -348,38 +348,48 @@ class WrittenCountTests(unittest.TestCase):
         path.write_text(body, encoding="utf-8")
         return path
 
-    def test_a_count_of_what_the_repository_contains_is_reported(self) -> None:
+    def test_the_plainest_form_is_reported_in_every_file_kind_read(self) -> None:
         # Each of these nouns has carried a stale number: README named fewer gate steps
         # than ran, generated_block named fewer consumers than dispatched blocks,
         # PROJECT.md kept seam counts by hand. Nothing read any of them.
-        for noun, number in (
-            ("checks", self.EIGHT),
-            ("consumers", self.TWO),
-            ("seams", self.TWO),
-            ("forms", self.FOUR),
+        for relative, body in (
+            ("DOC.md", f"# Doc\n\nIt has {self.EIGHT} checks.\n"),
+            ("m.py", f'"""{self.TWO} readers disagree."""\n'),
+            ("r.yaml", f"note: it took {self.THREE} rounds\n"),
+            ("t.toml", f"# {self.TWO} consumers share it\n"),
         ):
-            with self.subTest(noun=noun), TemporaryDirectory() as tmp:
+            with self.subTest(relative=relative), TemporaryDirectory() as tmp:
                 root = Path(tmp)
-                path = self.workspace(root, "DOC.md", f"# Doc\n\nIt has {number} {noun}.\n")
+                path = self.workspace(root, relative, body)
 
                 errors = check_text.check([path], root)
 
                 self.assertEqual(len(errors), 1, errors)
                 self.assertIn("writes a count", errors[0].message)
 
-    def test_prose_without_a_count_passes(self) -> None:
+    def test_what_the_pre_filter_does_not_see(self) -> None:
+        # Recorded rather than claimed. A word between the number and the noun, or a
+        # noun not on the list, passes — which is how one sat in the registry while the
+        # commit adding this check said counts had stopped. The rule is a judgment and
+        # the sweep for it is done by reading.
+        for body in (
+            f"# Doc\n\n{self.THREE} review rounds settled it.\n",
+            f"# Doc\n\nIt ships {self.TWO} validators.\n",
+        ):
+            with self.subTest(body=body.strip().splitlines()[-1]), TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                path = self.workspace(root, "DOC.md", body)
+
+                self.assertEqual(check_text.check([path], root), [])
+
+    def test_a_number_that_cannot_go_stale_passes(self) -> None:
+        # A rule's threshold, a recorded measurement's parameters, a configured value:
+        # none of them says how much of anything the tree holds. Paired with a count in
+        # the same file kind, so this shows where the line falls and not merely that the
+        # check was quiet.
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
-            path = self.workspace(root, "DOC.md", "# Doc\n\nThe gate runs these checks.\n")
-
-            self.assertEqual(check_text.check([path], root), [])
-
-    def test_a_skill_states_thresholds_and_a_scenario_states_its_parameters(self) -> None:
-        # A skill's rules and a recorded measurement's parameters are not claims about
-        # the tree. Rewording the reps an arm was run at falsifies the record.
-        with TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            paths = [
+            allowed = [
                 self.workspace(
                     root,
                     "skills/x/SKILL.md",
@@ -390,55 +400,13 @@ class WrittenCountTests(unittest.TestCase):
                     "scripts/tests/scenarios/x/README.md",
                     f"# X\n\n{self.THREE} arms at {self.FIVE} reps each.\n",
                 ),
+                self.workspace(root, "t.toml", f"line-length = 10{self.FIVE}\n"),
+                self.workspace(root, "m.py", 'print(f"OK   inventory ({len(items)} seam(s))")\n'),
             ]
-
-            self.assertEqual(check_text.check(paths, root), [])
-
-    def test_a_configured_value_is_not_a_count(self) -> None:
-        # A width, a target version, a schema number: none of them say how much of
-        # anything the tree holds, and none can go stale against it. Paired with a count
-        # in the same file kind, so this shows where the line falls and not merely that
-        # the check was quiet.
-        with TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            allowed = [
-                self.workspace(
-                    root, "t.toml", f'line-length = 10{self.FIVE}\ntarget-version = "py310"\n'
-                ),
-                self.workspace(root, "s.yaml", f"schema: {self.FIVE}\n"),
-            ]
-            stated = self.workspace(root, "u.toml", f"# {self.TWO} consumers share it\n")
+            stated = self.workspace(root, "n.py", f'"""The inventory holds {self.TWO} seams."""\n')
 
             self.assertEqual(check_text.check(allowed, root), [])
             self.assertEqual(len(check_text.check([stated], root)), 1)
-
-    def test_a_derived_number_in_output_is_not_written_down(self) -> None:
-        # The gate prints how many seams, knowns and steps it found. Those are counted
-        # while it runs, so they cannot disagree with the tree. The contrast is the
-        # point: computing the number is fine, stating it in the same file is not.
-        with TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            computed = self.workspace(
-                root, "m.py", 'print(f"OK   inventory ({len(items)} seam(s))")\n'
-            )
-            stated = self.workspace(root, "n.py", f'"""The inventory holds {self.TWO} seams."""\n')
-
-            self.assertEqual(check_text.check([computed], root), [])
-            self.assertEqual(len(check_text.check([stated], root)), 1)
-
-    def test_python_and_yaml_are_read_too(self) -> None:
-        # The counts that went stale were in docstrings and in a registry entry, not
-        # only in Markdown.
-        with TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            paths = [
-                self.workspace(root, "m.py", f'"""{self.TWO} readers disagree."""\n'),
-                self.workspace(root, "r.yaml", f"note: it took {self.THREE} rounds\n"),
-            ]
-
-            errors = check_text.check(paths, root)
-
-            self.assertEqual(len(errors), 2, errors)
 
 
 if __name__ == "__main__":

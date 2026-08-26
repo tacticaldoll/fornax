@@ -58,21 +58,6 @@ knowns:
       - Exclude those paths and select I for the rest, which trades one unchecked claim for a maintained list of exemptions.
     verification: None. This is the one condition in this file with no check behind it, which is what makes it debt rather than a resolved defect; the grouping in runtime_contract.py was repaired by hand.
     updated: 2026-08-26
-  - id: written-count-check-is-syntactic
-    statement: The rule against writing a count of what the repository contains is a judgment, and the check behind it recognises one syntax that a count can take.
-    kind: debt
-    treatment: accept
-    rationale: Deciding whether a number counts the tree needs the sentence's meaning. The check reports a cardinal standing immediately before a noun from a closed list, which is the plainest form and the one every stale count in this repository had taken; a count phrased any other way passes, and the rule is stated as an authoring judgment for that reason rather than as a guarantee.
-    evidence:
-      - The commit that added the check claimed counts had stopped while a count sat in this file, phrased with an adjective between the number and the noun, which the check does not see.
-      - Widening the syntax was measured and abandoned. Allowing modifiers before the noun and any plural word after the number matched mostly ordinary prose — "one is", a character threshold, a PEP number followed by a verb — so it surfaced nothing the closed list missed and would have buried what it did surface.
-      - The exemption for skills and scenario records is by directory, so a count of tree state written inside one passes.
-      - Every count the sweep found was reworded by reading the sentence, not by the check; the check found the plainest of them.
-    declined-changes:
-      - Widen the matcher to any plural noun after a cardinal, which was measured as mostly false positives.
-      - State the rule as a guarantee the check enforces, which is the claim a review refuted.
-    verification: scripts/tests/test_check_text.py covers the syntax the check does recognise, in each file kind it reads, and pins the classification's boundaries from both sides. What it cannot cover is the gap this entry records.
-    updated: 2026-08-26
   - id: evidence-entry-model-splits-by-hand
     statement: A result measured against more than one document is registered as a separate evidence entry per document only because a maintainer remembers to split it.
     kind: debt

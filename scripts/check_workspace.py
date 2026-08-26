@@ -77,7 +77,7 @@ STEPS = (
     ),
     Step(
         "text hygiene",
-        "tracked text hygiene, repository-local Markdown links, and written counts",
+        "tracked text hygiene, repository-local Markdown links, and plainly written counts",
         ("scripts/check_text.py",),
     ),
     Step("python style", "Python style, at the pinned Ruff", ("-m", "ruff", "check", ".")),

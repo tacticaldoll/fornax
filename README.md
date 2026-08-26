@@ -279,7 +279,7 @@ It runs these checks, in this order:
 6. the `development-knowns.yaml` registry
 7. recorded behavioural evidence against the prose it measured
 8. this list, derived from the gate rather than transcribed
-9. tracked text hygiene, repository-local Markdown links, and written counts
+9. tracked text hygiene, repository-local Markdown links, and plainly written counts
 10. Python style, at the pinned Ruff
 11. every non-Python source the repository ships, through its own parser
 12. the validation test suite

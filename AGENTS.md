@@ -630,45 +630,14 @@ Keep scripts deterministic, portable, and easy to audit.
   how many commits or forms a past repair took. A number beside such a noun is a claim about the
   tree that nothing reads, and every one of these nouns has carried a stale one: README named fewer
   gate steps than the gate ran, `generated_block` named fewer consumers than dispatched blocks,
-  `PROJECT.md` kept seam counts by hand, and had already had some removed for this very reason.
-  Derive the number into a generated block, or say the thing without it — "form after form", "more
-  than one check", "the consumers of one record identity".
+  `PROJECT.md` kept seam counts by hand. Derive the number into a generated block, or say the thing
+  without it — "form after form", "more than one check", "the consumers of one record identity".
 
-  **The rule is a judgment; the check is not the rule.** `scripts/check_text.py` reports a cardinal
-  number standing immediately before a noun from a closed list — the nouns that have gone stale.
-  That is one syntax a count can take, and counts take others: an adjective between the number and
-  the noun slips past it, and so does any noun not on the list. Both were verified, and a count
-  phrased that way sat in `development-knowns.yaml` while the commit that added the check claimed
-  counts had stopped. Widening the syntax was measured and abandoned: allowing modifiers before
-  the noun and any plural after the number matched mostly prose — "one is", "72 characters", "PEP
-  508 is" — so it caught nothing new and would have buried what it did catch. Extending the noun
-  list narrows the gap; nothing closes it, because deciding whether a number counts the tree needs
-  the sentence's meaning. `development-knowns.yaml` records that.
-
-  The classification below is what decides whether a number is a count at all, and it is for the
-  author to apply — the check only catches the plainest form. Each row names where the suite shows
-  the check agreeing with it, because a category stated here that the check does not implement is
-  the same defect this rule is about.
-
-  | A number that... | Is it a count? |
-  |---|---|
-  | says how much of something the tree holds | **yes — remove it** |
-  | a rule prescribes, or states as a threshold | no |
-  | records the conditions a measured result was taken under | no, and rewording it falsifies it |
-  | configures a tool, or names a version | no |
-  | a check computes while it runs | no, it cannot go stale |
-
-  In `scripts/tests/test_check_text.py`, in that order:
-  `..._a_count_of_what_the_repository_contains_is_reported`,
-  `..._a_skill_states_thresholds_and_a_scenario_states_its_parameters` for the next two,
-  `..._a_configured_value_is_not_a_count`, and
-  `..._a_derived_number_in_output_is_not_written_down`.
-
-  Skills and scenario records sit outside the check because their numbers are the prescribed and
-  almost everywhere. That exemption is by directory, which is coarse; a count of tree state inside
-  one would pass. Nothing better is available without reading intent, and this file is where that
-  limit is recorded rather than left to be rediscovered.
-
-  This check's own rule text and fixtures have to contain the pattern. They compose their numbers
-  from parts instead of earning an exemption: a check its own suite is exempt from is a check
-  nothing holds to its own rule.
+  Not every number is one. A quantity a rule prescribes, a threshold, a configured value, a
+  version, and the reps and arms a recorded measurement was taken under are all numbers that cannot
+  go stale against the tree; rewording the last of those falsifies the record it belongs to.
+  Deciding which a number is needs the sentence, so this is an authoring judgment and the sweep for
+  it is done by reading. `scripts/check_text.py` catches the plainest form only — a number standing
+  immediately before one of those nouns — and is a pre-filter, not the rule. A count phrased around
+  it passes, which is how one sat in `development-knowns.yaml` while the commit adding the check
+  said counts had stopped.

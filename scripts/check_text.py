@@ -19,8 +19,13 @@ ROOT = Path(__file__).resolve().parent.parent
 # Nouns naming something the repository contains. A number written next to one of
 # these is a claim about the tree that nothing reads, and each of these nouns has
 # carried a stale one: README named fewer gate steps than ran, generated_block named
-# fewer consumers than dispatched blocks, PROJECT.md kept seam counts by hand. Derive
-# the number or describe the thing without it.
+# fewer consumers than dispatched blocks, PROJECT.md kept seam counts by hand.
+#
+# A pre-filter, not the rule. It sees a number standing immediately before one of
+# these nouns, which is the plainest form and the one every stale count here had
+# taken; a count with a word in between, or beside a noun not listed, passes. The rule
+# is an authoring judgment and AGENTS.md states it as one — the sweep that removed
+# these was done by reading, and this caught the plainest of them.
 INVENTORY = (
     "arms|cases|checks|commits|consumers|controls|copies|entries|families|files|findings|"
     "forms|generators|grammars|knowns|layers|matchers|modules|readers|rounds|seams|skills|"
