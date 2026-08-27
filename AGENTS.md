@@ -710,8 +710,10 @@ Keep scripts deterministic, portable, and easy to audit.
   clause is transcription — a number in a message gets copied into a docstring, and the docstring
   does go stale — so a message's number must not become the tree's.
 
-  That line was drawn after four consecutive rounds reported this clause violated, each time by the
-  commits repairing the previous round's violation of it. The wording it replaces — "name what
+  That line was drawn after round after round reported this clause violated, each time by the
+  commits repairing the previous round's violation of it — the count of rounds belongs in the dated
+  records under `docs/dispositions/`, and writing it here is the thing this rule forbids, in the
+  paragraph amending it. The wording it replaces — "name what
   changed, not how much of it" — forbade both kinds while naming a harm for only one, and a clause
   nobody satisfies produces a finding a round and prevents nothing. The weighing rule above says
   that is worse than the authoring rule alone; applying it to a governance clause rather than to a
