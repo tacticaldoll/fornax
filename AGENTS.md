@@ -60,14 +60,19 @@ Write these files in English:
 - scripts, validation messages, commit messages, PR summaries, and release notes
 
 Chinese is allowed when it is task data, source material, domain reference content, localized
-examples, a maintainer-only micro-test rubric or its raw scores, or required by a specific NLP
-workflow. Keep executable instructions and trigger metadata in English whenever possible.
+examples, a maintainer-only micro-test rubric or its raw scores, an archived Review Record under
+`docs/reviews/`, or required by a specific NLP workflow. Keep executable instructions and trigger metadata in English whenever possible.
 
 The rubric class is written down because the lists above did not decide it and a review had to
 raise it as a judgment call. A rubric is executable — a maintainer runs it to reproduce a
 measurement — so "whenever possible" reaches it, while nothing installed or published reads it
 and the `README.md` that summarises each one is English. Decided in favour of leaving them as
 they are, recorded here so the next reader is not deciding again.
+
+An archived Review Record joins that list for a different reason: it is not this repository's prose
+at all. It is a copy of what a producer wrote, kept so a later round can check a reconciliation
+against its input, and translating it would destroy the only property it has. The Disposition Record
+that reconciles it is English, which is where the reasoning a reader needs lives.
 
 ## Naming Convention
 
