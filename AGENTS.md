@@ -683,10 +683,10 @@ Keep scripts deterministic, portable, and easy to audit.
   subjects exceed 72 characters" and "30 `re.compile` sites" are measurements of the tree, they go
   stale with the next commit, and reading the exemption to cover them is how they were written into
   the very commits that removed counts elsewhere. A measurement worth keeping goes in a dated record
-  that says when it was taken. A
-  Disposition Record under `docs/dispositions/` is exempt for that same reason and not by
-  courtesy — it is dated, it says what a range was found to contain when it was read, and editing
-  its numbers to satisfy a later rule makes it a worse record of that reading.
+  that says when it was taken. A Disposition Record under `docs/dispositions/` is exempt for that
+  same reason and not by courtesy — it is dated, it says what a range was found to contain when it
+  was read, and editing its numbers to satisfy a later rule makes it a worse record of that reading.
+
   Deciding which a number is needs the sentence, so this is a judgment and nothing checks it. A
   check was written for it and removed: it saw only a number standing immediately before one of
   those nouns, so a count with a word in between passed — one sat in `development-knowns.yaml`
@@ -701,10 +701,20 @@ Keep scripts deterministic, portable, and easy to audit.
   written into the very commits that removed the check and claimed the sweep had been re-run; what
   had been re-run was the dead matcher's pattern.
 
-  The rule covers commit prose too. A commit message cannot go stale on its own — it describes the
-  change it made — but its numbers are copied into docstrings, which do, and that is where every
-  count removed above came from. Reading the message against this rule means reading its own
-  sentences, not only checking that the reworded sites are gone: the round that swept the tree wrote
-  fresh measurements of the tree into the messages that reported the sweep, and said in a record
-  that the messages had been checked. The commit that swept them said "Two prohibited counts" and "Four
-  sites reworded" in the act of forbidding both. Name what changed, not how much of it.
+  The rule covers commit prose, and where it cuts there is staleness, which is what the whole rule
+  is about. A message describes the change it made and is never re-read as a claim about the current
+  tree, so a number counting what **that commit did** — sites it reworded, files it touched — cannot
+  go stale and is not this rule's subject. A **measurement of the tree** written into a message is:
+  "39 of 119 subjects exceed 72 characters" reads afterwards as a fact about the repository and
+  stops being one at the next commit. Those belong in a dated record. The second reason for the
+  clause is transcription — a number in a message gets copied into a docstring, and the docstring
+  does go stale — so a message's number must not become the tree's.
+
+  That line was drawn after four consecutive rounds reported this clause violated, each time by the
+  commits repairing the previous round's violation of it. The wording it replaces — "name what
+  changed, not how much of it" — forbade both kinds while naming a harm for only one, and a clause
+  nobody satisfies produces a finding a round and prevents nothing. The weighing rule above says
+  that is worse than the authoring rule alone; applying it to a governance clause rather than to a
+  check is the same judgment, and narrowing one is a repair for the same reason removing a check is.
+  What is not narrowed: a measurement of the tree in a message stays forbidden, and it is the form
+  that actually got transcribed.
