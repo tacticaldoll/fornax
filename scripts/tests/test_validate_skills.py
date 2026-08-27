@@ -1148,6 +1148,9 @@ class ProjectedDescriptionTests(unittest.TestCase):
         # name, and each one shortened a ref into the shipped tag.
         for text, expected in (
             ('"REPO@v1.2.3"', ["v1.2.3"]),
+            # Quoted, fragment-bearing and closed: the ref ends at the fragment and the
+            # word ends at the quote after it, which are different ends.
+            ('"REPO@v1.2.3#subdirectory=tools/cli"', ["v1.2.3"]),
             ('"REPO@v1.2.3#subdirectory=tools/cli"', ["v1.2.3"]),
             ('"fornax@REPO#v1.2.3"', ["v1.2.3"]),
             ("REPO@v1.2.3 \\", ["v1.2.3"]),
@@ -1213,7 +1216,15 @@ class ProjectedDescriptionTests(unittest.TestCase):
     def test_an_opening_quote_nothing_closes_leaves_the_ref_unread(self) -> None:
         # A token that ran to the end of the document is not a token read to its end,
         # whatever it happens to spell.
-        for text in ('"REPO@v1.2.3', "'REPO@v1.2.3"):
+        # The fragment case is the one that got through: `#` ends the ref inside quotes
+        # as readily as outside, and one flag stood for both "the ref ended" and "the
+        # word closed", so a fragment proved a closure that never happened.
+        for text in (
+            '"REPO@v1.2.3',
+            "'REPO@v1.2.3",
+            '"REPO@v1.2.3#subdirectory=tools/cli',
+            "'REPO@v1.2.3#egg=fixture",
+        ):
             with self.subTest(text=text):
                 refs, unreadable = distribution_manifest.install_refs(
                     text.replace("REPO", "git+https://x.invalid/r.git"),

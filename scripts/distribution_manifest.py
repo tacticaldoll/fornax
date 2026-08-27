@@ -184,10 +184,8 @@ def install_refs(text: str, repository: str) -> tuple[list[str], list[Unread]]:
 
         ends = {opening, "#"} if opening else set(" \t\r\n#")
         token: list[str] = []
-        closed = False
         for char in text[match.end() :]:
             if char in ends:
-                closed = True
                 break
             token.append(char)
 
@@ -196,7 +194,12 @@ def install_refs(text: str, repository: str) -> tuple[list[str], list[Unread]]:
         # about which one to install.
         if not token or token[0] != "v":
             continue
-        if opening and not closed:
+        # Where the ref ends and whether the word is closed are separate questions, and
+        # answering them with one flag conflated them: `#` ends the ref inside quotes as
+        # readily as outside, so `"…@v1.2.3#egg=x` with no closing quote counted the
+        # fragment as the closure and read as the shipped tag. The word's closer is
+        # wherever that quote character next appears, which is what the shell says too.
+        if opening and opening not in text[match.end() :]:
             unreadable.append(
                 Unread("".join(token), f"opens with {opening} that nothing closes")
             )
