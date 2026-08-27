@@ -51,6 +51,33 @@ class LineCitations(unittest.TestCase):
 
             self.assertIn("cites a line", messages(root)[0])
 
+    def test_a_line_citation_is_refused_without_backticks_and_by_any_suffix(self) -> None:
+        """The first form asked for backticks and a suffix from a list of six.
+
+        So `scripts/foo.py:12` written as plain prose passed, and so did a `.js` path,
+        under a message saying the form is refused.
+        """
+        for text in (
+            "bare scripts/foo.py:12 in prose\n",
+            "`.opencode/plugins/fornax.js:12`\n",
+            "see docs/review-record-contract.md:44\n",
+        ):
+            with self.subTest(text=text), TemporaryDirectory() as tmp:
+                root = workspace(tmp, **{"AGENTS.md": text})
+
+                found = messages(root)
+
+                self.assertEqual(len(found), 1, found)
+                self.assertIn("cites a line", found[0])
+
+    def test_a_version_is_not_a_line_citation(self) -> None:
+        # The widened pattern requires an alphabetic extension. Without that, "Python
+        # 3.10:1" reads as a path with extension "10" and a line number.
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp, **{"AGENTS.md": "Pinned at Python 3.10:1 of the matrix.\n"})
+
+            self.assertEqual(messages(root), [])
+
     def test_a_disposition_record_is_a_subject(self) -> None:
         with TemporaryDirectory() as tmp:
             root = workspace(
@@ -148,6 +175,37 @@ class SymbolCitations(unittest.TestCase):
 
             self.assertEqual(len(found), 1, found)
             self.assertIn("names no member of Reader", found[0])
+
+    def test_a_misspelled_internal_module_is_reported(self) -> None:
+        """The gap the first version had: unknown module read as external module.
+
+        `evidnce_currency.resolved_inside` passed in silence, which is the whole failure
+        a citation check exists to stop. A misspelling is a near-miss by definition, so
+        that is what separates it from `shlex.shlex`, with no list to maintain.
+        """
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp, **{"AGENTS.md": "Asked through `sampl_module.reads_whole`.\n"})
+
+            found = messages(root)
+
+            self.assertEqual(len(found), 1, found)
+            self.assertIn("is one character-set away", found[0])
+
+    def test_a_test_module_is_a_module_here(self) -> None:
+        # Reading only scripts/ made every citation into a test module unknown, and the
+        # near-miss rule then reported it against its production sibling.
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp)
+            (root / "scripts" / "tests").mkdir()
+            (root / "scripts" / "tests" / "test_sample_module.py").write_text(
+                "class Cases:\n    def test_one(self) -> None:\n        pass\n",
+                encoding="utf-8",
+            )
+            (root / "AGENTS.md").write_text(
+                "Covered by `test_sample_module.Cases.test_one`.\n", encoding="utf-8"
+            )
+
+            self.assertEqual(messages(root), [])
 
 
 class EntryPoint(unittest.TestCase):

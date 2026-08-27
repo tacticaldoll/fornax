@@ -683,18 +683,18 @@ Keep scripts deterministic, portable, and easy to audit.
 
 - **Do not cite a line number in durable prose.** A `path:line` citation is keyed to a coordinate
   that moves with the next edit to that file, so it can only be maintained by hand, and it fails
-  quietly: more than half the citations the disposition records carried sat in files that had changed
-  since the record landed, and the round that checked them found wrong symbols and wrong lines inside
-  the cells asserting closures had been verified. Cite the file and the unit inside it — a symbol
-  (`evidence_currency.resolved_inside`), or a quoted phrase where no symbol owns the text. Both
-  survive an unrelated edit, and `scripts/check_citations.py` verifies that a cited symbol exists.
+  quietly: a review round found wrong symbols and wrong lines inside the cells asserting closures had
+  been verified, and the records' citations had gone unverifiable wherever the cited file had changed
+  since. Cite the file and the unit inside it — a symbol (`evidence_currency.resolved_inside`), or a
+  quoted phrase where no symbol owns the text. Both survive an unrelated edit, and
+  `scripts/check_citations.py` verifies that a cited symbol exists.
 
   The subject is what this repository authors as durable reasoning: this file, `PROJECT.md`,
   `README.md`, `development-knowns.yaml`, and the records under `docs/dispositions/`. Two things are
   outside it, and not by exemption. A Review Record's own evidence column is a coordinate into the
   tree as reviewed, read once by the triage in the round it was written, and never afterwards — and
-  six of its convention's sites sit inside sections a recorded measurement fingerprints, so changing
-  them would supersede a measurement to make a wording change. Raw scores under
+  most of that convention's sites sit inside sections a recorded measurement fingerprints, so
+  changing them would supersede a measurement to make a wording change. Raw scores under
   `scripts/tests/scenarios/` quote what an agent produced during a run; editing them falsifies the
   record, which is the same reason the count rule leaves them alone.
 

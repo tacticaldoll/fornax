@@ -2,10 +2,10 @@
 """Check that this repository's durable reasoning cites something that survives an edit.
 
 A `path:line` citation is keyed to a coordinate that moves with the next edit to that
-file. It can only be maintained by hand, and it fails quietly: more than half the
-citations the disposition records carried sat in files that had changed since the record
-landed, and the round that checked them found wrong symbols and wrong lines inside the
-cells asserting that closures had been verified.
+file. It can only be maintained by hand, and it fails quietly: a review round found wrong
+symbols and wrong lines inside the cells asserting that closures had been verified, and
+the citations that had gone unverifiable were the ones whose files had changed since their
+record landed. The measurement is in the dated record for that round.
 
 So the citation form is what this refuses, and the symbol form is what it verifies. A
 line number cannot be checked without knowing what it was meant to point at; a symbol
@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import difflib
 import re
 import sys
 from dataclasses import dataclass
@@ -44,10 +45,12 @@ ROOT = Path(__file__).resolve().parent.parent
 SUBJECTS = ("AGENTS.md", "PROJECT.md", "README.md", "development-knowns.yaml")
 RECORDS = Path("docs/dispositions")
 
-SOURCE_SUFFIXES = ("py", "md", "yaml", "yml", "toml", "txt", "json")
-LINE_CITATION = re.compile(
-    r"`[A-Za-z0-9_./-]+\.(?:" + "|".join(SOURCE_SUFFIXES) + r"):\d+(?:-\d+)?`"
-)
+SOURCE_SUFFIXES = ("py", "md", "yaml", "yml", "toml", "txt", "json", "js", "sh", "cfg")
+# Any path with an alphabetic extension, backticks or not. The first form of this asked
+# for backticks and a suffix from the list above, so `scripts/foo.py:12` in plain prose
+# and a `.js` citation both passed a check whose message says the form is refused. The
+# extension must be letters, or `Python 3.10:1` reads as a citation.
+LINE_CITATION = re.compile(r"[A-Za-z0-9_./-]+\.[A-Za-z]{1,6}:\d+(?:-\d+)?")
 SYMBOL_CITATION = re.compile(
     r"`([a-z][a-z0-9_]*)((?:\.[A-Za-z_][A-Za-z0-9_]*){1,2})`"
 )
@@ -69,6 +72,20 @@ def subjects(root: Path) -> list[Path]:
     return found
 
 
+def modules(root: Path) -> dict[str, Path]:
+    """Every module under `scripts/`, by the name a citation would use.
+
+    `scripts/tests/` included. Reading only the top directory made every citation into a
+    test module — and a Reach entry naming a test is the ordinary case — an unknown
+    module that the near-miss rule below then reported against its production sibling:
+    `test_validate_skills.check` came back as a misspelling of `validate_skills`.
+    """
+    scripts = root / "scripts"
+    if not scripts.is_dir():
+        return {}
+    return {path.stem: path for path in sorted(scripts.rglob("*.py"))}
+
+
 def module_symbols(root: Path, module: str) -> dict[str, set[str]] | None:
     """What a `scripts/` module defines at its top level, each with its own members.
 
@@ -80,8 +97,8 @@ def module_symbols(root: Path, module: str) -> dict[str, set[str]] | None:
     a citation this cannot follow is a citation this does not check. `Document.require`
     is exactly the shape of the wrong-symbol defect that prompted the rule.
     """
-    path = root / "scripts" / f"{module}.py"
-    if not path.is_file():
+    path = modules(root).get(module)
+    if path is None:
         return None
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"))
@@ -134,13 +151,30 @@ def citations(root: Path, path: Path) -> list[Diagnostic]:
                 continue  # `evidence_currency.py` is a filename, not a symbol citation
             names = module_symbols(root, module)
             if names is None:
+                # An unknown module is either something outside this tree or a
+                # misspelling of something inside it, and the first version of this
+                # check read both as the first — so `evidnce_currency.resolved_inside`
+                # passed silently, which is the whole failure a citation check exists to
+                # stop. A misspelling is a near-miss by definition, so that is what
+                # separates them, with no list of external modules to maintain.
+                near = difflib.get_close_matches(module, list(modules(root)), n=1, cutoff=0.8)
+                if near:
+                    found.append(
+                        Diagnostic(
+                            path,
+                            number,
+                            f"{match.group(0)} names no module here; "
+                            f"{modules(root)[near[0]].relative_to(root)} is one character-set away",
+                        )
+                    )
                 continue
             if parts[0] not in names:
                 found.append(
                     Diagnostic(
                         path,
                         number,
-                        f"{match.group(0)} names no top-level symbol in scripts/{module}.py",
+                        f"{match.group(0)} names no top-level symbol in "
+                        f"{modules(root)[module].relative_to(root)}",
                     )
                 )
             elif len(parts) > 1 and parts[1] not in names[parts[0]]:
@@ -148,8 +182,8 @@ def citations(root: Path, path: Path) -> list[Diagnostic]:
                     Diagnostic(
                         path,
                         number,
-                        f"{match.group(0)} names no member of {parts[0]} "
-                        f"in scripts/{module}.py",
+                        f"{match.group(0)} names no member of {parts[0]} in "
+                        f"{modules(root)[module].relative_to(root)}",
                     )
                 )
     return found

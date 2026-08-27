@@ -152,7 +152,7 @@ def marked_code_blocks(text: str) -> list[MarkedBlock]:
 def prose_lines(text: str) -> list[tuple[int, str]]:
     """Every line outside a fenced code block, numbered from one.
 
-    A fourth operation needing the grammar, and the same reason as the others: what is
+    Another operation needing the grammar, and the same reason as the others: what is
     inside a fence is a quotation, not this document's own prose. An archived Review
     Record is held in a fence precisely so its absolute-path links and its line
     citations are text rather than claims, and a hand-written rule that skipped lines
