@@ -687,14 +687,16 @@ Keep scripts deterministic, portable, and easy to audit.
   been verified, and the records' citations had gone unverifiable wherever the cited file had changed
   since. Cite the file and the unit inside it — a symbol (`evidence_currency.resolved_inside`), or a
   quoted phrase where no symbol owns the text. Both survive an unrelated edit, and
-  `scripts/check_citations.py` verifies that a cited symbol exists.
+  `scripts/check_citations.py` verifies that a citation into this tree names a symbol that exists —
+  and that a citation naming anything else names a module the standard library or this repository's
+  own imports account for, which is what a mistyped internal module fails.
 
   The subject is what this repository authors as durable reasoning: this file, `PROJECT.md`,
   `README.md`, `development-knowns.yaml`, and the records under `docs/dispositions/`. Two things are
   outside it, and not by exemption. A Review Record's own evidence column is a coordinate into the
   tree as reviewed, read once by the triage in the round it was written, and never afterwards — and
-  that convention lives largely inside sections a recorded measurement fingerprints, so changing it
-  would supersede a measurement to make a wording change. Raw scores under
+  changing that convention would reach sections a recorded measurement fingerprints, superseding a
+  measurement to make a wording change. Raw scores under
   `scripts/tests/scenarios/` quote what an agent produced during a run; editing them falsifies the
   record, which is the same reason the count rule leaves them alone.
 

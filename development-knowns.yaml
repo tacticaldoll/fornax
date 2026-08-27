@@ -46,6 +46,21 @@ knowns:
     reconsider-when: bashlex relicenses or an equivalently complete bash parser ships under a permissive license, or Python 3.11 becomes the declared floor, or a matcher's boundedness becomes machine-decidable.
     verification: "`grep -n \"re.compile\" scripts/*.py` enumerates every matcher in the tree, which is where the classification above is checked rather than trusted; this list has under-reported twice, and a reader who takes it as complete inherits that. Each grammar states the channel it has. The parsed ones are total by their libraries — Requirement consumes the string or raises, safe_load parses the document or raises, and runtime_contract reports what raised rather than reading fewer commands. The token grammars reach their value through read_whole.whole, whose Whole rejects any match not spanning its subject; test_read_whole.py fails when that check is removed. Command structure is covered by cases rather than by a guarantee, because a structure this reads wrongly is silent: echoed text, another program whose name starts with pip, the wrong verb, an install after a control operator, after assignments, through the module, and by path are each a case in test_runtime_contract.py. RUFF_TARGET needs no channel: check requires exactly one match in ruff.toml, so a misread changes the count and fails."
     updated: 2026-08-27
+  - id: external-symbol-citations-unchecked
+    statement: A citation naming a module outside this tree is checked to the module and no further, so a symbol that module does not define reads as verified.
+    kind: debt
+    treatment: accept
+    rationale: Reading an external symbol means reading source this repository does not hold. The standard library's would come through an interpreter path and a package's through whatever a local environment installed, and the second is the environment dependence the checker was repaired to remove; a check that answers differently on two machines is worse than one that states its boundary.
+    evidence:
+      - scripts/check_citations.py resolves a citation's module against scripts/, the standard library set the pinned interpreter carries, and the modules some file under scripts/ imports. The first of those is parsed for symbols and members; the other two are not.
+      - No external symbol has been miscited in this repository. The falsifier that opened this gap was constructed by a review, and every citation defect that actually occurred named a module or a symbol inside this tree.
+      - What the module check does buy is the case that has occurred — a mistyped internal module, which matches no name in any of the three sets and is refused.
+    declined-changes:
+      - Parse the standard library's source from the interpreter's stdlib path, which covers the stdlib half of these citations, leaves the packaged half unchecked, and so leaves the boundary needing a statement anyway.
+      - Import each cited module and read its attributes, which runs third-party code inside a maintenance check.
+    reconsider-when: An external symbol citation is found wrong, or the packaged names this repository cites come to be readable without asking a local environment.
+    verification: None for the symbol; the module half is covered by test_check_citations.SymbolCitations, whose cases include a stdlib name, an imported third-party name, one nothing here imports, and misspellings of an internal module.
+    updated: 2026-08-27
   - id: import-grouping-unchecked
     statement: Whether a module's imports are grouped as the files claim is checked by nobody, and a third-party import landed in the middle of a standard-library group with every gate green.
     kind: debt

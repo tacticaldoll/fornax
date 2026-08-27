@@ -11,6 +11,16 @@ So the citation form is what this refuses, and the symbol form is what it verifi
 line number cannot be checked without knowing what it was meant to point at; a symbol
 can, and a symbol that no longer exists is the defect a wrong line number hides.
 
+Where that verification stops: a citation into this tree is checked to its symbol and to
+a class member below it, and a citation naming an external module is checked only to the
+module. Reading an external symbol means reading source this repository does not hold —
+the standard library's by an interpreter path, a package's by whatever a local
+environment installed — and the second of those is the environment dependence this check
+was just repaired for. No external symbol has ever been miscited here, so the reading is
+not bought; what is bought is that a module name outside `scripts/`, the standard library
+and this repository's own imports is refused, which is what a mistyped internal module
+looks like. `development-knowns.yaml` records the gap.
+
 What this costs, stated because it is the objection to the rule it enforces: renaming a
 cited symbol turns every record citing it red. That is not the failure mode a line
 number has. A line number breaks on any edit anywhere above it, silently and with no
@@ -31,7 +41,6 @@ from __future__ import annotations
 
 import argparse
 import ast
-import importlib.util
 import re
 import sys
 from dataclasses import dataclass
@@ -53,8 +62,11 @@ SOURCE_SUFFIXES = ("py", "md", "yaml", "yml", "toml", "txt", "json", "js", "sh",
 # version and a column read as a citation. A match inside a URL's authority is not one:
 # `https://example.com:443/path` yields `//example.com:443`, so the whole whitespace-
 # bounded word is examined and a word carrying a scheme separator is left alone.
-LINE_CITATION = re.compile(r"[A-Za-z0-9_./-]+\.[A-Za-z]+:\d+(?:-\d+)?")
-URL_WORD = re.compile(r"\S*://\S*")
+LINE_CITATION = re.compile(r"[A-Za-z0-9_./-]+\.[A-Za-z][A-Za-z0-9]*:\d+(?:-\d+)?")
+# Only a URL's authority is exempt. Skipping the whole whitespace-bounded word let a
+# citation inside a URL's path escape as well, and a path there is as much a path as
+# anywhere. The authority runs from after the scheme separator to the next slash.
+URL_AUTHORITY = re.compile(r"://[^/\s]*")
 SYMBOL_CITATION = re.compile(
     r"`([a-z][a-z0-9_]*)((?:\.[A-Za-z_][A-Za-z0-9_]*){1,2})`"
 )
@@ -176,22 +188,36 @@ def module_symbols(root: Path, module: str) -> Symbols | None:
     return Symbols(names, None)
 
 
-def installed(module: str) -> bool:
-    """Whether a module of that name can be found anywhere on the path.
+def citable(root: Path) -> set[str]:
+    """Every module name a citation may name without this tree defining it.
 
-    This is what separates an external module from a misspelling of an internal one, and
-    it needs no threshold and no list: `shlex` and `yaml` resolve, a name with a letter
-    transposed resolves nowhere. A similarity heuristic stood here first and passed every
-    misspelling unlike enough to a real name, which is the same silence in a smaller
-    range. `find_spec` locates without importing.
+    Derived, not asked of the environment. `find_spec` stood here first, which made the
+    answer depend on what happened to be installed in the interpreter running the check
+    rather than on anything this repository declares. The stdlib set is static and comes
+    with the interpreter version `.python-version` pins; the third-party names are the
+    ones some module under `scripts/` actually imports, read from the import statements.
+
+    So a name outside all of this — `scripts/`, the standard library, and what this
+    repository imports — resolves nowhere that matters, whatever a local environment
+    holds. A similarity heuristic stood here before `find_spec` and passed every
+    misspelling unlike enough to a real name, which was the same silence in a smaller
+    range.
     """
-    try:
-        return importlib.util.find_spec(module) is not None
-    except (ImportError, ValueError):
-        return False
+    names = set(sys.stdlib_module_names)
+    for path in sorted((root / "scripts").rglob("*.py")):
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+        except (OSError, SyntaxError):
+            continue  # reported where it is cited, and by the source-parsing gate step
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                names.update(alias.name.split(".")[0] for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module and not node.level:
+                names.add(node.module.split(".")[0])
+    return names
 
 
-def citations(root: Path, path: Path) -> list[Diagnostic]:
+def citations(root: Path, path: Path, external: set[str]) -> list[Diagnostic]:
     """Every citation in one file that names a line, or a symbol nothing defines."""
     try:
         text = path.read_text(encoding="utf-8")
@@ -202,10 +228,10 @@ def citations(root: Path, path: Path) -> list[Diagnostic]:
     lines = prose_lines(text) if path.suffix == ".md" else list(enumerate(text.splitlines(), 1))
     found: list[Diagnostic] = []
     for number, line in lines:
-        urls = [word.span() for word in URL_WORD.finditer(line)]
+        urls = [found.span() for found in URL_AUTHORITY.finditer(line)]
         for match in LINE_CITATION.finditer(line):
             if any(start <= match.start() and match.end() <= end for start, end in urls):
-                continue  # a host and a port inside a URL, not a path and a line
+                continue  # a host and a port in a URL's authority, not a path and a line
             found.append(
                 Diagnostic(
                     path,
@@ -221,13 +247,14 @@ def citations(root: Path, path: Path) -> list[Diagnostic]:
                 continue  # `evidence_currency.py` is a filename, not a symbol citation
             symbols = module_symbols(root, module)
             if symbols is None:
-                if not installed(module):
+                if module not in external:
                     found.append(
                         Diagnostic(
                             path,
                             number,
-                            f"{match.group(0)} names a module found neither under "
-                            "scripts/ nor on the import path",
+                            f"{match.group(0)} names a module that is not under "
+                            "scripts/, not in the standard library, and not imported "
+                            "anywhere here",
                         )
                     )
                 continue
@@ -236,8 +263,8 @@ def citations(root: Path, path: Path) -> list[Diagnostic]:
                     Diagnostic(
                         path,
                         number,
-                        f"scripts/{module}.py {symbols.reason}, so "
-                        f"{match.group(0)} could not be checked",
+                        f"{known.by_stem[module].relative_to(root)} {symbols.reason}"
+                        f", so {match.group(0)} could not be checked",
                     )
                 )
                 continue
@@ -278,7 +305,10 @@ def check(root: Path) -> list[Diagnostic]:
         )
         for stem, paths in sorted(modules(root).collisions.items())
     ]
-    return found + [problem for path in subjects(root) for problem in citations(root, path)]
+    external = citable(root)
+    return found + [
+        problem for path in subjects(root) for problem in citations(root, path, external)
+    ]
 
 
 def main(argv: list[str] | None = None) -> int:

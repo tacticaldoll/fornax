@@ -17,7 +17,7 @@ def workspace(tmp: str, **files: str) -> Path:
     root = Path(tmp)
     (root / "scripts").mkdir()
     (root / "scripts" / "sample_module.py").write_text(
-        "CONSTANT = 1\n\n\n"
+        "import yaml\n\n\nCONSTANT = 1\n\n\n"
         "def reads_whole() -> None:\n    pass\n\n\n"
         "class Reader:\n    depth: int\n\n    def read(self) -> None:\n        pass\n",
         encoding="utf-8",
@@ -72,10 +72,11 @@ class LineCitations(unittest.TestCase):
                 self.assertIn("cites a line", found[0])
 
     def test_a_long_extension_is_still_a_line_citation(self) -> None:
-        with TemporaryDirectory() as tmp:
-            root = workspace(tmp, **{"AGENTS.md": "See docs/spec.markdown:12 for it.\n"})
+        for text in ("See docs/spec.markdown:12 for it.\n", "And schema.proto3:12 too.\n"):
+            with self.subTest(text=text), TemporaryDirectory() as tmp:
+                root = workspace(tmp, **{"AGENTS.md": text})
 
-            self.assertIn("cites a line", messages(root)[0])
+                self.assertIn("cites a line", messages(root)[0])
 
     def test_a_url_authority_is_not_a_line_citation(self) -> None:
         """A host and a port read as a path and a line to the pattern alone.
@@ -91,6 +92,16 @@ class LineCitations(unittest.TestCase):
                 root = workspace(tmp, **{"AGENTS.md": text})
 
                 self.assertEqual(messages(root), [])
+
+    def test_a_citation_inside_a_url_path_is_still_one(self) -> None:
+        # Exempting the whole whitespace-bounded word let this escape with the port. A
+        # path inside a URL's path is as much a path as anywhere.
+        with TemporaryDirectory() as tmp:
+            root = workspace(
+                tmp, **{"AGENTS.md": "At https://host.example/docs/file.py:12 today.\n"}
+            )
+
+            self.assertIn("cites a line", messages(root)[0])
 
     def test_a_version_is_not_a_line_citation(self) -> None:
         # The widened pattern requires an alphabetic extension. Without that, "Python
@@ -169,9 +180,14 @@ class SymbolCitations(unittest.TestCase):
 
             self.assertEqual(messages(root), [])
 
-    def test_a_dotted_name_from_outside_this_tree_is_not_judged(self) -> None:
-        # A standard-library or third-party call is not a claim about this repository,
-        # and answering about it would make the check refuse ordinary prose.
+    def test_a_module_the_standard_library_or_this_tree_accounts_for_passes(self) -> None:
+        """`shlex` comes with the interpreter; `yaml` is imported by the sample module.
+
+        Both are derived rather than asked of the environment: the stdlib set is static
+        for the pinned interpreter, and the third-party names come from the import
+        statements under `scripts/`. Asking the environment made the answer depend on
+        what a local interpreter happened to have installed.
+        """
         with TemporaryDirectory() as tmp:
             root = workspace(
                 tmp,
@@ -179,6 +195,15 @@ class SymbolCitations(unittest.TestCase):
             )
 
             self.assertEqual(messages(root), [])
+
+    def test_a_third_party_module_nothing_here_imports_is_reported(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp, **{"AGENTS.md": "Fetched with `requests.get`.\n"})
+
+            found = messages(root)
+
+            self.assertEqual(len(found), 1, found)
+            self.assertIn("not imported anywhere here", found[0])
 
     def test_a_member_the_class_defines_passes(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -213,7 +238,7 @@ class SymbolCitations(unittest.TestCase):
                 found = messages(root)
 
                 self.assertEqual(len(found), 1, found)
-                self.assertIn("found neither under scripts/ nor on the import path", found[0])
+                self.assertIn("not in the standard library", found[0])
 
     def test_a_test_module_is_a_module_here(self) -> None:
         # Reading only scripts/ made every citation into a test module unknown, and the
@@ -260,6 +285,27 @@ class ModuleIdentity(unittest.TestCase):
             self.assertEqual(len(found), 1, found)
             self.assertIn("could not be parsed", found[0])
             self.assertNotIn("names no", found[0])
+
+    def test_an_unparseable_module_is_named_where_it_actually_sits(self) -> None:
+        """The diagnostic composed `scripts/<stem>.py`, which is a guess about a path.
+
+        A module under `scripts/tests/` was reported at a path that does not exist, in
+        the diagnostic whose whole job is to say which file could not be read.
+        """
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp)
+            (root / "scripts" / "tests").mkdir()
+            (root / "scripts" / "tests" / "broken_nested.py").write_text(
+                "def f(:\n", encoding="utf-8"
+            )
+            (root / "AGENTS.md").write_text(
+                "Asked through `broken_nested.f`.\n", encoding="utf-8"
+            )
+
+            found = messages(root)
+
+            self.assertEqual(len(found), 1, found)
+            self.assertIn("scripts/tests/broken_nested.py", found[0])
 
     def test_symbols_cannot_hold_both_a_mapping_and_a_reason(self) -> None:
         for names, reason in (({}, "unreadable"), (None, None)):
