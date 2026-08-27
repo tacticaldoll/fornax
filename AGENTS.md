@@ -476,8 +476,8 @@ Prefer lightweight tests that match the risk of the change.
 - Review every change with `static-review` before reporting completion — any change, not only a
   skill — after committing it, so the review reads a range rather than a working tree. Fresh
   context, and the full Against-Contract track. The gate is not that and neither is rereading the
-  diff: a range that had been through three adversarial passes and a green gate returned eighteen
-  findings on its first real review, one of them a regression whose own commit message called it a
+  diff: a range that had been through adversarial passes and a green gate returned findings in
+  quantity on its first real review, one of them a regression whose own commit message called it a
   strengthening. This is the one step here no gate can enforce, because it needs a model rather
   than a fast deterministic check, so it is stated here and pointed at from the Authoring Workflow
   and from Release rather than restated in either.
@@ -526,7 +526,7 @@ Prefer lightweight tests that match the risk of the change.
   dependency spec, a heading — cover it with two negative controls, not one: a **near-miss sharing
   the accepted prefix**, and a **valid alternate spelling of the same meaning**. Instance tests stay
   necessary; these are what make the claim about the grammar rather than about the examples. Both
-  halves have failed here in one day: a tag boundary written as an excluded-character list let
+  halves have failed here: a tag boundary written as an excluded-character list let
   `+build.5` through, and a pin matcher rewritten to ignore the command prefix began reporting
   `# example: tool==1.0` as an install. Each was one control short, and the missing control was a
   different one each time.
@@ -537,9 +537,8 @@ Prefer lightweight tests that match the risk of the change.
   absent owner go in `development-knowns.yaml` with the reason. Stopping at the enclosing
   construct's own closing delimiter needs neither: `[^"]+` inside quotes, `[^*]+` inside `**`,
   `[^\n]+` on a line are reading to a delimiter the construct defines, not guessing where a token
-  gives out. Inventing a terminator list is the thing that needs an owner or an entry — five
-  rounds of this were each a repair freely inventing one, and it was the freedom rather than any
-  particular list that kept reopening the hole.
+  gives out. Inventing a terminator list is the thing that needs an owner or an entry: the freedom
+  to invent one, rather than any particular list, is what reopens the hole.
 - Read a token whole through `read_whole.whole`, never a prefix of it. Both ways of deciding where
   a token ends are guesses — listing what may follow it, or listing what it may contain — and the
   second fails worse, because ending too early yields a well-formed value that passes its next
@@ -551,17 +550,13 @@ Prefer lightweight tests that match the risk of the change.
 - After repairing a defect, sweep the repository for the same class before calling it fixed. Not by
   rereading the change — by enumerating the mechanism: every `re.compile`, every hand-written
   grammar, every place the same question is answered, then checking each against the property the
-  repair established. Reviews report what they were pointed at. The install-ref boundary was
-  rewritten form after form, and when the class was finally swept, more matchers of the same shape
-  were sitting in files no round had opened: a hand-written heading grammar in `seam_contract`, and
-  a terminator list for a declared version in `runtime_contract`. Both were found by asking "what
-  else is like this", which no review had been asked. Sweeping is not the end of it either — one of
-  those repairs replaced a terminator list with an alphabet, which is the same mistake in the other
-  direction, and the sweep that found the site did not stop the repair from being wrong. What ends
-  a round is the reading being total, not the examples being covered: once a wrong guess yields an
-  `Unread` the caller reports, a further input the matcher misreads is a known to register, not a
-  repair to make. Round after round ran past that point, each closing one more example of a hole
-  the type now closes.
+  repair established. Reviews report what they were pointed at; asking "what else is like this"
+  has found matchers of the same shape sitting in files no review had opened. A sweep does not
+  validate the repair it prompts — one such repair replaced a terminator list with an alphabet,
+  the same mistake in the other direction, and the sweep that found the site said nothing about it.
+  What ends a round is the reading being total, not the examples being covered: once a wrong guess
+  yields an `Unread` the caller reports, a further input the matcher misreads is a known to
+  register, not a repair to make.
 - The OpenCode plugin is syntax-checked in CI with
   `node --input-type=module --check < .opencode/plugins/fornax.js`, install-free on the runner; the
   hook is parsed by `scripts/check_sources.py` inside the workspace gate. Feed the plugin through
@@ -631,12 +626,11 @@ Keep scripts deterministic, portable, and easy to audit.
 - Do not add generated caches, local installs, or copied third-party skills unless the user asks
   to vendor them.
 - Run `git status --short` before final reporting so the user sees the actual change surface.
-- **Every file in this workspace is text.** Nothing binary is tracked, and the text-hygiene
-  check reads every file rather than exempting the ones that hold a NUL byte. That exemption
-  was written for binary assets this repository does not have, and it covered every suffix but
-  `.md`, so a `.py` or a `.yaml` holding a NUL was reported by nothing. Adding a binary asset
-  is therefore a deliberate change to `check_text._hygiene`, weighed like any other check
-  change, and not a file that quietly passes.
+- **Every file in this workspace is text.** Nothing binary is tracked, and the text-hygiene check
+  reads every file rather than exempting the ones holding a NUL byte. Exempting by suffix was tried
+  and measured: a `.md` holding a NUL was reported and a `.py` or `.yaml` holding one was reported
+  by nothing. Adding a binary asset is a deliberate change to `check_text._hygiene`, weighed like
+  any other check change, and not a file that quietly passes.
 - **Before adding a check, say what it would have caught and what it costs per change.** Name the
   failure in this repository's history it would have stopped, and whether that failure reached a
   user or stopped at a contributor. Then name the standing cost: the exemptions it needs, the prose
@@ -645,13 +639,14 @@ Keep scripts deterministic, portable, and easy to audit.
   does not apply, is worse than the authoring rule alone — it costs the same attention and its
   green means less than a reader assumes.
 
-  Applied backwards over the checks here: parsing every tracked YAML passes easily, because the
-  registries were unreadable by any tool but this repository's own readers and the check needs no
-  exemptions. Deriving README's gate list passes, because the transcribed list was already wrong
-  and a derived block cannot go stale. The written-count pre-filter failed on both counts — no
-  failure it prevented ever left the workspace, and it needed a directory exemption — and it was
-  removed. It was kept after this rule condemned it, softened to a pre-filter rather than deleted,
-  which is what applying a rule to everything except the thing that prompted it looks like.
+  Worked backwards over the checks here: parsing every tracked YAML passes, because the registries
+  were unreadable by any tool but this repository's own readers and the check needs no exemptions.
+  Deriving README's gate list passes, because the transcribed list was already wrong and a derived
+  block cannot go stale. A pre-filter for written counts failed both tests — no failure it prevented
+  ever left the workspace, and it needed a directory exemption — and was removed.
+
+  The same weighing applies to a rule written here, not only to a check. A clause nobody can satisfy
+  produces a finding per round and prevents nothing.
 
   The corollary is that removing is a repair. A check that overclaims, a claim nothing reads, a
   helper nothing calls: each is worse than its absence, and deleting one closes a finding as
@@ -659,64 +654,38 @@ Keep scripts deterministic, portable, and easy to audit.
 
 - **Do not write a count of what the repository contains.** Not how many skills, families, seams,
   consumers, generated blocks, gate steps, registry entries, modules or tests there are, not how
-  many commits or forms a past repair took, and not how many files a past defect reached — that
-  last one is the same claim with a tense on it, and it went unreworded sweep after sweep because
-  neither the forbidden list nor the carve-out had named it.
+  many commits or forms a past repair took, and not how many files a past defect reached.
 
-  A number beside such a noun is a claim about the tree that nothing reads, and every one of
-  these nouns has carried a stale one: README named fewer gate steps than the gate ran,
-  `generated_block` named fewer consumers than dispatched blocks, `PROJECT.md` kept seam counts
-  by hand. Derive the number into a generated block, or say the thing without it — "form after
-  form", "more than one check", "the consumers of one record identity".
+  A number beside such a noun is a claim about the tree that nothing reads, and each of those nouns
+  has carried a stale one — README named fewer gate steps than the gate ran. Derive the number into
+  a generated block, or say the thing without it: "form after form", "more than one check", "the
+  consumers of one record identity".
 
   A total spelled as a word is the same claim. "Both consumers", "either registry", "all three
-  phases" carry a number without writing one, and `generated_block` said "both consumers" while a
-  third consumer sat in the tree dispatching blocks. What decides is the referent, not the word: a
-  number over things the sentence itself names as language — three syntactic forms a matcher
-  strips, two conditions a guard refuses — cannot go stale against the tree and is not this rule's
-  subject. A number over the tree's own artifacts is.
+  phases" carry a number without writing one. What decides is the referent, not the word: a number
+  over things the sentence itself names as language — three syntactic forms a matcher strips, two
+  conditions a guard refuses — cannot go stale against the tree and is not this rule's subject. A
+  number over the tree's own artifacts is.
 
-  Not every number is one. A quantity a rule prescribes, a threshold, a configured value, a
-  version, and the reps and arms a recorded measurement was taken under are all numbers that cannot
-  go stale against the tree; rewording the last of those falsifies the record it belongs to. What is
-  exempt there is the experiment's own parameters, not any number a measurement produces: "39 of 119
-  subjects exceed 72 characters" and "30 `re.compile` sites" are measurements of the tree, they go
-  stale with the next commit, and reading the exemption to cover them is how they were written into
-  the very commits that removed counts elsewhere. A measurement worth keeping goes in a dated record
-  that says when it was taken. A Disposition Record under `docs/dispositions/` is exempt for that
-  same reason and not by courtesy — it is dated, it says what a range was found to contain when it
-  was read, and editing its numbers to satisfy a later rule makes it a worse record of that reading.
+  Not every number is one. A quantity a rule prescribes, a threshold, a configured value, a version,
+  and the reps and arms a recorded measurement was taken under all fail to go stale against the
+  tree, and rewording the last of those falsifies the record it belongs to. What is exempt there is
+  the experiment's own parameters, not any number the measurement produced: a subject-length tally
+  or a matcher-site total measures the tree and stops being true at the next commit. A measurement
+  worth keeping goes in a dated record that says when it was taken, which is why a Disposition
+  Record under `docs/dispositions/` is exempt and not by courtesy — editing its numbers to satisfy
+  a later rule makes it a worse record of the reading it reports.
 
-  Deciding which a number is needs the sentence, so this is a judgment and nothing checks it. A
-  check was written for it and removed: it saw only a number standing immediately before one of
-  those nouns, so a count with a word in between passed — one sat in `development-knowns.yaml`
-  while the commit adding the check said counts had stopped — and its green read as though counts
-  had been checked. The sweep that removed the counts was done by reading, which is the only thing
-  that does it.
+  Deciding which a number is needs the sentence, so this is a judgment and nothing checks it. The
+  forms a pattern would never catch are the ones that keep landing: an adverb rather than a noun
+  phrase ("wrong twice", "diverged twice"), an ordinal standing in for the count it was rewritten
+  from ("a third omitted", "a second grammar"), and a noun no list would have held, like the clauses
+  a function's job takes to state.
 
-  Reading catches the forms a pattern never will, and those are the ones that keep landing: an
-  adverb rather than a noun phrase — "wrong twice", "said so twice", "diverged twice" — an ordinal
-  standing in for the count it was rewritten from — "A third omitted", "A second grammar" — and a
-  noun no list would have held, like the clauses a function's job takes to state. Each of those was
-  written into the very commits that removed the check and claimed the sweep had been re-run; what
-  had been re-run was the dead matcher's pattern.
-
-  The rule covers commit prose, and where it cuts there is staleness, which is what the whole rule
-  is about. A message describes the change it made and is never re-read as a claim about the current
-  tree, so a number counting what **that commit did** — sites it reworded, files it touched — cannot
-  go stale and is not this rule's subject. A **measurement of the tree** written into a message is:
-  "39 of 119 subjects exceed 72 characters" reads afterwards as a fact about the repository and
-  stops being one at the next commit. Those belong in a dated record. The second reason for the
-  clause is transcription — a number in a message gets copied into a docstring, and the docstring
-  does go stale — so a message's number must not become the tree's.
-
-  That line was drawn after round after round reported this clause violated, each time by the
-  commits repairing the previous round's violation of it — the count of rounds belongs in the dated
-  records under `docs/dispositions/`, and writing it here is the thing this rule forbids, in the
-  paragraph amending it. The wording it replaces — "name what
-  changed, not how much of it" — forbade both kinds while naming a harm for only one, and a clause
-  nobody satisfies produces a finding a round and prevents nothing. The weighing rule above says
-  that is worse than the authoring rule alone; applying it to a governance clause rather than to a
-  check is the same judgment, and narrowing one is a repair for the same reason removing a check is.
-  What is not narrowed: a measurement of the tree in a message stays forbidden, and it is the form
-  that actually got transcribed.
+  In commit prose the rule cuts at staleness, which is what the whole rule is about. A message
+  describes the change it made and is never re-read as a claim about the current tree, so a number
+  counting what **that commit did** — sites it reworded, files it touched — cannot go stale and is
+  not this rule's subject. A **measurement of the tree** written into a message is, and belongs in a
+  dated record instead. The second reason for the clause is transcription: a number in a message
+  gets copied into a docstring, and the docstring does go stale, so a message's number must not
+  become the tree's.
