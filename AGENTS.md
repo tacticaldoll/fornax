@@ -487,6 +487,15 @@ Prefer lightweight tests that match the risk of the change.
   at their locations, and each round's repairs produced the next round's defects. One commit per
   cause, not one per round.
 
+  Persist the Review Record too, under `docs/reviews/<range>.md`, and name it from the Disposition
+  Record's `Source`. A disposition reconciles a producer's claims — its verdict, its finding count,
+  its coverage — and can only do that against the text it was actually handed. When that text
+  arrives by paste rather than from the tree, a triage cannot tell a field the producer omitted from
+  one that did not survive the trip, and it will record the first: this repository has a record
+  whose reconciliation called three header fields absent that the producer had emitted. Persisting
+  the text makes the reconciliation auditable by the next round, which is the only thing that caught
+  it, and it is what would have kept the rounds below from being lost.
+
   This binds each round as it happens, and only then. A round whose Review Record was never
   persisted cannot be settled afterwards — the text it would be settled against no longer exists,
   and a record built from the commits that repaired it would be a reconstruction rather than a
