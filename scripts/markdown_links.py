@@ -123,7 +123,7 @@ def heading_texts(text: str, depths: Iterable[int] = (2, 3)) -> list[str]:
 def marked_code_blocks(text: str) -> list[MarkedBlock]:
     """Every fenced code block introduced by an HTML comment, in document order.
 
-    A third operation that needs the grammar, here for the reason the module docstring
+    Another operation that needs the grammar, here for the reason the module docstring
     gives. `seam_contract` read the fence itself, with `^```markdown\n(.*?)^```` and
     `DOTALL`: the body ended at the first line opening with three backticks, so a
     template fenced as `~~~markdown` was not found at all and one fenced with four

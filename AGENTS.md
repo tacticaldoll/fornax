@@ -678,7 +678,12 @@ Keep scripts deterministic, portable, and easy to audit.
 
   Not every number is one. A quantity a rule prescribes, a threshold, a configured value, a
   version, and the reps and arms a recorded measurement was taken under are all numbers that cannot
-  go stale against the tree; rewording the last of those falsifies the record it belongs to. A
+  go stale against the tree; rewording the last of those falsifies the record it belongs to. What is
+  exempt there is the experiment's own parameters, not any number a measurement produces: "39 of 119
+  subjects exceed 72 characters" and "30 `re.compile` sites" are measurements of the tree, they go
+  stale with the next commit, and reading the exemption to cover them is how they were written into
+  the very commits that removed counts elsewhere. A measurement worth keeping goes in a dated record
+  that says when it was taken. A
   Disposition Record under `docs/dispositions/` is exempt for that same reason and not by
   courtesy — it is dated, it says what a range was found to contain when it was read, and editing
   its numbers to satisfy a later rule makes it a worse record of that reading.
@@ -698,5 +703,8 @@ Keep scripts deterministic, portable, and easy to audit.
 
   The rule covers commit prose too. A commit message cannot go stale on its own — it describes the
   change it made — but its numbers are copied into docstrings, which do, and that is where every
-  count removed above came from. The commit that swept them said "Two prohibited counts" and "Four
+  count removed above came from. Reading the message against this rule means reading its own
+  sentences, not only checking that the reworded sites are gone: the round that swept the tree wrote
+  fresh measurements of the tree into the messages that reported the sweep, and said in a record
+  that the messages had been checked. The commit that swept them said "Two prohibited counts" and "Four
   sites reworded" in the act of forbidding both. Name what changed, not how much of it.
