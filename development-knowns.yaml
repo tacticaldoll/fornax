@@ -104,13 +104,16 @@ knowns:
     rationale: A disposition settles a round against the text that round produced. Those texts were never written to the tree and are not recoverable, so nothing can settle those rounds now. A record assembled from the commits that repaired them would state what the repairs were, not what the round decided, which is the difference the record exists to carry.
     evidence:
       - "docs/dispositions/v0.4.1..64d6861.md names the gap where it begins: the rounds fall between docs/dispositions/v0.4.1..af01263.md and that record, and its own scope says which rounds it can and cannot cover."
-      - Every round since is settled in the round it belongs to, each record naming its prior, so the chain is unbroken from that point forward.
       - The cost is visible in the record that opens the chain again — a finding from a lost round had to be re-found rather than carried, because no record held its Reach.
+      - "The trigger below has fired and was examined rather than left standing. The round reviewing v0.4.1..87c7bb4 got no record until the round after it reported the absence, and the mechanism was not neglect: that round's findings were all about the previous record's own output, so every repair landed inside that record and the round was treated as settled by the fixing. A round is settled by a record of what it decided, not by the repairs it prompted, and where its findings land says nothing about whether it has one."
+      - "What the examination did not find is a check. A round exists only as a message until a record is written for it, so nothing in the tree can count rounds or notice a missing one; the chain of prior-round links is what a reader follows, and a round with no record leaves no link to be missing."
+      - Both records for that round now exist and are dated by the round they settle rather than by the day they were written, which the late one says in its own header.
     declined-changes:
       - Reconstruct the lost records from the commits that repaired those rounds, which produces a reconstruction presented as a record and makes the gap harder to see rather than smaller.
       - Leave the requirement reading as though those rounds are still settleable, which reports a violation every round and repairs nothing.
-    reconsider-when: A round's Review Record is lost again, which would mean the practice of settling in-round has lapsed rather than that this debt has changed.
-    verification: docs/dispositions/ holds a record for every round since the gap closed, each naming its prior round, so a missing link is visible by reading the chain.
+      - "Check that every round has a record. There is nothing to check against: a round with no record is a message this repository never held, so the check would compare docs/dispositions/ with an inventory only the same practice could maintain."
+    reconsider-when: A round's Review Record is lost again after this examination, or a record is written for a round whose findings were about something other than the previous record and is still missing.
+    verification: "docs/dispositions/ holds a record for every round since the gap closed, each naming its prior round, so a break in the chain is visible by reading it — which is how the missing one was found, by the next round rather than by a gate."
     updated: 2026-08-27
   - id: commit-partition-held-by-author-discipline
     statement: Nothing in this repository observes how a change is partitioned across commits, so one reason per commit is held by author discipline alone.
