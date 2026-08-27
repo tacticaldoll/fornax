@@ -486,6 +486,14 @@ Prefer lightweight tests that match the risk of the change.
   review without requiring the disposition is how a cause returns: round after round repaired findings
   at their locations, and each round's repairs produced the next round's defects. One commit per
   cause, not one per round.
+
+  This binds each round as it happens, and only then. A round whose Review Record was never
+  persisted cannot be settled afterwards — the text it would be settled against no longer exists,
+  and a record built from the commits that repaired it would be a reconstruction rather than a
+  record of what that round decided. Such rounds are recorded once, as accepted debt in
+  `development-knowns.yaml`, and are not a standing violation of this rule. Reporting them every
+  round costs a finding and repairs nothing, which is what the weighing rule below says about a
+  clause nobody can satisfy.
 - Use `.venv/bin/python scripts/check_workspace.py` as the public local entry point; CI runs the
   same script in its pinned Python 3.10 environment, and the style and hook-syntax gates run inside
   it so a green local run and a green CI run mean the same thing. What stays CI-only does so because

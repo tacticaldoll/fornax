@@ -97,6 +97,21 @@ knowns:
       - Add an interface-usage column on evidence that could not be separated from the responsibility and dependency mechanism.
     reconsider-when: An interface-segregation finding recurs after the ledger is in use.
     updated: 2026-08-24
+  - id: review-rounds-settled-without-a-record
+    statement: Review rounds in the v0.4.1 range were settled without a persisted Disposition Record, and their Review Record texts no longer exist.
+    kind: debt
+    treatment: accept
+    rationale: A disposition settles a round against the text that round produced. Those texts were never written to the tree and are not recoverable, so nothing can settle those rounds now. A record assembled from the commits that repaired them would state what the repairs were, not what the round decided, which is the difference the record exists to carry.
+    evidence:
+      - "docs/dispositions/v0.4.1..64d6861.md names the gap where it begins: the rounds fall between docs/dispositions/v0.4.1..af01263.md and that record, and its own scope says which rounds it can and cannot cover."
+      - Every round since is settled in the round it belongs to, each record naming its prior, so the chain is unbroken from that point forward.
+      - The cost is visible in the record that opens the chain again — a finding from a lost round had to be re-found rather than carried, because no record held its Reach.
+    declined-changes:
+      - Reconstruct the lost records from the commits that repaired those rounds, which produces a reconstruction presented as a record and makes the gap harder to see rather than smaller.
+      - Leave the requirement reading as though those rounds are still settleable, which reports a violation every round and repairs nothing.
+    reconsider-when: A round's Review Record is lost again, which would mean the practice of settling in-round has lapsed rather than that this debt has changed.
+    verification: docs/dispositions/ holds a record for every round since the gap closed, each naming its prior round, so a missing link is visible by reading the chain.
+    updated: 2026-08-27
   - id: commit-partition-held-by-author-discipline
     statement: Nothing in this repository observes how a change is partitioned across commits, so one reason per commit is held by author discipline alone.
     kind: debt
