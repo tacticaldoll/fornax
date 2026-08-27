@@ -59,12 +59,12 @@ def requirement(token: str) -> tuple[str, str] | Unread | None:
     """The exact pin a token states — unread if it states one that will not parse, and
     None if it states no exact pin at all.
 
-    PEP 508 is `packaging`'s grammar and this is `packaging` reading it. Commits in
-    this range wrote that grammar by hand and each was wrong where the last had been
-    right. A terminator list ran past `|`. The version's own alphabet stopped there and
-    kept the prefix, turning a declaration that failed its comparison loudly into one
-    that passes. That alphabet omitted the `_` PEP 440 admits in a local version, so a
-    valid declaration silently became a different pin.
+    PEP 508 is `packaging`'s grammar and this is `packaging` reading it. Hand-writing it
+    fails in both directions, measured: a terminator list runs past `|` and yields a
+    malformed pin that fails loudly, while the version's own alphabet stops there and
+    keeps the prefix, turning that into a pin which passes its comparison. The alphabet
+    also omits the `_` PEP 440 admits in a local version, so a valid declaration reads as
+    a different pin.
 
     `Requirement` is total the way `whole()` is, and for the same reason: it consumes
     the string or raises, and there is no answer in between for a caller to compare

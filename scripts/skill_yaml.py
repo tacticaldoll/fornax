@@ -88,20 +88,14 @@ class Document:
     states the type admitted and no code meant — and a type that admits a state nobody
     means is the shape this repository has been removing all round.
 
-    Every accessor used to take the text and parse it again, so a manifest was parsed
-    once per required field, once per resource key and once for the version check.
-    Reading is one act, and its outcome is a value the readers are handed.
+    Reading is one act. The readers are handed its outcome rather than the text, so a
+    manifest is parsed once instead of once per required field, per resource key and for
+    the version check.
 
-    Carrying the reason was supposed to make the failure unskippable, and this said so
-    while it was not — then said it again after the first repair. `skill_graph` read a
-    family straight out of an unreadable manifest and reported the family missing; the
-    mapping was then routed through `require` and this said it was reached that way,
-    while the field stayed public and any caller could still take it. Checking a state
-    is not the same as enforcing how it is reached, and saying so was the same mistake
-    a layer along.
-
-    So the payload is private and `require` is the only way to it. `reason` stays
-    public because asking about it is the thing a caller is supposed to do.
+    The payload is private and `require` is the only way to it, because checking a state
+    is not the same as enforcing how it is reached: with the field public, `skill_graph`
+    read a family straight out of an unreadable manifest and reported the family missing.
+    `reason` stays public — asking about it is the thing a caller is supposed to do.
     """
 
     _mapping: dict[str, object] | None

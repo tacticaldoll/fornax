@@ -331,9 +331,9 @@ def tree_unaccounted(root: Path, entries: tuple[Evidence, ...]) -> bool:
 def check(root: Path, entries: tuple[Evidence, ...]) -> bool:
     """Report each entry as current, superseded, or drifted. True when any drifted.
 
-    One clause, now that it is one job. It used to verify each record was a file inside
-    the tree and name every unaccounted scenario file as well, under this same sentence
-    — and the tree sweep is not about an entry at all. `main` calls each of them.
+    One clause, because it is one job. Verifying each record is a file inside the tree
+    and naming every unaccounted scenario file are separate functions; a tree sweep is
+    not about an entry at all. `main` calls each of them.
     """
     failed = False
     for entry in entries:
