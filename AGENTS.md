@@ -508,6 +508,11 @@ Prefer lightweight tests that match the risk of the change.
   the text makes the reconciliation auditable by the next round, which is the only thing that caught
   it, and it is what would have kept the rounds below from being lost.
 
+  A round ends when its record is written, not when its repairs land. Offering the record as a next
+  step is how two rounds in a row lost theirs: the repairs were committed, the record was raised as a
+  question, and the next round's input arrived before the answer. So the record is part of the turn
+  that repairs, written before reporting, and the report says it exists.
+
   This binds each round as it happens, and only then. A round whose Review Record was never
   persisted cannot be settled afterwards — the text it would be settled against no longer exists,
   and a record built from the commits that repaired it would be a reconstruction rather than a
