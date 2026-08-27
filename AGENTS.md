@@ -693,8 +693,8 @@ Keep scripts deterministic, portable, and easy to audit.
   `README.md`, `development-knowns.yaml`, and the records under `docs/dispositions/`. Two things are
   outside it, and not by exemption. A Review Record's own evidence column is a coordinate into the
   tree as reviewed, read once by the triage in the round it was written, and never afterwards — and
-  most of that convention's sites sit inside sections a recorded measurement fingerprints, so
-  changing them would supersede a measurement to make a wording change. Raw scores under
+  that convention lives largely inside sections a recorded measurement fingerprints, so changing it
+  would supersede a measurement to make a wording change. Raw scores under
   `scripts/tests/scenarios/` quote what an agent produced during a run; editing them falsifies the
   record, which is the same reason the count rule leaves them alone.
 

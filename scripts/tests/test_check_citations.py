@@ -52,10 +52,11 @@ class LineCitations(unittest.TestCase):
             self.assertIn("cites a line", messages(root)[0])
 
     def test_a_line_citation_is_refused_without_backticks_and_by_any_suffix(self) -> None:
-        """The first form asked for backticks and a suffix from a list of six.
+        """The first form asked for backticks and a suffix from a short list.
 
-        So `scripts/foo.py:12` written as plain prose passed, and so did a `.js` path,
-        under a message saying the form is refused.
+        So a path-and-line written as plain prose passed, and so did a `.js` path, under
+        a message saying the form is refused. Capped at six letters it then passed
+        `.markdown`, so the extension has no length rule, only an alphabetic one.
         """
         for text in (
             "bare scripts/foo.py:12 in prose\n",
@@ -69,6 +70,27 @@ class LineCitations(unittest.TestCase):
 
                 self.assertEqual(len(found), 1, found)
                 self.assertIn("cites a line", found[0])
+
+    def test_a_long_extension_is_still_a_line_citation(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp, **{"AGENTS.md": "See docs/spec.markdown:12 for it.\n"})
+
+            self.assertIn("cites a line", messages(root)[0])
+
+    def test_a_url_authority_is_not_a_line_citation(self) -> None:
+        """A host and a port read as a path and a line to the pattern alone.
+
+        `https://example.com:443/path` yields `//example.com:443`, so refusing it would
+        make the check reject ordinary prose — worse than the miss it was closing.
+        """
+        for text in (
+            "Served at https://example.com:443/path today.\n",
+            "Or http://x.invalid:8080/a for it.\n",
+        ):
+            with self.subTest(text=text), TemporaryDirectory() as tmp:
+                root = workspace(tmp, **{"AGENTS.md": text})
+
+                self.assertEqual(messages(root), [])
 
     def test_a_version_is_not_a_line_citation(self) -> None:
         # The widened pattern requires an alphabetic extension. Without that, "Python
@@ -176,20 +198,22 @@ class SymbolCitations(unittest.TestCase):
             self.assertEqual(len(found), 1, found)
             self.assertIn("names no member of Reader", found[0])
 
-    def test_a_misspelled_internal_module_is_reported(self) -> None:
-        """The gap the first version had: unknown module read as external module.
+    def test_a_module_name_that_resolves_nowhere_is_reported(self) -> None:
+        """An unknown module was read as an external one, so a misspelling passed.
 
-        `evidnce_currency.resolved_inside` passed in silence, which is the whole failure
-        a citation check exists to stop. A misspelling is a near-miss by definition, so
-        that is what separates it from `shlex.shlex`, with no list to maintain.
+        A similarity threshold stood here first and caught a near-miss while passing
+        every misspelling unlike enough to a real name — the same silence in a smaller
+        range. Importability answers it with no threshold and no list: a real external
+        module resolves, a mistyped internal one resolves nowhere.
         """
-        with TemporaryDirectory() as tmp:
-            root = workspace(tmp, **{"AGENTS.md": "Asked through `sampl_module.reads_whole`.\n"})
+        for name in ("sampl_module", "smpl_mdl", "totally_unlike_anything_here"):
+            with self.subTest(name=name), TemporaryDirectory() as tmp:
+                root = workspace(tmp, **{"AGENTS.md": f"Asked through `{name}.reads_whole`.\n"})
 
-            found = messages(root)
+                found = messages(root)
 
-            self.assertEqual(len(found), 1, found)
-            self.assertIn("is one character-set away", found[0])
+                self.assertEqual(len(found), 1, found)
+                self.assertIn("found neither under scripts/ nor on the import path", found[0])
 
     def test_a_test_module_is_a_module_here(self) -> None:
         # Reading only scripts/ made every citation into a test module unknown, and the
@@ -206,6 +230,42 @@ class SymbolCitations(unittest.TestCase):
             )
 
             self.assertEqual(messages(root), [])
+
+
+class ModuleIdentity(unittest.TestCase):
+    def test_a_stem_naming_more_than_one_module_is_reported_once(self) -> None:
+        """A dict keyed by stem lost one file and checked citations against the other."""
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp)
+            (root / "scripts" / "tests").mkdir()
+            (root / "scripts" / "tests" / "sample_module.py").write_text(
+                "x = 1\n", encoding="utf-8"
+            )
+            (root / "AGENTS.md").write_text("Nothing cites anything.\n", encoding="utf-8")
+
+            found = messages(root)
+
+            self.assertEqual(len(found), 1, found)
+            self.assertIn("names more than one module", found[0])
+
+    def test_a_module_that_cannot_be_parsed_is_reported_as_that(self) -> None:
+        """Three states shared one None, so an unreadable module read as a missing one."""
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp)
+            (root / "scripts" / "broken_module.py").write_text("def f(:\n", encoding="utf-8")
+            (root / "AGENTS.md").write_text("Asked through `broken_module.f`.\n", encoding="utf-8")
+
+            found = messages(root)
+
+            self.assertEqual(len(found), 1, found)
+            self.assertIn("could not be parsed", found[0])
+            self.assertNotIn("names no", found[0])
+
+    def test_symbols_cannot_hold_both_a_mapping_and_a_reason(self) -> None:
+        for names, reason in (({}, "unreadable"), (None, None)):
+            with self.subTest(names=names, reason=reason):
+                with self.assertRaises(ValueError):
+                    check_citations.Symbols(names, reason)
 
 
 class EntryPoint(unittest.TestCase):

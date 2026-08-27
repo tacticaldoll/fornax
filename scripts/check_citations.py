@@ -31,7 +31,7 @@ from __future__ import annotations
 
 import argparse
 import ast
-import difflib
+import importlib.util
 import re
 import sys
 from dataclasses import dataclass
@@ -45,12 +45,16 @@ ROOT = Path(__file__).resolve().parent.parent
 SUBJECTS = ("AGENTS.md", "PROJECT.md", "README.md", "development-knowns.yaml")
 RECORDS = Path("docs/dispositions")
 
+# Suffixes a citation may name, used only to tell a filename from a symbol citation.
 SOURCE_SUFFIXES = ("py", "md", "yaml", "yml", "toml", "txt", "json", "js", "sh", "cfg")
-# Any path with an alphabetic extension, backticks or not. The first form of this asked
-# for backticks and a suffix from the list above, so `scripts/foo.py:12` in plain prose
-# and a `.js` citation both passed a check whose message says the form is refused. The
-# extension must be letters, or `Python 3.10:1` reads as a citation.
-LINE_CITATION = re.compile(r"[A-Za-z0-9_./-]+\.[A-Za-z]{1,6}:\d+(?:-\d+)?")
+
+# Any path with an alphabetic extension, backticks or not, and no cap on the extension's
+# length — capped at six it passed `.markdown`. The extension must be letters, or a
+# version and a column read as a citation. A match inside a URL's authority is not one:
+# `https://example.com:443/path` yields `//example.com:443`, so the whole whitespace-
+# bounded word is examined and a word carrying a scheme separator is left alone.
+LINE_CITATION = re.compile(r"[A-Za-z0-9_./-]+\.[A-Za-z]+:\d+(?:-\d+)?")
+URL_WORD = re.compile(r"\S*://\S*")
 SYMBOL_CITATION = re.compile(
     r"`([a-z][a-z0-9_]*)((?:\.[A-Za-z_][A-Za-z0-9_]*){1,2})`"
 )
@@ -72,38 +76,85 @@ def subjects(root: Path) -> list[Path]:
     return found
 
 
-def modules(root: Path) -> dict[str, Path]:
+@dataclass(frozen=True)
+class Modules:
+    """The module map, and the stems that name more than one file.
+
+    A dict keyed by stem answered the wrong question silently: two files sharing a stem
+    left one of them unreachable, and a citation into the shadowed one was checked
+    against the other. So the collision is a value here rather than a lost key, and the
+    caller reports it instead of resolving it — which file a bare stem means is a
+    question the citation form cannot answer, so the form has to change or the files do.
+    """
+
+    by_stem: dict[str, Path]
+    collisions: dict[str, list[Path]]
+
+
+def modules(root: Path) -> Modules:
     """Every module under `scripts/`, by the name a citation would use.
 
     `scripts/tests/` included. Reading only the top directory made every citation into a
     test module — and a Reach entry naming a test is the ordinary case — an unknown
-    module that the near-miss rule below then reported against its production sibling:
-    `test_validate_skills.check` came back as a misspelling of `validate_skills`.
+    module, reported against its production sibling.
     """
     scripts = root / "scripts"
     if not scripts.is_dir():
-        return {}
-    return {path.stem: path for path in sorted(scripts.rglob("*.py"))}
+        return Modules({}, {})
+    found: dict[str, list[Path]] = {}
+    for path in sorted(scripts.rglob("*.py")):
+        found.setdefault(path.stem, []).append(path)
+    return Modules(
+        {stem: paths[0] for stem, paths in found.items()},
+        {stem: paths for stem, paths in found.items() if len(paths) > 1},
+    )
 
 
-def module_symbols(root: Path, module: str) -> dict[str, set[str]] | None:
+@dataclass(frozen=True)
+class Symbols:
+    """What a module defines, or why this could not say — never both, and never neither.
+
+    Three states shared one `None` before: no such module, a module that would not read,
+    and a module that would not parse. The caller reported all three as "names no module
+    here", so an unreadable module read as a citation defect and the real failure was
+    invisible. The shape is `skill_yaml.Document`'s, for the same reason.
+    """
+
+    _names: dict[str, set[str]] | None
+    reason: str | None
+
+    def __post_init__(self) -> None:
+        if (self._names is None) == (self.reason is None):
+            raise ValueError("symbols hold a mapping or a reason, never both or neither")
+
+    @property
+    def names(self) -> dict[str, set[str]]:
+        if self._names is None:
+            raise ValueError(self.reason or "")
+        return self._names
+
+
+def module_symbols(root: Path, module: str) -> Symbols | None:
     """What a `scripts/` module defines at its top level, each with its own members.
 
-    None rather than an empty mapping: a citation whose first part is not a module here
-    — a standard-library call, a dotted filename — is not a claim about this tree, and
-    the caller must be able to tell that from a module that defines nothing.
+    None for no such module, which is not a defect on its own — a citation whose first
+    part is not a module here may be an installed one, and the caller decides. A module
+    that exists and cannot be read or parsed comes back as a reason, because that is a
+    failure to report rather than a citation to judge.
 
     Members are carried because a class member is the natural unit to cite for one, and
-    a citation this cannot follow is a citation this does not check. `Document.require`
-    is exactly the shape of the wrong-symbol defect that prompted the rule.
+    a citation this cannot follow is a citation this does not check. A wrong method name
+    in a cell asserting a closure was verified is the defect that prompted the rule.
     """
-    path = modules(root).get(module)
+    path = modules(root).by_stem.get(module)
     if path is None:
         return None
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"))
-    except (OSError, SyntaxError):
-        return None
+    except OSError as error:
+        return Symbols(None, f"could not be read: {error}")
+    except SyntaxError as error:
+        return Symbols(None, f"could not be parsed: {error}")
     names: dict[str, set[str]] = {}
     for node in tree.body:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -122,20 +173,39 @@ def module_symbols(root: Path, module: str) -> dict[str, set[str]] | None:
             names.update({t.id: set() for t in node.targets if isinstance(t, ast.Name)})
         elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
             names[node.target.id] = set()
-    return names
+    return Symbols(names, None)
+
+
+def installed(module: str) -> bool:
+    """Whether a module of that name can be found anywhere on the path.
+
+    This is what separates an external module from a misspelling of an internal one, and
+    it needs no threshold and no list: `shlex` and `yaml` resolve, a name with a letter
+    transposed resolves nowhere. A similarity heuristic stood here first and passed every
+    misspelling unlike enough to a real name, which is the same silence in a smaller
+    range. `find_spec` locates without importing.
+    """
+    try:
+        return importlib.util.find_spec(module) is not None
+    except (ImportError, ValueError):
+        return False
 
 
 def citations(root: Path, path: Path) -> list[Diagnostic]:
-    """Every citation in one file that names a line, or a symbol its module does not define."""
+    """Every citation in one file that names a line, or a symbol nothing defines."""
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
         return []  # text hygiene owns unreadable files and reports them there
 
+    known = modules(root)
     lines = prose_lines(text) if path.suffix == ".md" else list(enumerate(text.splitlines(), 1))
     found: list[Diagnostic] = []
     for number, line in lines:
+        urls = [word.span() for word in URL_WORD.finditer(line)]
         for match in LINE_CITATION.finditer(line):
+            if any(start <= match.start() and match.end() <= end for start, end in urls):
+                continue  # a host and a port inside a URL, not a path and a line
             found.append(
                 Diagnostic(
                     path,
@@ -149,49 +219,66 @@ def citations(root: Path, path: Path) -> list[Diagnostic]:
             parts = rest.lstrip(".").split(".")
             if parts[0] in SOURCE_SUFFIXES:
                 continue  # `evidence_currency.py` is a filename, not a symbol citation
-            names = module_symbols(root, module)
-            if names is None:
-                # An unknown module is either something outside this tree or a
-                # misspelling of something inside it, and the first version of this
-                # check read both as the first — so `evidnce_currency.resolved_inside`
-                # passed silently, which is the whole failure a citation check exists to
-                # stop. A misspelling is a near-miss by definition, so that is what
-                # separates them, with no list of external modules to maintain.
-                near = difflib.get_close_matches(module, list(modules(root)), n=1, cutoff=0.8)
-                if near:
+            symbols = module_symbols(root, module)
+            if symbols is None:
+                if not installed(module):
                     found.append(
                         Diagnostic(
                             path,
                             number,
-                            f"{match.group(0)} names no module here; "
-                            f"{modules(root)[near[0]].relative_to(root)} is one character-set away",
+                            f"{match.group(0)} names a module found neither under "
+                            "scripts/ nor on the import path",
                         )
                     )
                 continue
-            if parts[0] not in names:
+            if symbols.reason is not None:
                 found.append(
                     Diagnostic(
                         path,
                         number,
-                        f"{match.group(0)} names no top-level symbol in "
-                        f"{modules(root)[module].relative_to(root)}",
+                        f"scripts/{module}.py {symbols.reason}, so "
+                        f"{match.group(0)} could not be checked",
                     )
                 )
-            elif len(parts) > 1 and parts[1] not in names[parts[0]]:
+                continue
+            where = known.by_stem[module].relative_to(root)
+            if parts[0] not in symbols.names:
                 found.append(
                     Diagnostic(
                         path,
                         number,
-                        f"{match.group(0)} names no member of {parts[0]} in "
-                        f"{modules(root)[module].relative_to(root)}",
+                        f"{match.group(0)} names no top-level symbol in {where}",
+                    )
+                )
+            elif len(parts) > 1 and parts[1] not in symbols.names[parts[0]]:
+                found.append(
+                    Diagnostic(
+                        path,
+                        number,
+                        f"{match.group(0)} names no member of {parts[0]} in {where}",
                     )
                 )
     return found
 
 
 def check(root: Path) -> list[Diagnostic]:
-    """Every citation defect across the subject files."""
-    return [problem for path in subjects(root) for problem in citations(root, path)]
+    """Every citation defect across the subject files, and any module name that is not one.
+
+    A stem naming more than one file is reported once, against the repository rather than
+    against a document: no citation in any subject is wrong for it, and every citation
+    naming that stem is unverifiable until the ambiguity goes.
+    """
+    found = [
+        Diagnostic(
+            root,
+            0,
+            f"`{stem}` names more than one module — "
+            + ", ".join(str(path.relative_to(root)) for path in paths)
+            + " — so a citation naming it cannot be checked",
+        )
+        for stem, paths in sorted(modules(root).collisions.items())
+    ]
+    return found + [problem for path in subjects(root) for problem in citations(root, path)]
 
 
 def main(argv: list[str] | None = None) -> int:
