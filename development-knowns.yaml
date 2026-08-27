@@ -56,7 +56,7 @@ knowns:
       - No external symbol has been miscited in this repository. The falsifier that opened this gap was constructed by a review, and every citation defect that actually occurred named a module or a symbol inside this tree.
       - What the module check does buy is the case that has occurred — a mistyped internal module, which matches no name in any of the three sets and is refused.
     declined-changes:
-      - Parse the standard library's source from the interpreter's stdlib path, which covers the stdlib half of these citations, leaves the packaged half unchecked, and so leaves the boundary needing a statement anyway.
+      - Parse the standard library's source from the interpreter's stdlib path, which reads the citations naming a standard-library module and leaves the ones naming a package unchecked, so the boundary still needs stating.
       - Import each cited module and read its attributes, which runs third-party code inside a maintenance check.
     reconsider-when: An external symbol citation is found wrong, or the packaged names this repository cites come to be readable without asking a local environment.
     verification: None for the symbol; the module half is covered by test_check_citations.SymbolCitations, whose cases include a stdlib name, an imported third-party name, one nothing here imports, and misspellings of an internal module.
@@ -68,7 +68,7 @@ knowns:
     rationale: Ruff owns this rule and adopting it edits files across the tree, among them the pinned CLI adapter this repository ships and a review-scenario fixture whose content is the input a recorded micro-test measured. The defect it would catch is cosmetic, and those two are not.
     evidence:
       - runtime_contract.py gained yaml and packaging between its standard-library imports in a commit that passed ruff, the full suite and the whole workspace gate.
-      - "ruff check --select I reports findings across most of scripts/, plus tools/fornax-cli/fornax_cli/cli.py and scripts/tests/scenarios/static-review/gate5-ledger/fixture/billing.py; run it to see the current set rather than trusting a number written here."
+      - "`ruff check --select I` reports findings under scripts/, and also in tools/fornax-cli/fornax_cli/cli.py and scripts/tests/scenarios/static-review/gate5-ledger/fixture/billing.py, which are the two that make adopting it costly. Run it for the current set; this entry describes which paths matter, not how many there are."
       - "Setting src so ruff resolves first-party modules by path rather than by a maintained list of names was measured as removing every finding. That measurement was wrong: the key had been appended under the lint table, where ruff rejects it, and the run failed to load its configuration while the reading took a blank line for a clean answer."
       - ruff.toml already records import sorting as an opinion this repository has not adopted; what is new here is a measured cost rather than a stated one.
     declined-changes:
@@ -141,7 +141,7 @@ knowns:
       - "A path-partition gate would have passed the commit that motivated it: d8ed52f touches AGENTS.md, development-knowns.yaml and scripts only, so every split-when rule is vacuously satisfied while unrelated reasons sit inside one region."
       - The same gate would refuse e514bbd, which spans templates and skills and is a shape the section explicitly blesses.
       - "The trigger below has fired and was examined rather than left standing: subjects in this range carry a second clause after a comma — recording that nothing reads a repaired grouping, saying what a check decides, settling a coupling — and each of those is a cause the rule would have had in its own commit."
-      - "What the examination found is the same thing the first two lines record: the gate that would notice a second cause is a path partition, and it passes the commit that motivated it. A cause is a reason, and a reason leaves no trace in a path. So the trigger has fired, the treatment is unchanged, and the reason is here rather than in a reviewer's next round."
+      - "What the examination found is the same thing the evidence above records: the gate that would notice a second cause is a path partition, and it passes the commit that motivated it. A cause is a reason, and a reason leaves no trace in a path. So the trigger has fired, the treatment is unchanged, and the reason is here rather than in a reviewer's next round."
     declined-changes:
       - Encode the granularity rules as a path-partition check, which passes the motivating commit, refuses a blessed shape, and moves the enforcement floor PROJECT.md keeps at structure.
       - Rewrite published history to split the commit, which no enforced claim requires.

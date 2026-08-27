@@ -87,6 +87,9 @@ class LineCitations(unittest.TestCase):
         for text in (
             "Served at https://example.com:443/path today.\n",
             "Or http://x.invalid:8080/a for it.\n",
+            # A network-path reference carries an authority and no scheme, and
+            # markdown_links.local_target already reads this form as not ours.
+            "Or //example.com:443/path for it.\n",
         ):
             with self.subTest(text=text), TemporaryDirectory() as tmp:
                 root = workspace(tmp, **{"AGENTS.md": text})
@@ -96,12 +99,14 @@ class LineCitations(unittest.TestCase):
     def test_a_citation_inside_a_url_path_is_still_one(self) -> None:
         # Exempting the whole whitespace-bounded word let this escape with the port. A
         # path inside a URL's path is as much a path as anywhere.
-        with TemporaryDirectory() as tmp:
-            root = workspace(
-                tmp, **{"AGENTS.md": "At https://host.example/docs/file.py:12 today.\n"}
-            )
+        for text in (
+            "At https://host.example/docs/file.py:12 today.\n",
+            "At //host.example/docs/file.py:12 today.\n",
+        ):
+            with self.subTest(text=text), TemporaryDirectory() as tmp:
+                root = workspace(tmp, **{"AGENTS.md": text})
 
-            self.assertIn("cites a line", messages(root)[0])
+                self.assertIn("cites a line", messages(root)[0])
 
     def test_a_version_is_not_a_line_citation(self) -> None:
         # The widened pattern requires an alphabetic extension. Without that, "Python

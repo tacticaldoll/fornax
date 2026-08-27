@@ -509,7 +509,7 @@ Prefer lightweight tests that match the risk of the change.
   it, and it is what would have kept the rounds below from being lost.
 
   A round ends when its record is written, not when its repairs land. Offering the record as a next
-  step is how two rounds in a row lost theirs: the repairs were committed, the record was raised as a
+  step is how successive rounds lost theirs: the repairs were committed, the record was raised as a
   question, and the next round's input arrived before the answer. So the record is part of the turn
   that repairs, written before reporting, and the report says it exists.
 

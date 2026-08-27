@@ -65,8 +65,12 @@ SOURCE_SUFFIXES = ("py", "md", "yaml", "yml", "toml", "txt", "json", "js", "sh",
 LINE_CITATION = re.compile(r"[A-Za-z0-9_./-]+\.[A-Za-z][A-Za-z0-9]*:\d+(?:-\d+)?")
 # Only a URL's authority is exempt. Skipping the whole whitespace-bounded word let a
 # citation inside a URL's path escape as well, and a path there is as much a path as
-# anywhere. The authority runs from after the scheme separator to the next slash.
-URL_AUTHORITY = re.compile(r"://[^/\s]*")
+# anywhere. The authority runs to the next slash, from the scheme separator or — for a
+# network-path reference, which carries an authority and no scheme — from the leading
+# pair of slashes. `markdown_links.local_target` already reads that second form as a
+# destination this repository does not own, so recognising one form and not the other was
+# this module disagreeing with the module that owns the grammar.
+URL_AUTHORITY = re.compile(r"://[^/\s]*|(?<![:\w./-])//[^/\s]*")
 SYMBOL_CITATION = re.compile(
     r"`([a-z][a-z0-9_]*)((?:\.[A-Za-z_][A-Za-z0-9_]*){1,2})`"
 )
