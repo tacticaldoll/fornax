@@ -123,9 +123,16 @@ recorded with a single repair hides the choice from whoever plans the work.
 
 Each repair carries two things.
 
-**Reach** — every location the repair touches, enumerated as `file:line`. Enumerate; do not classify.
-Whether a repair is confined to the finding's own place, spans several, or dissolves them is then read
-off the list itself.
+**Reach** — every location the repair touches, enumerated as a file plus the unit inside it: a
+symbol (`evidence_currency.resolved_inside`), or a quoted phrase where no symbol owns the text.
+Enumerate; do not classify. Whether a repair is confined to the finding's own place, spans several,
+or dissolves them is then read off the list itself.
+
+Not `file:line`, for the reason Phase 1 gives about keying a finding: a line number drifts with the
+next edit to that file, so a Reach keyed to one cannot be checked once the record is a round old,
+and a record's Reach is read by every round after it. A symbol survives an unrelated edit and can be
+verified against the file; a line number can only be maintained by hand, and by the time it is wrong
+nothing says so.
 
 **Kind** — what the repair does:
 
@@ -200,8 +207,8 @@ enumerate the Review Record's coverage.]
 
 | # | Cause (the thing to change) | Findings | Repair | Kind | Reach (every location it touches) | Route |
 |---|---|---|---|---|---|---|
-| 1 | stated as the change, not the symptom | every source id | 1a | listed Kind \| `<action> (gap)` | `file:line`, … | where it goes |
-| 1 | " | " | 1b | the alternative, when the cause admits one | `file:line`, … | " |
+| 1 | stated as the change, not the symptom | every source id | 1a | listed Kind \| `<action> (gap)` | `file` + `symbol`, … | where it goes |
+| 1 | " | " | 1b | the alternative, when the cause admits one | `file` + `symbol`, … | " |
 
 ### Pattern
 
