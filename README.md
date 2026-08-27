@@ -280,9 +280,10 @@ It runs these checks, in this order:
 7. recorded behavioural evidence against the prose it measured
 8. this list, derived from the gate rather than transcribed
 9. tracked text hygiene and repository-local Markdown links
-10. Python style, at the pinned Ruff
-11. every non-Python source the repository ships, through its own parser
-12. the validation test suite
+10. that durable reasoning cites a symbol rather than a line number
+11. Python style, at the pinned Ruff
+12. every non-Python source the repository ships, through its own parser
+13. the validation test suite
 
 <!-- GATE-STEPS:END -->
 

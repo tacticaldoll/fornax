@@ -80,6 +80,11 @@ STEPS = (
         "tracked text hygiene and repository-local Markdown links",
         ("scripts/check_text.py",),
     ),
+    Step(
+        "citations",
+        "that durable reasoning cites a symbol rather than a line number",
+        ("scripts/check_citations.py",),
+    ),
     Step("python style", "Python style, at the pinned Ruff", ("-m", "ruff", "check", ".")),
     Step(
         "non-Python sources",
