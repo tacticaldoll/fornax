@@ -100,6 +100,18 @@ When all three hold, record the finding as `closed` with the code and input evid
 still holds, or any closure evidence is unavailable, carry the prior disposition and original reason
 forward; say which closure condition was not established. Review silence alone is never closure.
 
+Condition 1 has three arms and the third is not a lesser one. A repair a round can re-run — revert
+the unit the finding names, watch a named test fail, restore — is stronger evidence than a reading
+of that unit, and where a repository keeps such probes as a ledger, running one satisfies condition 1
+outright. What silence never does is stand in for any of the three.
+
+**A finding whose unit is prose closes on the reading that settled it.** A docstring's wording, a
+registry entry, a record's own cell: no test holds them and no gate opens over them, so requiring a
+gate-reviewed unit would carry them forever, which reports the same rows every round and retires
+nothing. For these, condition 1 is met by the recorded reading — the Disposition Record's own
+statement of what was read and what it said — and conditions 2 and 3 are unchanged. Carrying a prose
+finding is for when the reading has not been done, not for when no gate can be opened.
+
 ### Phase 2: Group findings into causes
 
 For each finding ask: **what one change would remove it?** Findings that answer the same way share a

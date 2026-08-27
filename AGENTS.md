@@ -508,6 +508,13 @@ Prefer lightweight tests that match the risk of the change.
   the text makes the reconciliation auditable by the next round, which is the only thing that caught
   it, and it is what would have kept the rounds below from being lost.
 
+  Keep the repair guards under `docs/guards.md`: for each finding a round accepted, the unit whose
+  revert must turn a named test red. A repair measured only in a commit message cannot be re-run by
+  the round that would retire the finding, which is how findings came to sit in `Carried forward`
+  round after round with no path out. The guards are symbols, so the citation check refuses one that
+  has been renamed away, and a finding whose unit is prose says so there instead of naming a test
+  that cannot exist.
+
   A round ends when its record is written, not when its repairs land. Offering the record as a next
   step is how successive rounds lost theirs: the repairs were committed, the record was raised as a
   question, and the next round's input arrived before the answer. So the record is part of the turn

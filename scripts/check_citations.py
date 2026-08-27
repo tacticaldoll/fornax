@@ -51,7 +51,7 @@ from markdown_links import prose_lines
 
 ROOT = Path(__file__).resolve().parent.parent
 
-SUBJECTS = ("AGENTS.md", "PROJECT.md", "README.md", "development-knowns.yaml")
+SUBJECTS = ("AGENTS.md", "PROJECT.md", "README.md", "development-knowns.yaml", "docs/guards.md")
 RECORDS = Path("docs/dispositions")
 
 # Suffixes a citation may name, used only to tell a filename from a symbol citation.
