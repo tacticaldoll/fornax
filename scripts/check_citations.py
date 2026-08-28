@@ -43,7 +43,7 @@ import argparse
 import ast
 import re
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from diagnostic_text import printable
@@ -92,7 +92,7 @@ def subjects(root: Path) -> list[Path]:
     return found
 
 
-@dataclass(frozen=True)
+@dataclass
 class Modules:
     """The module map, and the stems that name more than one file.
 
@@ -105,6 +105,9 @@ class Modules:
 
     by_stem: dict[str, Path]
     collisions: dict[str, list[Path]]
+    #: What each module defines, parsed once and kept for the run. A citation names a
+    #: module as often as it is cited, and every one re-read and re-parsed the file.
+    read: dict[str, "Symbols"] = field(default_factory=dict)
 
 
 def modules(root: Path) -> Modules:
@@ -150,7 +153,7 @@ class Symbols:
         return self._names
 
 
-def module_symbols(root: Path, module: str) -> Symbols | None:
+def module_symbols(known: Modules, module: str) -> Symbols | None:
     """What a `scripts/` module defines at its top level, each with its own members.
 
     None for no such module, which is not a defect on its own — a citation whose first
@@ -161,16 +164,25 @@ def module_symbols(root: Path, module: str) -> Symbols | None:
     Members are carried because a class member is the natural unit to cite for one, and
     a citation this cannot follow is a citation this does not check. A wrong method name
     in a cell asserting a closure was verified is the defect that prompted the rule.
+
+    The map is handed in rather than re-derived. It used to take a root and rebuild the
+    map for every symbol citation, while both callers above it were already holding one,
+    so a run walked the `scripts/` tree once per citation and re-parsed each cited module
+    every time it was named.
     """
-    path = modules(root).by_stem.get(module)
+    path = known.by_stem.get(module)
     if path is None:
         return None
+    if module in known.read:
+        return known.read[module]
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"))
     except OSError as error:
-        return Symbols(None, f"could not be read: {error}")
+        known.read[module] = Symbols(None, f"could not be read: {error}")
+        return known.read[module]
     except SyntaxError as error:
-        return Symbols(None, f"could not be parsed: {error}")
+        known.read[module] = Symbols(None, f"could not be parsed: {error}")
+        return known.read[module]
     names: dict[str, set[str]] = {}
     for node in tree.body:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -189,7 +201,8 @@ def module_symbols(root: Path, module: str) -> Symbols | None:
             names.update({t.id: set() for t in node.targets if isinstance(t, ast.Name)})
         elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
             names[node.target.id] = set()
-    return Symbols(names, None)
+    known.read[module] = Symbols(names, None)
+    return known.read[module]
 
 
 def citable(root: Path) -> set[str]:
@@ -221,14 +234,13 @@ def citable(root: Path) -> set[str]:
     return names
 
 
-def citations(root: Path, path: Path, external: set[str]) -> list[Diagnostic]:
+def citations(known: Modules, root: Path, path: Path, external: set[str]) -> list[Diagnostic]:
     """Every citation in one file that names a line, or a symbol nothing defines."""
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
         return []  # text hygiene owns unreadable files and reports them there
 
-    known = modules(root)
     lines = prose_lines(text) if path.suffix == ".md" else list(enumerate(text.splitlines(), 1))
     found: list[Diagnostic] = []
     for number, line in lines:
@@ -249,7 +261,7 @@ def citations(root: Path, path: Path, external: set[str]) -> list[Diagnostic]:
             parts = rest.lstrip(".").split(".")
             if parts[0] in SOURCE_SUFFIXES:
                 continue  # `evidence_currency.py` is a filename, not a symbol citation
-            symbols = module_symbols(root, module)
+            symbols = module_symbols(known, module)
             if symbols is None:
                 if module not in external:
                     found.append(
@@ -299,6 +311,7 @@ def check(root: Path) -> list[Diagnostic]:
     against a document: no citation in any subject is wrong for it, and every citation
     naming that stem is unverifiable until the ambiguity goes.
     """
+    known = modules(root)
     found = [
         Diagnostic(
             root,
@@ -307,11 +320,13 @@ def check(root: Path) -> list[Diagnostic]:
             + ", ".join(str(path.relative_to(root)) for path in paths)
             + " — so a citation naming it cannot be checked",
         )
-        for stem, paths in sorted(modules(root).collisions.items())
+        for stem, paths in sorted(known.collisions.items())
     ]
     external = citable(root)
     return found + [
-        problem for path in subjects(root) for problem in citations(root, path, external)
+        problem
+        for path in subjects(root)
+        for problem in citations(known, root, path, external)
     ]
 
 

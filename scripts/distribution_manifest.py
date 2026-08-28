@@ -212,7 +212,31 @@ def install_refs(text: str, repository: str) -> tuple[list[str], list[Unread]]:
     return refs, unreadable
 
 
-def validate_install_pins(root: Path, repository: str, version: str) -> bool:
+def install_documents(root: Path) -> list[Path]:
+    """Every Markdown file under *root*, asked of git where git can answer.
+
+    The set wanted here is the documents a reader could copy an install command from,
+    and that is a filesystem question. Git answers it better where it can, because it
+    excludes what the workspace ignores — a virtualenv, a build directory — so a
+    worktree is listed rather than walked.
+
+    Where git cannot answer, the walk is the answer rather than a failure. This scan
+    used to fail the whole distribution check on a root that is not a worktree, which
+    is exactly the root `tools/fornax-cli` runs the shipped validator against: the
+    engine materializes a release snapshot, and a snapshot carries no git metadata. The
+    lister's own docstring already said a release tarball or a `git archive` export is a
+    directory a check can legitimately be pointed at; the caller turned that into a hard
+    failure anyway.
+    """
+    paths, error = listed(root)
+    if error is None:
+        return sorted(path for path in paths if path.suffix == ".md" and path.is_file())
+    return sorted(path for path in root.rglob("*.md") if path.is_file())
+
+
+def validate_install_pins(
+    root: Path, repository: str, version: str, documents: list[Path] | None = None
+) -> bool:
     """Require every documented install pin to name the release being shipped.
 
     The host manifests are checked above, but the commands a reader copies live
@@ -239,14 +263,7 @@ def validate_install_pins(root: Path, repository: str, version: str) -> bool:
     expected = f"v{version}"
     carrying: set[str] = set()
 
-    paths, error = listed(root)
-    if error is not None:
-        print(printable(f"FAIL distribution.json - {error}"))
-        return True
-
-    for path in sorted(paths):
-        if path.suffix != ".md" or not path.is_file():
-            continue
+    for path in install_documents(root) if documents is None else documents:
         try:
             text = path.read_text(encoding="utf-8")
         except (OSError, UnicodeError):

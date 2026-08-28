@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """CommonMark link and section extraction for repository maintenance checks.
 
-This module owns the repository's CommonMark parser. Both operations that need the
-grammar live here rather than beside their callers: link destinations, and the text
-under one heading. Writing the grammar again beside a caller is how a fingerprint came
-to cover part of the section it named.
+This module owns the repository's CommonMark parser. Every operation that needs the
+grammar lives here rather than beside its caller — each names itself below. Writing the
+grammar again beside a caller is how a fingerprint came to cover part of the section it
+named.
 """
 
 from __future__ import annotations

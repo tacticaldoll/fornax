@@ -1250,10 +1250,18 @@ class ProjectedDescriptionTests(unittest.TestCase):
 
             self.assertTrue(passed, output)
 
-    def test_a_non_worktree_reports_rather_than_raising(self) -> None:
-        # The pin scan asks git what the workspace carries, and the lister raises on a
-        # root that is not a worktree. The second caller did not turn that into a
-        # diagnostic, so a valid distribution.json in an exported tree crashed.
+    def test_a_non_worktree_validates_from_the_filesystem(self) -> None:
+        """The root `tools/fornax-cli` runs the shipped validator against.
+
+        The engine materializes a release snapshot, which carries no git metadata, and
+        the pin scan asked git what the workspace carries. First that raised; then it
+        was turned into a diagnostic and the whole distribution check failed on it,
+        which this case asserted. Measured against a `git archive` export of this
+        repository, the shipped validator exited 1 on a tree with nothing wrong in it.
+
+        The document set is a filesystem question, and git is how it is asked where git
+        can answer.
+        """
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             fixtures.write_distribution(root)
@@ -1261,8 +1269,27 @@ class ProjectedDescriptionTests(unittest.TestCase):
 
             passed, output = self.check_distribution(root)
 
+            self.assertTrue(passed, output)
+            self.assertNotIn("workspace could not be listed", output)
+
+    def test_a_non_worktree_still_reports_a_stale_pin(self) -> None:
+        # Falling back must not become skipping: the walk has to find the same
+        # documents the listing would have.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_distribution(root)
+            relative = distribution_manifest.PINNED_INSTALL_DOCS[0]
+            path = root / relative
+            path.write_text(
+                path.read_text(encoding="utf-8").replace("@v1.2.3", "@v9.9.9"),
+                encoding="utf-8",
+            )
+            subprocess.run(["rm", "-rf", str(root / ".git")], check=True)
+
+            passed, output = self.check_distribution(root)
+
             self.assertFalse(passed)
-            self.assertIn("workspace could not be listed", output)
+            self.assertIn("install ref v9.9.9 must be v1.2.3", output)
 
     def test_pins_cannot_be_checked_without_a_repository_url(self) -> None:
         with TemporaryDirectory() as tmp:

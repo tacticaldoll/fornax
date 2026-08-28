@@ -520,6 +520,11 @@ Prefer lightweight tests that match the risk of the change.
   question, and the next round's input arrived before the answer. So the record is part of the turn
   that repairs, written before reporting, and the report says it exists.
 
+  A round is a review and its settlement. Work done without a review — a repair the user asked for
+  directly — is not a round and has no record of its own; it falls inside the range of the next
+  review, and that round's record settles it. Reading the clause as covering every commit made the
+  commit that wrote it a violation of itself.
+
   This binds each round as it happens, and only then. A round whose Review Record was never
   persisted cannot be settled afterwards — the text it would be settled against no longer exists,
   and a record built from the commits that repaired it would be a reconstruction rather than a
@@ -703,8 +708,10 @@ Keep scripts deterministic, portable, and easy to audit.
   and that a citation naming anything else names a module the standard library or this repository's
   own imports account for, which is what a mistyped internal module fails.
 
-  The subject is what this repository authors as durable reasoning: this file, `PROJECT.md`,
-  `README.md`, `development-knowns.yaml`, and the records under `docs/dispositions/`. Two things are
+  The subject is what this repository authors as durable reasoning, and `check_citations.SUBJECTS`
+  is where that set is written down — the records under `docs/dispositions/` are added there too.
+  Naming the files here as well meant the enumeration and the code could disagree, and they did: a
+  file was added to the check and not to the rule. Two things are
   outside it, and not by exemption. A Review Record's own evidence column is a coordinate into the
   tree as reviewed, read once by the triage in the round it was written, and never afterwards — and
   changing that convention would reach sections a recorded measurement fingerprints, superseding a

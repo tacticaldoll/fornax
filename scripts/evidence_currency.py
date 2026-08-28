@@ -239,22 +239,59 @@ def section_text(text: str, heading: str) -> str | None:
     return heading_section(text, heading)
 
 
-def fingerprint(root: Path, tests: str, heading: str) -> str | None:
-    """Hash the text an entry claims to have measured, or None when it is gone.
+@dataclass(frozen=True)
+class Fingerprint:
+    """A hash of the measured text, or why there is none — never both, never neither.
+
+    One `None` carried four answers: the path resolved outside the repository, the file
+    would not read, it was not there, and the heading was absent. Every caller reported
+    the last of them, so an entry pointing at a symlink out of the tree or at a deleted
+    file sent the reader to a heading that was never the problem.
+
+    The shape is `skill_yaml.Document`'s, `path_boundary.Boundary`'s and
+    `check_citations.Symbols`'. The sweep that produced those enumerated types with
+    paired optional fields; a function returning `None` for several reasons is the same
+    defect and was not in its reach.
+    """
+
+    _digest: str | None
+    reason: str | None
+
+    def __post_init__(self) -> None:
+        if (self._digest is None) == (self.reason is None):
+            raise ValueError("a fingerprint holds a digest or a reason, never both or neither")
+
+    @property
+    def digest(self) -> str:
+        if self._digest is None:
+            raise ValueError(self.reason or "")
+        return self._digest
+
+
+def fingerprint(root: Path, tests: str, heading: str) -> Fingerprint:
+    """Hash the text an entry claims to have measured, or say why it could not.
 
     The path is resolved against the root before reading, so a symlink escaping the
-    repository is `None` rather than a hash of whatever it points at.
+    repository is refused rather than hashed.
     """
-    if not resolved_inside(tests, root):
-        return None
+    if not spelled_inside(tests):
+        return Fingerprint(None, f"{tests} is not spelled inside the repository")
+    # Asked of `path_boundary` rather than of `resolved_inside`, which answers with a
+    # bool over a verdict that already tells absent from outside. The sibling keeps its
+    # bool for the caller that only decides whether to read; this one has to say why.
+    verdict = resolve_within(root / Path(tests), Boundary.at(root)).verdict
+    if verdict is Verdict.ABSENT:
+        return Fingerprint(None, f"{tests} is not there")
+    if verdict is not Verdict.INSIDE:
+        return Fingerprint(None, f"{tests} resolves {verdict.value} the repository")
     try:
         text = (root / tests).read_text(encoding="utf-8")
-    except (OSError, UnicodeError):
-        return None
+    except (OSError, UnicodeError) as error:
+        return Fingerprint(None, f"{tests} could not be read: {error}")
     found = section_text(text, heading)
     if found is None:
-        return None
-    return hashlib.sha256(found.encode("utf-8")).hexdigest()[:16]
+        return Fingerprint(None, f"{tests} no longer carries {heading}")
+    return Fingerprint(hashlib.sha256(found.encode("utf-8")).hexdigest()[:16], None)
 
 
 def unaccounted_files(root: Path, registered: set[str]) -> list[str]:
@@ -342,16 +379,11 @@ def check(root: Path, entries: tuple[Evidence, ...]) -> bool:
             print(printable(f"SUPERSEDED {identifier} - {entry.get('superseded-reason')}"))
             continue
         found = fingerprint(root, entry.get("tests"), entry.get("section"))
-        if found is None:
-            print(
-                printable(
-                    f"FAIL {identifier} - {entry.get('tests')} no longer carries "
-                    f"{entry.get('section')}"
-                )
-            )
+        if found.reason is not None:
+            print(printable(f"FAIL {identifier} - {found.reason}"))
             failed = True
             continue
-        if found != entry.get("fingerprint"):
+        if found.digest != entry.get("fingerprint"):
             print(
                 printable(
                     f"FAIL {identifier} - {entry.get('tests')} changed since the evidence "
@@ -390,10 +422,10 @@ def main(argv: list[str] | None = None) -> int:
         path = arguments.fingerprint[0]
         heading = " ".join(arguments.fingerprint[1:]) or WHOLE_FILE
         found = fingerprint(ROOT, path, heading)
-        if found is None:
-            print(printable(f"FAIL {path} does not carry {heading}"), file=sys.stderr)
+        if found.reason is not None:
+            print(printable(f"FAIL {found.reason}"), file=sys.stderr)
             return 1
-        print(found)
+        print(found.digest)
         return 0
 
     try:

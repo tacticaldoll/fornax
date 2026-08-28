@@ -120,7 +120,7 @@ class DriftTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             write(root, CURRENT.format(fingerprint="placeholder"))
-            actual = evidence_currency.fingerprint(root, "doc.md", "Gate 5: Responsibility")
+            actual = evidence_currency.fingerprint(root, "doc.md", "Gate 5: Responsibility").digest
             write(root, CURRENT.format(fingerprint=actual))
 
             failed, output = run_check(root)
@@ -128,11 +128,43 @@ class DriftTests(unittest.TestCase):
             self.assertFalse(failed, output)
             self.assertIn("OK   sample", output)
 
+    def test_each_way_a_fingerprint_fails_says_which_one(self) -> None:
+        """One None carried four answers and every caller reported the last of them.
+
+        A registry entry pointing at a symlink out of the tree, or at a file that is
+        not there, sent the reader to a heading that was never the problem.
+        """
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write(root, CURRENT.format(fingerprint="placeholder"))
+            (root / "outside.md").write_text("elsewhere\n", encoding="utf-8")
+            escape = root / "escape.md"
+            escape.symlink_to(Path(tmp).parent / "nowhere-at-all.md")
+
+            cases = {
+                "../outside.md": "is not spelled inside the repository",
+                "missing.md": "is not there",
+                "doc.md": "no longer carries",
+            }
+            for tests, expected in cases.items():
+                with self.subTest(tests=tests):
+                    heading = "Absent Heading" if tests == "doc.md" else "whole-file"
+                    found = evidence_currency.fingerprint(root, tests, heading)
+
+                    self.assertIsNotNone(found.reason, found)
+                    self.assertIn(expected, found.reason)
+
+    def test_a_fingerprint_cannot_hold_both_a_digest_and_a_reason(self) -> None:
+        for digest, reason in (("abc", "gone"), (None, None)):
+            with self.subTest(digest=digest, reason=reason):
+                with self.assertRaises(ValueError):
+                    evidence_currency.Fingerprint(digest, reason)
+
     def test_edited_text_drifts_and_names_the_repair(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             write(root, CURRENT.format(fingerprint="placeholder"))
-            actual = evidence_currency.fingerprint(root, "doc.md", "Gate 5: Responsibility")
+            actual = evidence_currency.fingerprint(root, "doc.md", "Gate 5: Responsibility").digest
             write(root, CURRENT.format(fingerprint=actual), DOCUMENT.replace("measured", "edited"))
 
             failed, output = run_check(root)
@@ -241,7 +273,9 @@ class DriftTests(unittest.TestCase):
                 (root / "escape.md").symlink_to(outside)
 
                 self.assertFalse(evidence_currency.resolved_inside("escape.md", root))
-                self.assertIsNone(evidence_currency.fingerprint(root, "escape.md", "whole-file"))
+                refused = evidence_currency.fingerprint(root, "escape.md", "whole-file")
+                self.assertIsNotNone(refused.reason)
+                self.assertIn("resolves outside", refused.reason)
             finally:
                 outside.unlink()
 
@@ -263,7 +297,9 @@ class DriftTests(unittest.TestCase):
                     "scenarios/sample/README.md", "scenarios/a/README.md"
                 )
                 write(root, registry)
-                actual = evidence_currency.fingerprint(root, "doc.md", "Gate 5: Responsibility")
+                actual = evidence_currency.fingerprint(
+                    root, "doc.md", "Gate 5: Responsibility"
+                ).digest
                 write(root, registry.replace("placeholder", actual))
                 (scenario / "README.md").unlink()
                 (scenario / "README.md").symlink_to(outside)
@@ -282,7 +318,7 @@ class DriftTests(unittest.TestCase):
             (root / "link.md").symlink_to(Path("real.md"))
 
             self.assertTrue(evidence_currency.resolved_inside("link.md", root))
-            self.assertIsNotNone(evidence_currency.fingerprint(root, "link.md", "whole-file"))
+            self.assertIsNone(evidence_currency.fingerprint(root, "link.md", "whole-file").reason)
 
     def test_a_tree_covering_record_cannot_silence_the_walk(self) -> None:
         # One entry whose record sits beside the registry would make SCENARIOS itself
@@ -312,7 +348,7 @@ class DriftTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             write(root, registry)
-            actual = evidence_currency.fingerprint(root, "doc.md", "Gate 5: Responsibility")
+            actual = evidence_currency.fingerprint(root, "doc.md", "Gate 5: Responsibility").digest
             write(root, registry.replace("placeholder", actual))
 
             failed, output = run_check(root)
@@ -326,7 +362,7 @@ class DriftTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             write(root, CURRENT.format(fingerprint="placeholder"))
-            actual = evidence_currency.fingerprint(root, "doc.md", "Gate 5: Responsibility")
+            actual = evidence_currency.fingerprint(root, "doc.md", "Gate 5: Responsibility").digest
             write(root, CURRENT.format(fingerprint=actual))
             odd = root / "scripts" / "tests" / "scenarios" / "odd"
             odd.mkdir(parents=True, exist_ok=True)

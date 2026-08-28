@@ -9,13 +9,13 @@ is the product.
 More than one attack, one class. An escape sequence rewrites the line it sits in, so a value
 could bend its own FAIL toward looking like a pass. A right-to-left override reverses
 how the rest of the line renders, so "SKILL.md<RLO>dm.LLIKS ton" reads as
-"SKILL.md not SKILL.md" — the report saying the opposite of what it says. The first
-is Unicode category Cc; the second is Cf, and an earlier rule that matched a codepoint
-*range* caught only the first.
+"SKILL.md not SKILL.md" — the report saying the opposite of what it says. The escape
+sequence is Unicode category Cc and the override is Cf, and an earlier rule that
+matched a codepoint *range* caught the escape sequence alone.
 
 So the test is the category, taken from the Unicode database rather than a list kept
 here: Cc and Cf hide or redirect, Zl and Zp end a line where the file did not. Cs is
-here for a third reason: a lone surrogate cannot come from *decoding* UTF-8, but it
+here for a different reason: a lone surrogate cannot come from *decoding* UTF-8, but it
 is exactly what ``os.fsdecode`` produces for a filename whose bytes are not UTF-8,
 and printing one raises UnicodeEncodeError. That crashed the text check on any
 repository holding such a file instead of reporting it — the report is the product,
