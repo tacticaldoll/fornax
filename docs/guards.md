@@ -8,9 +8,11 @@ repairs were measured when they landed — a revert, a red test, a count in a co
 none of that is re-runnable by a reader. What a round needed in order to close one was the evidence,
 and the evidence was in prose nobody could execute.
 
-Each entry names the unit to revert and the test that must fail, both as symbols. Nothing here
-names a line: `scripts/check_citations.py` resolves every symbol below, so an entry whose unit or
-guard is renamed away is loud rather than quietly wrong.
+Each **guarded** entry names the unit to revert and the test that must fail, both as symbols;
+an entry with no guard names the finding and says why nothing can turn red, which is a row of its
+own kind and not a half-filled one. Nothing here names a line: `scripts/check_citations.py` resolves
+every symbol below, so an entry whose unit or guard is renamed away is loud rather than quietly
+wrong.
 
 Every finding a round accepted in this range has a row, closed ones included, and a finding whose
 repair nothing can guard has a row saying so rather than no row at all. The first version held only
@@ -69,12 +71,9 @@ is why the sections are separate rather than one heading with two dates.
 | EXTENSION-RULE-TOO-NARROW | `check_citations.LINE_CITATION`, capped back to six letters | `test_check_citations.LineCitations.test_a_long_extension_is_still_a_line_citation` | 2 |
 | DIAGNOSTIC-COMPOSES-A-PATH | the module path in `check_citations.citations`, composed instead of taken from the map | `test_check_citations.ModuleIdentity.test_an_unparseable_module_is_named_where_it_actually_sits` | 1 |
 | CITABLE-SET-ASKS-THE-ENVIRONMENT | `check_citations.citable`, given a name nothing here imports | `test_check_citations.SymbolCitations.test_a_third_party_module_nothing_here_imports_is_reported` | 1 |
+| IMPORTS-OUTSIDE-THE-INVARIANT | the raising accessor on `check_citations.Symbols`, so `imports` answers a reason-carrying value | `test_check_citations.ModuleIdentity.test_a_symbols_holding_a_reason_answers_neither_question` | 1 |
 | SNAPSHOT-NEEDS-A-WORKTREE | the filesystem fallback in `distribution_manifest.install_documents` | `test_validate_skills.ProjectedDescriptionTests.test_a_non_worktree_validates_from_the_filesystem`, `test_validate_skills.ProjectedDescriptionTests.test_a_non_worktree_still_reports_a_stale_pin` | 2 |
 | FINGERPRINT-COLLAPSED-NONE | the reasons in `evidence_currency.fingerprint` | `test_evidence_currency.DriftTests.test_each_way_a_fingerprint_fails_says_which_one` | 1 |
-| MODULE-MAP-REBUILT | — | none — the repair changed how often the tree is read, not what it answers. Its measurement is in `docs/dispositions/v0.4.1..1609403.md`: 165 parses to 66, 0.77s to 0.26s. The later 66 to 48 belongs to DOUBLE-PARSE-DISAGREES, in its own record, and this row said 48 and a wall time no record holds | — |
-| FORMATTING-DRIFT | — | none — the units are an import block and two prose lines, which no test holds | — |
-| SUBJECTS-STATED-TWICE, GUARDS-INCOMPLETE, ROUND-CLAUSE-TOO-WIDE, GUARD-NOT-A-SYMBOL | — | none — every unit is prose, and `GUARD-NOT-A-SYMBOL`'s repair is verified by the citation gate step reading this file | — |
-| DOUBLE-PARSE-DISAGREES | — | none, and this row claimed one. It said reverting `check_citations.citable` to a second walk turns `test_check_citations.ModuleIdentity.test_an_unparseable_module_is_absent_and_reported_by_one_answer` red, measured at 2. Re-measured: both implementations answer identically on that fixture, because the walk swallowed an unparseable module exactly as the one-pass form does. The convergence's effect is the parse count and one decision point for an unreadable module, neither of which an output can show. The case is kept — it asserts that one answer covers absence and defect — but it is not this repair's guard | — |
 | UNRESOLVABLE-SAYS-NOTHING | the `OUTSIDE` branch in `evidence_currency.fingerprint`, folded back together with the one below it | `test_evidence_currency.DriftTests.test_an_unresolvable_path_says_what_stopped_it` | 2 |
 
 ## Repairs with no guard, and why
@@ -84,6 +83,15 @@ is why the sections are separate rather than one heading with two dates.
 | INPUT-PATTERN-SPLIT | An equivalence refactor: two patterns for one Markdown line became one, and the answers were measured identical over the label alone, a padded label, a full contract line and a line without one. Reverting it leaves the suite green by construction, which is what an equivalence claim means. What settles it is `validate_skills.INPUT_LINE` being one pattern where there were two |
 | CLOSURE-NAMES-WRONG-SYMBOL | Its guard is not a test but a gate step: `scripts/check_citations.py` refuses a citation whose symbol no module defines, which is the defect itself. It is verified by the gate being green over the records |
 | ORDINAL-IN-NEW-MODULE, REGISTRY-UNDERREPORT, LEDGER-TABLE-ROUNDS, RAWSCORES-PROVISIONAL, COUNTS-IN-THE-NEW-PROSE, ROUND-ENDS-WHEN-ASKED, RECONCILED-AGAINST-A-PARTIAL-COPY | The unit is prose. No test can hold a docstring's wording, and no gate opens over one. These close on the recorded reading that settled them, which is in each round's Disposition Record |
+| MODULE-MAP-REBUILT | none — the repair changed how often the tree is read, not what it answers. Its measurement is in `docs/dispositions/v0.4.1..1609403.md`: 165 parses to 66, 0.77s to 0.26s. The later 66 to 48 belongs to DOUBLE-PARSE-DISAGREES, in its own record, and this row said 48 and a wall time no record holds |
+| FORMATTING-DRIFT | none — the units are an import block and two prose lines, which no test holds |
+| SUBJECTS-STATED-TWICE, GUARDS-INCOMPLETE, ROUND-CLAUSE-TOO-WIDE, GUARD-NOT-A-SYMBOL | none — every unit is prose, and `GUARD-NOT-A-SYMBOL`'s repair is verified by the citation gate step reading this file |
+| DOUBLE-PARSE-DISAGREES | none, and this row claimed one. It said reverting `check_citations.citable` to a second walk turns `test_check_citations.ModuleIdentity.test_an_unparseable_module_is_absent_and_reported_by_one_answer` red, measured at 2. Re-measured: both implementations answer identically on that fixture, because the walk swallowed an unparseable module exactly as the one-pass form does. The convergence's effect is the parse count and one decision point for an unreadable module, neither of which an output can show. The case is kept — it asserts that one answer covers absence and defect — but it is not this repair's guard |
+| GUARD-CLAIM-UNFAITHFUL-REVERT | — the finding is that a guard row promised a red that does not happen, and its repair is that row's correction. A ledger row cannot guard a ledger row |
+| LEDGER-QUOTES-WRONG-FIGURES | — the unit is a table cell |
+| PARAGRAPH-NOT-REWRAPPED | — the unit is a paragraph's line breaks |
+| ROW-NOT-SELF-CONTAINED | — the unit is a table cell |
+| GUARDS-CLAUSE-SELF-CONTRADICTS | — the unit is a clause in `AGENTS.md` |
 | REGISTRY-NOT-DERIVED | Declined, with the weighing in `development-knowns.yaml`. A declined finding has no repair to guard |
 
 ## What was declined
@@ -96,5 +104,15 @@ maintained by hand. That is the property this range spent a round removing from 
 reintroducing it in a more brittle form to guard the same claims is a worse trade than running the
 reverts when a round wants to close something.
 
-**Reconsider when** a repair is found to have lost its guard, or a mutation runner arrives that
-addresses a unit rather than a span of text.
+**Re-weighed after the trigger fired, and the decline stands.** The evidence above was one
+occurrence when it was written, and this file has since recorded three more ways a guard result went
+wrong: an edit that did not apply, an edit that applied but was not the pre-repair code, and a row
+whose guard never guarded at all. The trigger below names a repair *losing* its guard, and only the
+first of those three is that; the other two are a claim that never held, which a gate step would not
+have caught either — it would have run the same unfaithful revert and recorded the same number.
+What the three do say is that the failures are in *how a revert is performed*, not in whether one is
+performed on a schedule, and the preamble above is where that repair went. A reader meeting this
+decline should see it was reconsidered rather than left standing.
+
+**Reconsider when** a repair is found to have lost a guard it demonstrably had, or a mutation runner
+arrives that addresses a unit rather than a span of text.

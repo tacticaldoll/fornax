@@ -519,9 +519,8 @@ Prefer lightweight tests that match the risk of the change.
 
   A repair measured only in a commit message cannot be re-run by the round that would retire the
   finding, which is how findings came to sit in `Carried forward` round after round with no path
-  out. The guards are symbols, so the citation check refuses one that
-  has been renamed away, and a finding whose unit is prose says so there instead of naming a test
-  that cannot exist.
+  out. The guards are symbols, so the citation check refuses one that has been renamed away, and a
+  finding whose unit is prose says so there instead of naming a test that cannot exist.
 
   A round ends when its record is written, not when its repairs land. Offering the record as a next
   step is how successive rounds lost theirs: the repairs were committed, the record was raised as a
