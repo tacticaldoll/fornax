@@ -143,8 +143,11 @@ class Symbols:
     reason: str | None
     #: The top-level module names this module imports, for `citable`. Collected in the
     #: same pass: both questions read the same file, and reading it twice let the two
-    #: answers disagree about what an unreadable module means.
-    imports: frozenset[str] = frozenset()
+    #: answers disagree about what an unreadable module means. Private for the reason
+    #: the payload above is — an unreadable module answered a public `imports` with a
+    #: confident empty set, which reads as "imports nothing" where the truth is "could
+    #: not be read", and that is the swallow this field's own commit removed.
+    _imports: frozenset[str] = frozenset()
 
     def __post_init__(self) -> None:
         if (self._names is None) == (self.reason is None):
@@ -155,6 +158,12 @@ class Symbols:
         if self._names is None:
             raise ValueError(self.reason or "")
         return self._names
+
+    @property
+    def imports(self) -> frozenset[str]:
+        if self._names is None:
+            raise ValueError(self.reason or "")
+        return self._imports
 
 
 def module_symbols(known: Modules, module: str) -> Symbols | None:

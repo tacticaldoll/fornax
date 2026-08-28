@@ -343,6 +343,20 @@ class ModuleIdentity(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     check_citations.Symbols(names, reason)
 
+    def test_a_symbols_holding_a_reason_answers_neither_question(self) -> None:
+        """`imports` was a plain field beside an invariant the type enforces.
+
+        An unreadable module answered it with an empty set, which reads as "imports
+        nothing" where the truth is "could not be read" — the same swallow the field's
+        own commit removed from `citable`.
+        """
+        unreadable = check_citations.Symbols(None, "could not be parsed")
+
+        for reach in (lambda: unreadable.names, lambda: unreadable.imports):
+            with self.subTest(reach=reach):
+                with self.assertRaises(ValueError):
+                    reach()
+
 
 class EntryPoint(unittest.TestCase):
     def run_main(self, root: Path) -> tuple[int, str, str]:
