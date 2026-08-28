@@ -137,12 +137,13 @@ class DriftTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             write(root, CURRENT.format(fingerprint="placeholder"))
-            (root / "outside.md").write_text("elsewhere\n", encoding="utf-8")
-            escape = root / "escape.md"
-            escape.symlink_to(Path(tmp).parent / "nowhere-at-all.md")
+            (root / "escape.md").symlink_to(Path(tmp).parent / "nowhere-at-all.md")
 
             cases = {
                 "../outside.md": "is not spelled inside the repository",
+                # A symlink to a path outside the root resolves there, so this is the
+                # escape the Fingerprint docstring names first — not an absence.
+                "escape.md": "resolves outside the repository",
                 "missing.md": "is not there",
                 "doc.md": "no longer carries",
             }
@@ -153,6 +154,24 @@ class DriftTests(unittest.TestCase):
 
                     self.assertIsNotNone(found.reason, found)
                     self.assertIn(expected, found.reason)
+
+    def test_an_unresolvable_path_says_what_stopped_it(self) -> None:
+        """The branch that folded UNRESOLVABLE in with OUTSIDE said neither.
+
+        It composed "resolves unresolvable the repository" and discarded the only
+        value that names what stopped the resolution.
+        """
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write(root, CURRENT.format(fingerprint="placeholder"))
+            loop = root / "loop.md"
+            loop.symlink_to(loop)
+
+            found = evidence_currency.fingerprint(root, "loop.md", "whole-file")
+
+            self.assertIsNotNone(found.reason, found)
+            self.assertIn("could not be resolved", found.reason)
+            self.assertNotIn("resolves unresolvable", found.reason)
 
     def test_a_fingerprint_cannot_hold_both_a_digest_and_a_reason(self) -> None:
         for digest, reason in (("abc", "gone"), (None, None)):

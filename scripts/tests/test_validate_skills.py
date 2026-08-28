@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-import subprocess
+import shutil
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
@@ -1265,7 +1265,7 @@ class ProjectedDescriptionTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             fixtures.write_distribution(root)
-            subprocess.run(["rm", "-rf", str(root / ".git")], check=True)
+            shutil.rmtree(root / ".git")
 
             passed, output = self.check_distribution(root)
 
@@ -1284,7 +1284,7 @@ class ProjectedDescriptionTests(unittest.TestCase):
                 path.read_text(encoding="utf-8").replace("@v1.2.3", "@v9.9.9"),
                 encoding="utf-8",
             )
-            subprocess.run(["rm", "-rf", str(root / ".git")], check=True)
+            shutil.rmtree(root / ".git")
 
             passed, output = self.check_distribution(root)
 

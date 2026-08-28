@@ -312,6 +312,31 @@ class ModuleIdentity(unittest.TestCase):
             self.assertEqual(len(found), 1, found)
             self.assertIn("scripts/tests/broken_nested.py", found[0])
 
+    def test_an_unparseable_module_is_absent_and_reported_by_one_answer(self) -> None:
+        """The two passes read the same files and disagreed about failure.
+
+        `citable` swallowed an unparseable module and `module_symbols` reported it, so
+        one run could call the same file absent from the citable set and defective at
+        every citation naming it. One parse now answers both.
+        """
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp)
+            # `packaging` is imported by the broken module and by nothing else, so its
+            # citation is legitimate only if the broken module's imports count.
+            (root / "scripts" / "broken_import.py").write_text(
+                "import packaging\ndef f(:\n", encoding="utf-8"
+            )
+            (root / "AGENTS.md").write_text(
+                "Reached by `broken_import.f`, and by `packaging.requirements`.\n",
+                encoding="utf-8",
+            )
+
+            found = messages(root)
+
+            self.assertEqual(len(found), 2, found)
+            self.assertTrue(any("could not be parsed" in m for m in found), found)
+            self.assertTrue(any("packaging.requirements" in m for m in found), found)
+
     def test_symbols_cannot_hold_both_a_mapping_and_a_reason(self) -> None:
         for names, reason in (({}, "unreadable"), (None, None)):
             with self.subTest(names=names, reason=reason):

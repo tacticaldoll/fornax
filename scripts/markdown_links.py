@@ -21,6 +21,9 @@ from host_paths import is_absolute_anywhere
 
 
 EXTERNAL_SCHEME = re.compile(r"^[a-z][a-z0-9+.-]*:", re.IGNORECASE)
+#: The depths a record's sections use. A parameter stood here with one caller,
+#: which took the default, and no test supplying anything else.
+RECORD_DEPTHS = (2, 3)
 PARSER = MarkdownIt("commonmark")
 
 
@@ -102,15 +105,15 @@ def heading_section(text: str, heading: str) -> Optional[str]:
     return None
 
 
-def heading_texts(text: str, depths: Iterable[int] = (2, 3)) -> list[str]:
-    """Every heading's text at the given depths, in document order.
+def heading_texts(text: str) -> list[str]:
+    """Every heading's text at a record's own depths, in document order.
 
     Same parser, same reason as `heading_section`: `^#{2,3} (.+)$` counts a `##` inside
     a fenced block as a heading, so a template carrying a fenced example would have its
     example's headings inventoried as its own.
     """
     tokens = list(PARSER.parse(text))
-    wanted = {f"h{depth}" for depth in depths}
+    wanted = {f"h{depth}" for depth in RECORD_DEPTHS}
     found = []
     for index, token in enumerate(tokens):
         if token.type != "heading_open" or token.tag not in wanted:

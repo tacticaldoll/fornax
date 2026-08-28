@@ -234,9 +234,7 @@ def install_documents(root: Path) -> list[Path]:
     return sorted(path for path in root.rglob("*.md") if path.is_file())
 
 
-def validate_install_pins(
-    root: Path, repository: str, version: str, documents: list[Path] | None = None
-) -> bool:
+def validate_install_pins(root: Path, repository: str, version: str) -> bool:
     """Require every documented install pin to name the release being shipped.
 
     The host manifests are checked above, but the commands a reader copies live
@@ -263,7 +261,7 @@ def validate_install_pins(
     expected = f"v{version}"
     carrying: set[str] = set()
 
-    for path in install_documents(root) if documents is None else documents:
+    for path in install_documents(root):
         try:
             text = path.read_text(encoding="utf-8")
         except (OSError, UnicodeError):

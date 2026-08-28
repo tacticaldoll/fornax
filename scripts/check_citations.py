@@ -141,6 +141,10 @@ class Symbols:
 
     _names: dict[str, set[str]] | None
     reason: str | None
+    #: The top-level module names this module imports, for `citable`. Collected in the
+    #: same pass: both questions read the same file, and reading it twice let the two
+    #: answers disagree about what an unreadable module means.
+    imports: frozenset[str] = frozenset()
 
     def __post_init__(self) -> None:
         if (self._names is None) == (self.reason is None):
@@ -183,6 +187,12 @@ def module_symbols(known: Modules, module: str) -> Symbols | None:
     except SyntaxError as error:
         known.read[module] = Symbols(None, f"could not be parsed: {error}")
         return known.read[module]
+    imported: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported.update(alias.name.split(".")[0] for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module and not node.level:
+            imported.add(node.module.split(".")[0])
     names: dict[str, set[str]] = {}
     for node in tree.body:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -201,11 +211,11 @@ def module_symbols(known: Modules, module: str) -> Symbols | None:
             names.update({t.id: set() for t in node.targets if isinstance(t, ast.Name)})
         elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
             names[node.target.id] = set()
-    known.read[module] = Symbols(names, None)
+    known.read[module] = Symbols(names, None, frozenset(imported))
     return known.read[module]
 
 
-def citable(root: Path) -> set[str]:
+def citable(known: Modules) -> set[str]:
     """Every module name a citation may name without this tree defining it.
 
     Derived, not asked of the environment. `find_spec` stood here first, which made the
@@ -214,6 +224,12 @@ def citable(root: Path) -> set[str]:
     with the interpreter version `.python-version` pins; the third-party names are the
     ones some module under `scripts/` actually imports, read from the import statements.
 
+    Read through `module_symbols` rather than by a second walk of the same tree. The two
+    passes parsed the same files for different questions and disagreed about failure:
+    this one swallowed an unparseable module and the other reported it, so one run could
+    call the same file absent and defective. Now a module that will not parse holds its
+    reason once, contributes no imports, and is reported wherever it is cited.
+
     So a name outside all of this — `scripts/`, the standard library, and what this
     repository imports — resolves nowhere that matters, whatever a local environment
     holds. A similarity heuristic stood here before `find_spec` and passed every
@@ -221,16 +237,10 @@ def citable(root: Path) -> set[str]:
     range.
     """
     names = set(sys.stdlib_module_names)
-    for path in sorted((root / "scripts").rglob("*.py")):
-        try:
-            tree = ast.parse(path.read_text(encoding="utf-8"))
-        except (OSError, SyntaxError):
-            continue  # reported where it is cited, and by the source-parsing gate step
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                names.update(alias.name.split(".")[0] for alias in node.names)
-            elif isinstance(node, ast.ImportFrom) and node.module and not node.level:
-                names.add(node.module.split(".")[0])
+    for module in known.by_stem:
+        symbols = module_symbols(known, module)
+        if symbols is not None and symbols.reason is None:
+            names.update(symbols.imports)
     return names
 
 
@@ -322,7 +332,7 @@ def check(root: Path) -> list[Diagnostic]:
         )
         for stem, paths in sorted(known.collisions.items())
     ]
-    external = citable(root)
+    external = citable(known)
     return found + [
         problem
         for path in subjects(root)

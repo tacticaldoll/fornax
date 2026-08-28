@@ -12,10 +12,13 @@ Each entry names the unit to revert and the test that must fail, both as symbols
 names a line: `scripts/check_citations.py` resolves every symbol below, so an entry whose unit or
 guard is renamed away is loud rather than quietly wrong.
 
-Every finding a round accepted in this range has a row, closed ones included. The first version held
-only the findings still carried, which read the ledger as a way out rather than as what it is — the
+Every finding a round accepted in this range has a row, closed ones included, and a finding whose
+repair nothing can guard has a row saying so rather than no row at all. The first version held only
+the findings still carried, which read the ledger as a way out rather than as what it is — the
 record of what must break if a repair is undone, and a closed finding's repair can be undone like
-any other.
+any other. The second version was written in the turn that repaired, before the round's own findings
+list existed, so it could not hold what that list would say; the ledger is completed in the settling
+turn now, which `AGENTS.md` states.
 
 **A finding closes on this ledger the way it closes on an input's explicit verification** — the
 closure test in `skills/triage-findings/SKILL.md` accepts a verified repair in place of a
@@ -23,12 +26,14 @@ gate-reviewed unit, and a probe a round can re-run is a stronger verification th
 What that does not claim is a gate: no gate has opened over most of these units, and this ledger
 says what was measured rather than what was inspected.
 
-## Measured 2026-08-27, extended 2026-08-28
+A dated section is quotable only with the tree it names, so each one names its own. Every revert's
+edit was confirmed to have landed before its result was read — an earlier probe in this range
+reported no failures because its edit had not applied, and the number was nearly recorded.
 
-Each revert applied to the tree at `1abbb01`, the named test file run, the tree restored, and the
-whole suite confirmed green afterwards. Every revert's edit was confirmed to have landed before its
-result was read — an earlier probe in this range reported no failures because its edit had not
-applied, and the number was nearly recorded.
+## Measured 2026-08-27, at `1abbb01`
+
+Each revert applied to that tree, the named test file run, the tree restored, and the whole suite
+confirmed green afterwards.
 
 | Finding | Revert this | Guard | Red on revert |
 |---|---|---|---|
@@ -37,6 +42,16 @@ applied, and the number was nearly recorded.
 | VERDICT-CONTROL | the same fold; this finding is the assertion that the `OK` line is absent, so its guard is the same test named as a symbol rather than as a phrase inside one | `test_validate_skills.EntryPointTests.test_a_mismatched_sidecar_publisher_fails_the_entry_point` | 1 |
 | FENCE-HANDREAD | `seam_contract.elements`' use of `markdown_links.marked_code_blocks`, replaced by a hand-written fence pattern | `test_seam_contract.TemplateHeadingTests.test_a_four_backtick_template_keeps_a_three_backtick_example_inside_it`, `test_seam_contract.TemplateHeadingTests.test_a_tilde_fenced_template_is_the_output_template`, `test_seam_contract.TemplateHeadingTests.test_a_template_fenced_as_another_language_is_reported` | 3 |
 | BINARY-AS-TEXT | the suffix narrowing removed from `check_text._hygiene`, restored | `test_check_text.TextHygiene.test_any_tracked_file_holding_a_nul_is_reported_not_skipped` | 4 |
+
+## Measured 2026-08-28, at `aecf03d`
+
+The rows below were added after the tree above. Two of their units — `install_documents` and the
+reasons in `fingerprint` — were created at `aecf03d` and do not exist at `1abbb01`, so a later round
+reproducing these reverts against the earlier tree would be sent to units that are not there. That
+is why the sections are separate rather than one heading with two dates.
+
+| Finding | Revert this | Guard | Red on revert |
+|---|---|---|---|
 | NETWORK-PATH-AUTHORITY | `check_citations.URL_AUTHORITY`, narrowed back to the scheme form | `test_check_citations.LineCitations.test_a_url_authority_is_not_a_line_citation` | 1 |
 | CHECKER-ERROR-STATES | the reason branch in `check_citations.citations` | `test_check_citations.ModuleIdentity.test_a_module_that_cannot_be_parsed_is_reported_as_that` | 2 |
 | CHECKER-STEM-COLLISION | the collisions `check_citations.check` reports | `test_check_citations.ModuleIdentity.test_a_stem_naming_more_than_one_module_is_reported_once` | 1 |
@@ -45,6 +60,11 @@ applied, and the number was nearly recorded.
 | CITABLE-SET-ASKS-THE-ENVIRONMENT | `check_citations.citable`, given a name nothing here imports | `test_check_citations.SymbolCitations.test_a_third_party_module_nothing_here_imports_is_reported` | 1 |
 | SNAPSHOT-NEEDS-A-WORKTREE | the filesystem fallback in `distribution_manifest.install_documents` | `test_validate_skills.ProjectedDescriptionTests.test_a_non_worktree_validates_from_the_filesystem`, `test_validate_skills.ProjectedDescriptionTests.test_a_non_worktree_still_reports_a_stale_pin` | 2 |
 | FINGERPRINT-COLLAPSED-NONE | the reasons in `evidence_currency.fingerprint` | `test_evidence_currency.DriftTests.test_each_way_a_fingerprint_fails_says_which_one` | 1 |
+| MODULE-MAP-REBUILT | the per-run cache in `check_citations.Modules`, so each citation re-parses | none — the repair changed how often the tree is read, not what it answers. What settles it is the measurement in the round's record: 165 parses to 48, 0.77s to 0.22s | — |
+| FORMATTING-DRIFT | — | none — the units are an import block and two prose lines, which no test holds | — |
+| SUBJECTS-STATED-TWICE, GUARDS-INCOMPLETE, ROUND-CLAUSE-TOO-WIDE, GUARD-NOT-A-SYMBOL | — | none — every unit is prose, and `GUARD-NOT-A-SYMBOL`'s repair is verified by the citation gate step reading this file | — |
+| DOUBLE-PARSE-DISAGREES | the single pass in `check_citations.citable`, replaced by a second walk that parses the same files | `test_check_citations.ModuleIdentity.test_an_unparseable_module_is_absent_and_reported_by_one_answer` | 2 |
+| UNRESOLVABLE-SAYS-NOTHING | the `OUTSIDE` branch in `evidence_currency.fingerprint`, folded back together with the one below it | `test_evidence_currency.DriftTests.test_an_unresolvable_path_says_what_stopped_it` | 2 |
 
 ## Repairs with no guard, and why
 

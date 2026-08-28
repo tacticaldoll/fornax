@@ -279,11 +279,16 @@ def fingerprint(root: Path, tests: str, heading: str) -> Fingerprint:
     # Asked of `path_boundary` rather than of `resolved_inside`, which answers with a
     # bool over a verdict that already tells absent from outside. The sibling keeps its
     # bool for the caller that only decides whether to read; this one has to say why.
-    verdict = resolve_within(root / Path(tests), Boundary.at(root)).verdict
-    if verdict is Verdict.ABSENT:
+    resolved = resolve_within(root / Path(tests), Boundary.at(root))
+    if resolved.verdict is Verdict.ABSENT:
         return Fingerprint(None, f"{tests} is not there")
-    if verdict is not Verdict.INSIDE:
-        return Fingerprint(None, f"{tests} resolves {verdict.value} the repository")
+    if resolved.verdict is Verdict.OUTSIDE:
+        return Fingerprint(None, f"{tests} resolves outside the repository")
+    if resolved.verdict is not Verdict.INSIDE:
+        # The one branch that has something to say beyond its own name. Folded in with
+        # OUTSIDE it composed "resolves unresolvable the repository" and threw away the
+        # only value that says what stopped the resolution.
+        return Fingerprint(None, f"{tests} could not be resolved: {resolved.error}")
     try:
         text = (root / tests).read_text(encoding="utf-8")
     except (OSError, UnicodeError) as error:

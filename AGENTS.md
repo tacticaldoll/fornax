@@ -509,7 +509,10 @@ Prefer lightweight tests that match the risk of the change.
   it, and it is what would have kept the rounds below from being lost.
 
   Keep the repair guards under `docs/guards.md`: for each finding a round accepted, the unit whose
-  revert must turn a named test red. A repair measured only in a commit message cannot be re-run by
+  revert must turn a named test red. Write them when the record is written, not when the repair
+  lands — a ledger completed in the repair turn cannot hold the round's findings list, because that
+  list is what the record produces, and the ledger then claims a completeness its own turn could not
+  have. A finding nothing can guard gets a row saying so. A repair measured only in a commit message cannot be re-run by
   the round that would retire the finding, which is how findings came to sit in `Carried forward`
   round after round with no path out. The guards are symbols, so the citation check refuses one that
   has been renamed away, and a finding whose unit is prose says so there instead of naming a test
