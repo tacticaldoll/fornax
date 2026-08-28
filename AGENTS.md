@@ -508,11 +508,14 @@ Prefer lightweight tests that match the risk of the change.
   the text makes the reconciliation auditable by the next round, which is the only thing that caught
   it, and it is what would have kept the rounds below from being lost.
 
-  Keep the repair guards under `docs/guards.md`: for each finding a round accepted, the unit whose
-  revert must turn a named test red. Write them when the record is written, not when the repair
-  lands — a ledger completed in the repair turn cannot hold the round's findings list, because that
-  list is what the record produces, and the ledger then claims a completeness its own turn could not
-  have. A finding nothing can guard gets a row saying so.
+  Keep the repair guards under `docs/guards.md`: a row for every finding a round accepted, naming
+  the unit whose revert turns a named test red — or saying that nothing can turn red, and why. Both
+  are rows; a finding no test can hold is not an omission. Stating the demand as a guard per finding
+  and taking it back four sentences later is what let the ledger's scope and its contents disagree.
+
+  Write them when the record is written, not when the repair lands — a ledger completed in the
+  repair turn cannot hold the round's findings list, because that list is what the record produces,
+  and the ledger then claims a completeness its own turn could not have.
 
   A repair measured only in a commit message cannot be re-run by the round that would retire the
   finding, which is how findings came to sit in `Carried forward` round after round with no path
