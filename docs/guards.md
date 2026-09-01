@@ -93,6 +93,16 @@ is why the sections are separate rather than one heading with two dates.
 | ROW-NOT-SELF-CONTAINED | — the unit is a table cell |
 | GUARDS-CLAUSE-SELF-CONTRADICTS | — the unit is a clause in `AGENTS.md` |
 | REGISTRY-NOT-DERIVED | Declined, with the weighing in `development-knowns.yaml`. A declined finding has no repair to guard |
+| SETTLEMENT-NAMES-AN-ORPHAN | none — the unit is a hash in a record's `Settled by` and Scope cells. What replaces a guard is the check itself, re-runnable by any round: `git cat-file -e` on every hash a record names, then `git merge-base --is-ancestor` against HEAD. It was run over every record in `docs/dispositions/` and reports none remaining |
+| LEDGER-ROW-IN-THE-WRONG-TABLE | none — the units are a schema sentence in this file and the table a row sits in. No test holds either, and no gate opens over a table's membership |
+| DECLINE-NOT-RE-WEIGHED | none — the unit is the "What was declined" section below, and the repair is that the weighing is written there rather than left to a reader. Nothing can hold the presence of reasoning |
+| REACH-STOPS-AT-THE-FILE | none by test, but not unguarded: `scripts/check_citations.py` reads every record under `docs/dispositions/`, so a Reach cell naming a symbol that no module defines is refused. What stays unheld is a cell naming a quoted phrase, which the check cannot resolve |
+| PARAGRAPH-SPLIT-NOT-REFLOWED | none — the unit is a paragraph's line breaks in `AGENTS.md`. `ruff` holds a Python line's width and nothing holds a Markdown paragraph's |
+| GUARDS-LEDGER-MISSES-THE-SETTLING-ROUND | none — the unit is which findings a settling turn reads as current, which is a turn's own conduct and not a place in the tree. The nearest re-runnable check is the one its round's Disposition Record now carries as a self-check row: grep this file for every id that record accepts, and expect each to be found. Reverting the rows below turns that reading red, which is the closest a prose unit comes to a guard |
+| LIFECYCLE-OMITS-THE-NAMED-PRIOR | none — the units are the "Out of scope this round" sections and the lifecycle self-check rows of the two `v0.4.1..61789c2` records. The repair is that the self-check answers from the prior record's own tables rather than from what the record placed; no test holds where a self-check gets its list |
+| ABSENT-CLAIM-AS-MISMATCH | none — the unit is a table row that was removed. The record contract in `skills/triage-findings/SKILL.md` declares five checks, and nothing compares a record's Record integrity table against that list |
+| ANCESTRY-STATEMENT-UNBOUND | none — the unit is a `Verified how` cell's sentence. The ancestry facts it states are re-runnable, and are the same two commands `SETTLEMENT-NAMES-AN-ORPHAN` names above; what no check holds is whether the sentence attaches each result to the right hash |
+| COVERAGE-ENUMERATION-ABSENT | Declined, with the weighing in `docs/dispositions/74cd7e3..85d0569.md`. A declined finding has no repair to guard |
 
 ## What was declined
 
