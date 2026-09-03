@@ -193,6 +193,15 @@ def module_symbols(known: Modules, module: str) -> Symbols | None:
     except OSError as error:
         known.read[module] = Symbols(None, f"could not be read: {error}")
         return known.read[module]
+    except UnicodeError as error:
+        # Decoding is a third way this fails and it had no branch: `read_text` raises
+        # UnicodeDecodeError, which is a ValueError and so neither of the two below, and
+        # a module holding malformed UTF-8 ended the run in a traceback rather than in a
+        # diagnostic naming the file. The reason is its own rather than folded into
+        # "could not be read", because bytes that will not decode and a file that will
+        # not open are different repairs, and a checker's error states say which one.
+        known.read[module] = Symbols(None, f"could not be decoded: {error}")
+        return known.read[module]
     except SyntaxError as error:
         known.read[module] = Symbols(None, f"could not be parsed: {error}")
         return known.read[module]

@@ -199,11 +199,23 @@ def install_refs(text: str, repository: str) -> tuple[list[str], list[Unread]]:
         # readily as outside, so `"…@v1.2.3#egg=x` with no closing quote counted the
         # fragment as the closure and read as the shipped tag. The word's closer is
         # wherever that quote character next appears, which is what the shell says too.
-        if opening and opening not in text[match.end() :]:
-            unreadable.append(
-                Unread("".join(token), f"opens with {opening} that nothing closes")
-            )
-            continue
+        # Which delimiter comes first after the ref decides whether the word closes —
+        # not whether the quote appears again at all. This asked existence
+        # (`opening not in text[match.end():]`), so an unterminated ref passed whenever
+        # any later unrelated quote sat anywhere in the document, which in Markdown is
+        # nearly always: `"…@v0.4.1#subdirectory=x` with no closing quote read as a
+        # well-formed tag and matched its comparison, the direction that fails quietly.
+        # The word's closer is where that quote *next* appears, which is what the note
+        # above says and what this now measures. The whitespace here is the same word
+        # boundary `ends` uses when there is no quote, not a new terminator list.
+        if opening:
+            rest = text[match.end() + len(token) :]
+            closer = re.search("[" + re.escape(opening) + " \t\r\n]", rest)
+            if closer is None or closer.group() != opening:
+                unreadable.append(
+                    Unread("".join(token), f"opens with {opening} that nothing closes")
+                )
+                continue
         read = whole("".join(token), RELEASE_REF, "a release ref")
         if isinstance(read, Unread):
             unreadable.append(read)

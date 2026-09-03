@@ -101,6 +101,12 @@ def load(path: Path) -> tuple[Evidence, ...]:
         if line.rstrip() == "evidence:":
             if not seen_schema:
                 raise EvidenceError(f"line {number}: schema must precede evidence")
+            # Asymmetric with schema above, which refuses a second one: a repeated
+            # marker was silently ignored, and the entries after it read as though they
+            # sat under the first. The section is the file's one container, so a second
+            # is a malformed registry rather than a continuation.
+            if seen_evidence:
+                raise EvidenceError(f"line {number}: evidence must appear once")
             seen_evidence = True
             continue
         start = ENTRY_START.match(line)
@@ -125,6 +131,8 @@ def load(path: Path) -> tuple[Evidence, ...]:
         entries.append(current)
     if not seen_schema:
         raise EvidenceError(f"{path} must declare schema: 1")
+    if not seen_evidence:
+        raise EvidenceError(f"{path} must declare an evidence: section")
     return tuple(Evidence(entry) for entry in entries)
 
 

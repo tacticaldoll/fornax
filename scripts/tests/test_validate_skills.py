@@ -1235,6 +1235,50 @@ class ProjectedDescriptionTests(unittest.TestCase):
                 self.assertEqual(len(unreadable), 1, unreadable)
                 self.assertIn("that nothing closes", str(unreadable[0]))
 
+    def test_a_later_unrelated_quote_does_not_close_the_word(self) -> None:
+        # The near-miss sharing the accepted prefix: every text here holds a closing
+        # quote character somewhere after the ref, which is all the check used to ask.
+        # It asked existence rather than position, so an unterminated ref passed
+        # whenever any later quote sat anywhere in the document — in Markdown, nearly
+        # always. The value then read as a well-formed tag and matched its comparison,
+        # which is the direction that fails without a sound.
+        for text in (
+            '"REPO@v1.2.3#subdirectory=tools/cli\n\nsee the "notes" above',
+            "'REPO@v1.2.3#egg=fixture\n\nit's documented",
+            '"REPO@v1.2.3#subdirectory=x\nunrelated: "value"',
+        ):
+            with self.subTest(text=text):
+                refs, unreadable = distribution_manifest.install_refs(
+                    text.replace("REPO", "git+https://x.invalid/r.git"),
+                    "https://x.invalid/r",
+                )
+
+                self.assertEqual(refs, [])
+                self.assertEqual(len(unreadable), 1, unreadable)
+                self.assertIn("that nothing closes", str(unreadable[0]))
+
+    def test_every_quoting_of_a_closed_word_reads_the_same_ref(self) -> None:
+        # The valid alternate spellings of one meaning: the same closed word written
+        # with each quote character the grammar admits, and unquoted. Without this the
+        # test above would only assert that something is refused, not that what is
+        # refused is the unterminated form — a check rejecting every quoted ref would
+        # pass it.
+        for text in (
+            '"REPO@v1.2.3#subdirectory=tools/cli"',
+            "'REPO@v1.2.3#subdirectory=tools/cli'",
+            "`REPO@v1.2.3#subdirectory=tools/cli`",
+            "REPO@v1.2.3#subdirectory=tools/cli",
+            '"REPO@v1.2.3"',
+        ):
+            with self.subTest(text=text):
+                refs, unreadable = distribution_manifest.install_refs(
+                    text.replace("REPO", "git+https://x.invalid/r.git"),
+                    "https://x.invalid/r",
+                )
+
+                self.assertEqual(refs, ["v1.2.3"])
+                self.assertEqual(unreadable, [])
+
     def test_an_unpinned_install_ref_is_left_alone(self) -> None:
         # Tracking the default branch is a documented form, not a stale pin. Judging it
         # would force a version onto the one command that deliberately carries none.

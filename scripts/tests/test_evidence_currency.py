@@ -511,6 +511,23 @@ class ModelTests(unittest.TestCase):
                 with self.assertRaises(evidence_currency.EvidenceError):
                     self.parse(CURRENT.format(fingerprint=fingerprint))
 
+    def test_the_evidence_section_must_appear_exactly_once(self) -> None:
+        # `schema` refused a second one from the start; `evidence:` had no matching
+        # check, so a repeated marker was silently ignored and the entries after it read
+        # as though they sat under the first. A registry with no section at all was
+        # accepted too, answering with no claims — the gate still failed, because
+        # `unaccounted_files` guards the other direction and reported every scenario
+        # file as unregistered, but `load` returning cleanly for a truncated registry is
+        # the state this refuses.
+        for label, registry in (
+            ("repeated", "schema: 1\nevidence:\nevidence:\n"),
+            ("absent", "schema: 1\n"),
+        ):
+            with self.subTest(label=label):
+                with self.assertRaises(evidence_currency.EvidenceError) as caught:
+                    self.parse(registry)
+                self.assertIn("evidence", str(caught.exception))
+
     def test_a_double_quoted_scalar_holds_what_a_plain_one_cannot(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)

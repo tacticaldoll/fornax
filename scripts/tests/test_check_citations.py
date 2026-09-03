@@ -291,6 +291,29 @@ class ModuleIdentity(unittest.TestCase):
             self.assertIn("could not be parsed", found[0])
             self.assertNotIn("names no", found[0])
 
+    def test_a_module_that_cannot_be_decoded_is_reported_as_that(self) -> None:
+        """Decoding was the third way this fails and had no branch, so it ended the run.
+
+        `read_text` raises UnicodeDecodeError, a ValueError, so neither the OSError nor
+        the SyntaxError branch caught it and malformed UTF-8 in any module under
+        `scripts/` produced a traceback instead of a diagnostic naming the file. The
+        reason is checked as its own: a file that will not open and bytes that will not
+        decode are different repairs, and the sibling above asserts the parse state.
+        """
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp)
+            (root / "scripts" / "undecodable_module.py").write_bytes(b'x = "\xff\xfe"\n')
+            (root / "AGENTS.md").write_text(
+                "Asked through `undecodable_module.x`.\n", encoding="utf-8"
+            )
+
+            found = messages(root)
+
+            self.assertEqual(len(found), 1, found)
+            self.assertIn("could not be decoded", found[0])
+            self.assertNotIn("could not be read", found[0])
+            self.assertNotIn("could not be parsed", found[0])
+
     def test_an_unparseable_module_is_named_where_it_actually_sits(self) -> None:
         """The diagnostic composed `scripts/<stem>.py`, which is a guess about a path.
 
