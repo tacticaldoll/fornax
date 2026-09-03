@@ -76,6 +76,27 @@ is why the sections are separate rather than one heading with two dates.
 | FINGERPRINT-COLLAPSED-NONE | the reasons in `evidence_currency.fingerprint` | `test_evidence_currency.DriftTests.test_each_way_a_fingerprint_fails_says_which_one` | 1 |
 | UNRESOLVABLE-SAYS-NOTHING | the `OUTSIDE` branch in `evidence_currency.fingerprint`, folded back together with the one below it | `test_evidence_currency.DriftTests.test_an_unresolvable_path_says_what_stopped_it` | 2 |
 
+## Measured 2026-09-03, at `5327d53`
+
+Each revert applied to that tree, the named test run, the tree restored, and the whole suite
+confirmed green afterwards at 424 tests. The three units below were created at `5327d53` and do not
+exist at `aecf03d`, which is why this section is its own rather than rows under the heading above.
+
+| Finding | Revert this | Guard | Red on revert |
+|---|---|---|---|
+| CHECKER-CANNOT-DECODE | the `UnicodeError` branch in `check_citations.module_symbols` | `test_check_citations.ModuleIdentity.test_a_module_that_cannot_be_decoded_is_reported_as_that` | 1 |
+| QUOTE-CLOSER-BY-EXISTENCE | the closer search in `distribution_manifest.install_refs`, back to asking whether the opening quote appears anywhere after the ref | `test_validate_skills.ProjectedDescriptionTests.test_a_later_unrelated_quote_does_not_close_the_word` | 3 |
+| EVIDENCE-SECTION-UNBOUNDED | both section checks in `evidence_currency.load` | `test_evidence_currency.ModelTests.test_the_evidence_section_must_appear_exactly_once` | 2 |
+
+`QUOTE-CLOSER-BY-EXISTENCE` carries a second row of a kind this ledger has not held before: a
+control that must stay **green** under the same revert.
+`test_validate_skills.ProjectedDescriptionTests.test_every_quoting_of_a_closed_word_reads_the_same_ref`
+was run under that revert and passed, which is what distinguishes a check that reads the quote's
+position from one that refuses every quoted ref. Recorded because the matcher rule in `AGENTS.md`
+asks for both controls and only the red one is a guard in the usual sense. The pre-existing
+`test_an_opening_quote_nothing_closes_leaves_the_ref_unread` also stayed green under the revert —
+that is the measurement showing why one control was not enough to catch this defect.
+
 ## Repairs with no guard, and why
 
 | Finding | Why nothing goes red |
@@ -103,6 +124,8 @@ is why the sections are separate rather than one heading with two dates.
 | ABSENT-CLAIM-AS-MISMATCH | none — the unit is a table row that was removed. The record contract in `skills/triage-findings/SKILL.md` declares five checks, and nothing compares a record's Record integrity table against that list |
 | ANCESTRY-STATEMENT-UNBOUND | none — the unit is a `Verified how` cell's sentence. The ancestry facts it states are re-runnable, and are the same two commands `SETTLEMENT-NAMES-AN-ORPHAN` names above; what no check holds is whether the sentence attaches each result to the right hash |
 | COVERAGE-ENUMERATION-ABSENT | Declined, with the weighing in `docs/dispositions/74cd7e3..85d0569.md`. A declined finding has no repair to guard |
+| FIXTURE-READ-AS-PRODUCT | Declined, with the weighing in `docs/dispositions/v0.4.1..c60a6ba.md`. The reviewed units are the deliberate defects of a micro-test fixture, and a guard against repairing them is the registry entry the fixture already has: `evidence_currency.py --check` ties the `static-review-gate5-ledger` scenario to the wording it measured, and `unaccounted_files` reports a scenario file no entry accounts for |
+| REVIEW-COVERAGE-AS-FINDING | Declined, with the weighing in `docs/dispositions/v0.4.1..c60a6ba.md`. A declined finding has no repair to guard |
 
 ## What was declined
 
