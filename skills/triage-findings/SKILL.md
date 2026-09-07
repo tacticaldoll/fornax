@@ -184,6 +184,7 @@ returning next round, so a disposition without one has not actually been made.
 
 ### Phase 5: Produce the Disposition Record
 
+<!-- OUTPUT-TEMPLATE: disposition-record@1 text/markdown -->
 ```markdown
 ## Disposition Record
 
