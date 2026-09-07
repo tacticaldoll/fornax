@@ -68,37 +68,57 @@ class Diagnostic:
 
 
 @dataclass(frozen=True)
+class Shape:
+    """The two things the contract's template declares about a Record integrity table."""
+
+    checks: tuple[str, ...]
+    results: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class Declared:
-    """What the contract's template declares, or why it could not be read.
+    """The shape the contract declares, or why it could not be read.
 
     Never both and never neither, for the reason `skill_yaml.Document`,
     `path_boundary.Boundary`, `check_citations.Symbols` and
     `evidence_currency.Fingerprint` all carry: a caller that cannot tell an unread
     contract from an empty one reports the wrong thing, and here it would report every
     record as carrying an undeclared key.
+
+    One payload, which the first version of this type did not have. It held the checks
+    and the Result domain as two fields and the guard ranged over the first alone, so
+    `Declared(("a",), None, None)` was a state the type admitted and no code meant.
+    Reading `.results` there did the right thing with nothing to say: the accessor
+    correctly found its own field empty and raised the reason, and the reason was `None`
+    because the guard that would have required one had not run — an exception with an
+    empty message. The four types above each hold exactly one payload, which is why
+    their single guard is complete; copying their shape for two fields copied the guard
+    and not the completeness. `Shape` makes the pair one payload again, which is also
+    what lets this type call a shared predicate at all.
     """
 
-    _checks: tuple[str, ...] | None
-    _results: tuple[str, ...] | None
+    _shape: "Shape | None"
     reason: str | None
 
     def __post_init__(self) -> None:
-        if (self._checks is None) != (self.reason is not None):
+        if (self._shape is None) == (self.reason is None):
             raise ValueError(
                 "declared holds the contract's shape or a reason, never both or neither"
             )
 
     @property
-    def checks(self) -> tuple[str, ...]:
-        if self._checks is None:
+    def shape(self) -> "Shape":
+        if self._shape is None:
             raise ValueError(self.reason or "")
-        return self._checks
+        return self._shape
+
+    @property
+    def checks(self) -> tuple[str, ...]:
+        return self.shape.checks
 
     @property
     def results(self) -> tuple[str, ...]:
-        if self._results is None:
-            raise ValueError(self.reason or "")
-        return self._results
+        return self.shape.results
 
 
 def rows(text: str) -> list[list[str]]:
@@ -125,7 +145,7 @@ def declared(root: Path) -> Declared:
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeError) as error:
-        return Declared(None, None, f"{CONTRACT.as_posix()} could not be read: {error}")
+        return Declared(None, f"{CONTRACT.as_posix()} could not be read: {error}")
     # Taken from the parser rather than by splitting on the marker string. The template
     # sits inside a fence, so `heading_section` over the raw text finds nothing — a `###`
     # inside a fenced block is not a heading, which is the property that keeps an archived
@@ -133,25 +153,24 @@ def declared(root: Path) -> Declared:
     # the fence's content, where those headings are the template's own.
     marked = [b for b in marked_code_blocks(text) if b.marker == MARKER]
     if not marked:
-        return Declared(None, None, f"{CONTRACT.as_posix()} carries no {MARKER}")
+        return Declared(None, f"{CONTRACT.as_posix()} carries no {MARKER}")
     if len(marked) > 1:
-        return Declared(None, None, f"{CONTRACT.as_posix()} marks more than one such template")
+        return Declared(None, f"{CONTRACT.as_posix()} marks more than one such template")
 
     section = heading_section(marked[0].content, INTEGRITY)
     if section is None:
-        return Declared(None, None, f"the template declares no {INTEGRITY} table")
+        return Declared(None, f"the template declares no {INTEGRITY} table")
     table = rows(section)
     if len(table) < 2:
-        return Declared(None, None, f"the template's {INTEGRITY} table declares no rows")
+        return Declared(None, f"the template's {INTEGRITY} table declares no rows")
 
     body = table[1:]
     checks = tuple(row[0] for row in body if row)
     domains = {tuple(v.strip() for v in row[-1].split("|")) for row in body if len(row) > 1}
     if len(domains) != 1:
-        return Declared(
-            None, None, f"the template's {INTEGRITY} rows declare differing Result domains"
+        return Declared(None, f"the template's {INTEGRITY} rows declare differing Result domains"
         )
-    return Declared(checks, domains.pop(), None)
+    return Declared(Shape(checks, domains.pop()), None)
 
 
 def record_defects(path: Path, shape: Declared) -> list[Diagnostic]:

@@ -120,6 +120,42 @@ class DerivedShape(unittest.TestCase):
         self.assertIsNotNone(heading_section(content, "Record integrity"))
 
 
+class DeclaredInvariant(unittest.TestCase):
+    """One payload, so the single guard covers everything the type carries.
+
+    The first version held the checks and the Result domain as two fields and guarded
+    the first alone, so a value with a payload, no second payload and no reason was
+    constructible. Reading `.results` there raised the reason, and the reason was None
+    because the guard that would have required one had not run.
+    """
+
+    def test_a_shape_alone_is_the_read_state(self) -> None:
+        held = record_shape.Declared(record_shape.Shape(("a",), ("pass",)), None)
+
+        self.assertEqual(held.checks, ("a",))
+        self.assertEqual(held.results, ("pass",))
+
+    def test_neither_a_shape_nor_a_reason_is_refused(self) -> None:
+        with self.assertRaises(ValueError):
+            record_shape.Declared(None, None)
+
+    def test_both_a_shape_and_a_reason_is_refused(self) -> None:
+        with self.assertRaises(ValueError):
+            record_shape.Declared(record_shape.Shape((), ()), "why")
+
+    def test_an_unread_contract_never_raises_without_saying_why(self) -> None:
+        # The defect the collapse removes: an accessor that finds its own field empty
+        # and raises a reason nobody set. Every unread state now carries one, because
+        # the guard admits no other.
+        unread = record_shape.Declared(None, "the template carries no marker")
+
+        for accessor in ("shape", "checks", "results"):
+            with self.subTest(accessor=accessor):
+                with self.assertRaises(ValueError) as raised:
+                    getattr(unread, accessor)
+                self.assertEqual(str(raised.exception), "the template carries no marker")
+
+
 class RecordIntegrityRows(unittest.TestCase):
     def test_the_real_repository_passes_its_own_check(self) -> None:
         self.assertEqual(record_shape.check(Path(".")), [])
