@@ -273,10 +273,25 @@ class RecordIntegrityRows(unittest.TestCase):
 
         self.assertEqual(rows[1][0], "ONE\\q")
 
-    def test_two_ids_differing_only_by_an_escape_are_not_one(self) -> None:
-        pair = "| ONEq — one | 1 | new | accept | — |\n| ONE\\q — another | 2 | new | accept | — |"
+    def test_an_escape_in_a_description_does_not_merge_two_ids(self) -> None:
+        # This asserted the same thing through ids carrying an escape, which the contract
+        # no longer admits: an id is capitals, digits and hyphens, so a backslash cannot be
+        # inside one. The escape itself is still held by the sibling test above, which
+        # drives the parser; what belongs here is that the key is the id and a description's
+        # escapes cannot reach it.
+        pair = (
+            "| ONEQ — a\\q description | 1 | new | accept | — |\n"
+            "| ONER — another\\q one | 2 | new | accept | — |"
+        )
         with tree(rows=pair) as holder:
             self.assertEqual(record_shape.check(Path(holder)), [])
+
+    def test_an_id_outside_the_declared_alphabet_is_reported_not_keyed(self) -> None:
+        pair = "| ONEq — one | 1 | new | accept | — |\n| ONE\\q — another | 2 | new | accept | — |"
+        with tree(rows=pair) as holder:
+            found = [problem.message for problem in record_shape.check(Path(holder))]
+
+        self.assertEqual(sum("has no key" in message for message in found), 2, found)
 
     def test_a_qualified_verdict_passes_because_the_rule_is_a_prefix(self) -> None:
         # The corpus carries `mismatch, stated by the input` and two more like it. A
@@ -619,3 +634,49 @@ class RecordCardinality(unittest.TestCase):
                 any("carries no table this can read" in p.message for p in problems),
                 problems,
             )
+
+
+class FindingKeyReadWhole(unittest.TestCase):
+    """The key is read whole against the contract's separators, never by a guessed prefix.
+
+    `AGENTS.md` asks two negative controls of a hand-written grammar matcher: a near-miss
+    sharing the accepted prefix, and a valid alternate spelling of the same meaning. Both
+    are here, and the near-miss is the one that mattered — taking the text before an
+    invented separator made two rows keying one id under a different dash compare unequal,
+    so the duplicate the rule exists to catch was the thing it let through.
+    """
+
+    def _dispositions(self, rows: str) -> list[str]:
+        with tree(rows=rows) as t:
+            return [p.message for p in record_shape.check(Path(t))]
+
+    def test_a_duplicate_in_the_declared_form_is_caught(self) -> None:
+        found = self._dispositions(
+            "| F1 — first | 1 | new | accept | — |\n| F1 — again | 1 | new | accept | — |"
+        )
+        self.assertTrue(any("keys 'F1' more than once" in m for m in found), found)
+
+    def test_a_near_miss_sharing_the_prefix_is_unread_rather_than_its_own_key(self) -> None:
+        # The falsifier: a plain hyphen where the contract declares an em dash. This used
+        # to make each cell its own key, so the duplicate below went entirely unreported.
+        found = self._dispositions(
+            "| F1 - first | 1 | new | accept | — |\n| F1 - again | 1 | new | accept | — |"
+        )
+        self.assertEqual(
+            sum("has no key a later round can match" in m for m in found), 2, found
+        )
+        self.assertFalse(any("more than once" in m for m in found), found)
+
+    def test_the_other_declared_spelling_is_a_key_and_not_a_defect(self) -> None:
+        # The alternate spelling of the same meaning: the corpus writes a repair-bearing
+        # row as `ID, alternative \x601b\x60`, and reading it must give the same id.
+        found = self._dispositions(
+            "| F1, alternative `1b` | 1 | new | accept | — |\n"
+            "| F1, alternative `1c` | 1 | new | accept | — |"
+        )
+        self.assertTrue(any("keys 'F1' more than once" in m for m in found), found)
+        self.assertFalse(any("has no key" in m for m in found), found)
+
+    def test_an_id_alone_needs_no_separator(self) -> None:
+        found = self._dispositions("| F1 | 1 | new | accept | — |")
+        self.assertFalse(any("has no key" in m for m in found), found)

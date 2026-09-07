@@ -251,6 +251,12 @@ or Carried forward by the Phase 1 test. A finding re-reported after it was Close
 |---|---|---|---|---|
 | id | # \| ungrouped | new \| carried | accept \| decline \| defer | why — not "as reviewed" |
 
+The `Finding` cell opens with the stable id and nothing else: capitals, digits and hyphens.
+What may follow it is one of two forms and no third — ` — ` and a description, or
+`, alternative ` and the repair the row is about. The id is what a later round matches on, so a
+cell that runs the id into anything else has no id, and a reader taking the text before a
+separator it guessed at would make two rows keyed alike look distinct.
+
 ### Carried forward
 
 [Prior dispositions lying inside this round's scope that the input did not re-report: id,

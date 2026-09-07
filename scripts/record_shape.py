@@ -90,6 +90,16 @@ RESULT = "Result"
 # token boundary anywhere.
 QUALIFIER = ", "
 
+# The contract declares what may follow a finding's id and admits no third form, so this
+# reads to a boundary the document defines rather than to one invented here. The id itself
+# is the part a later round matches on across rounds.
+SEPARATOR = " — "
+ALTERNATIVE = ", alternative "
+FINDING_KEY = re.compile(
+    rf"(?P<id>[A-Z][A-Z0-9-]*)(?:{re.escape(SEPARATOR)}.+|{re.escape(ALTERNATIVE)}.+)?",
+    re.S,
+)
+
 
 class Subject(enum.Enum):
     """Whose conduct a section's rows judge, which is what decides its key discipline.
@@ -394,14 +404,34 @@ class ValueReadWhole(Rule):
 
 
 class UniqueFirstColumn(Rule):
-    """No two rows may key alike, taking a row's key up to the delimiter it uses."""
+    """No two rows may key alike, reading each row's key whole rather than by a prefix.
+
+    This took the text before an invented `" — "` and used it as the key. Two rows keying
+    the same finding under a different separator spelling therefore compared unequal and
+    the duplicate went unreported — falsified by construction, three rows keying one id
+    with a plain hyphen and the check saying nothing. It is the defect `AGENTS.md` names
+    where it says to read a token whole and never a prefix of it, sitting one rule away
+    from `ValueReadWhole`.
+
+    So the separator is the contract's now rather than this module's, and a cell in
+    neither declared form is `Unread` and reported. That is what stops a duplicate
+    hiding: a misspelled separator can no longer quietly turn a cell into its own key.
+    """
 
     def defects(self, seat: "Seat", found: "Table", shape: Shape) -> Iterator[str]:
         seen: set[str] = set()
         for row in found.body:
             if not row:
                 continue
-            identifier = row[0].split(" — ")[0].strip()
+            read = whole(row[0], FINDING_KEY, "a finding id, alone or with one declared separator")
+            if isinstance(read, Unread):
+                yield (
+                    f"{seat.heading} row {row[0]!r} does not open with a finding id "
+                    f"followed by nothing, {SEPARATOR!r} or {ALTERNATIVE!r}, so it has no "
+                    f"key a later round can match"
+                )
+                continue
+            identifier = read.match.group("id")
             if identifier in seen:
                 yield f"{seat.heading} keys {identifier!r} more than once"
             seen.add(identifier)
