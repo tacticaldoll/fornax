@@ -262,14 +262,33 @@ def citable(known: Modules) -> set[str]:
     return names
 
 
-def citations(known: Modules, root: Path, path: Path, external: set[str]) -> list[Diagnostic]:
-    """Every citation in one file that names a line, or a symbol nothing defines."""
+def prose(path: Path) -> list[tuple[int, str]] | None:
+    """One file's numbered lines outside any fenced block, or nothing when unreadable.
+
+    Reading is this function's job; judging is not. `check_text.check` was split for
+    that reason in this same range, with its docstring stating the standard — "a body
+    whose job takes a list of clauses to state is a body nobody can review one clause at
+    a time" — and this module did not receive it: one body read the file and applied both
+    citation policies to it.
+
+    Anything inside a fence is a quotation rather than this document's own prose, which
+    is why a Markdown file's lines come from `markdown_links.prose_lines`. A file with
+    another suffix has no fences to honour.
+
+    `None` carries one reason and needs no state to say which: text hygiene owns an
+    unreadable file and reports it there.
+    """
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
-        return []  # text hygiene owns unreadable files and reports them there
+        return None
+    if path.suffix == ".md":
+        return prose_lines(text)
+    return list(enumerate(text.splitlines(), 1))
 
-    lines = prose_lines(text) if path.suffix == ".md" else list(enumerate(text.splitlines(), 1))
+
+def _line_citations(path: Path, lines: list[tuple[int, str]]) -> list[Diagnostic]:
+    """Every citation keyed to a coordinate that the next edit moves."""
     found: list[Diagnostic] = []
     for number, line in lines:
         urls = [match.span() for match in URL_AUTHORITY.finditer(line)]
@@ -284,6 +303,15 @@ def citations(known: Modules, root: Path, path: Path, external: set[str]) -> lis
                     "quoted phrase, which survive an edit",
                 )
             )
+    return found
+
+
+def _symbol_citations(
+    known: Modules, root: Path, path: Path, lines: list[tuple[int, str]], external: set[str]
+) -> list[Diagnostic]:
+    """Every symbol citation naming a module or a symbol nothing here defines."""
+    found: list[Diagnostic] = []
+    for number, line in lines:
         for match in SYMBOL_CITATION.finditer(line):
             module, rest = match.groups()
             parts = rest.lstrip(".").split(".")
@@ -330,6 +358,21 @@ def citations(known: Modules, root: Path, path: Path, external: set[str]) -> lis
                     )
                 )
     return found
+
+
+def citations(known: Modules, root: Path, path: Path, external: set[str]) -> list[Diagnostic]:
+    """Every citation defect in one file, from the policies that own each form.
+
+    One clause, because it is one job: hand the lines to each policy. Which citations
+    name a line and which name an absent symbol are two questions with two answers, and
+    a body holding both alongside the read answered to three owners at once.
+    """
+    lines = prose(path)
+    if lines is None:
+        return []
+    return _line_citations(path, lines) + _symbol_citations(
+        known, root, path, lines, external
+    )
 
 
 def check(root: Path) -> list[Diagnostic]:
