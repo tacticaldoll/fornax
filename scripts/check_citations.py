@@ -272,7 +272,7 @@ def citations(known: Modules, root: Path, path: Path, external: set[str]) -> lis
     lines = prose_lines(text) if path.suffix == ".md" else list(enumerate(text.splitlines(), 1))
     found: list[Diagnostic] = []
     for number, line in lines:
-        urls = [found.span() for found in URL_AUTHORITY.finditer(line)]
+        urls = [match.span() for match in URL_AUTHORITY.finditer(line)]
         for match in LINE_CITATION.finditer(line):
             if any(start <= match.start() and match.end() <= end for start, end in urls):
                 continue  # a host and a port in a URL's authority, not a path and a line
