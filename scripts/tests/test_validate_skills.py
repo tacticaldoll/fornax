@@ -1484,6 +1484,61 @@ class ProjectedDescriptionTests(unittest.TestCase):
             self.assertIn("publisher_id must be a UUID", output)
 
 
+class DiagnosticExitTests(unittest.TestCase):
+    """The one exit, driven directly, because both payloads arrive from outside.
+
+    A ref comes from a document a reader could edit and a path comes from git, so both
+    are content this module does not control. The first case renders its own FAIL line
+    as agreement when it is not escaped; the second raises out of the print and ends the
+    check in a traceback. Driving fail() rather than the filesystem is deliberate: a
+    filename whose bytes are not UTF-8 cannot be created on every host the suite runs on,
+    and the unit under test is the exit, not the platform.
+    """
+
+    def exit_line(self, message: str) -> str:
+        output = StringIO()
+
+        with redirect_stdout(output):
+            distribution_manifest.fail(message)
+
+        return output.getvalue()
+
+    def test_an_override_in_a_ref_cannot_rewrite_its_own_failure_line(self) -> None:
+        # U+202E reverses everything after it, so an unescaped `v0.9.9<RLO>1.4.0v`
+        # renders as `v0.9.9v0.4.1` — a stale pin whose diagnostic reads as agreement.
+        # RELEASE_REF admits it: the set git forbids in a ref name holds no format
+        # character.
+        stale = "v0.9.9\u202e1.4.0v"
+        self.assertIsNotNone(distribution_manifest.RELEASE_REF.fullmatch(stale))
+
+        line = self.exit_line(f"README.md - install ref {stale} must be v0.4.1")
+
+        self.assertIn("\\u202e", line)
+        self.assertNotIn("\u202e", line)
+
+    def test_a_surrogate_in_a_path_is_a_diagnostic_and_not_a_traceback(self) -> None:
+        # os.fsdecode yields a lone surrogate for a filename whose bytes are not UTF-8,
+        # and printing one raises UnicodeEncodeError. workspace_files goes through
+        # fsdecode, so such a path reaches this module's diagnostics.
+        line = self.exit_line("bad\udcff.md - a registered install doc carrying no pin")
+
+        self.assertIn("\\udcff", line)
+        self.assertNotIn("\udcff", line)
+
+    def test_every_diagnostic_leaves_through_the_one_exit(self) -> None:
+        # The repair is the seam, not the site that forgot. A bare print reintroduced
+        # anywhere here is what this asserts against, and it is why the count is zero
+        # rather than small.
+        source = Path(distribution_manifest.__file__).read_text(encoding="utf-8")
+        bare = [
+            number
+            for number, line in enumerate(source.splitlines(), 1)
+            if "print(" in line and "printable(" not in line
+        ]
+
+        self.assertEqual(bare, [])
+
+
 class DirectoryListingTests(unittest.TestCase):
     """A path that cannot be listed is a diagnostic, not a traceback.
 

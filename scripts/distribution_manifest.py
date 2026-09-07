@@ -4,9 +4,11 @@
 distribution.json carries the canonical name, publisher UUID and release version; the
 per-host manifests are projections of it, so what this checks is agreement rather than
 each file on its own. That is a different subject from whether a skill folder is
-well formed, and it shares no helper with it — notably it reports through print
-directly and never through the skill validator's fail(), which is what let it move out
-whole.
+well formed, and it shares no helper with it: this module has its own diagnostic
+exit rather than the skill validator's fail(), which is what let it move out whole.
+
+That exit is fail() below, and it is one function because it was none. Every print here
+wrapped diagnostic_text.printable or did not, per site and by hand, and one did not.
 
 Standard library only.
 """
@@ -23,6 +25,26 @@ from diagnostic_text import printable
 from read_whole import Unread, whole
 from skill_model import NAME_PATTERN
 from workspace_files import listed
+
+
+def fail(message: str) -> None:
+    """The one way a diagnostic leaves this module, so none of it reaches a report raw.
+
+    This module's own, taking a message where the skill validator's fail() takes a skill
+    name — the independence the docstring above describes, now with a seam instead of a
+    bare print at every site.
+
+    What a raw print cost is measured. A ref carrying a right-to-left override rendered
+    its own failure line as agreement, because the override reverses everything after
+    it. A path holding a lone surrogate — what os.fsdecode yields for a filename whose
+    bytes are not UTF-8 — raised UnicodeEncodeError out of the print, ending the check
+    in a traceback rather than a diagnostic. Both are what diagnostic_text exists to
+    stop, and both arrived through the one site that had not opted in.
+
+    A single exit is the repair rather than that site, because opting in per site is a
+    convention and the next print has the same chance of forgetting.
+    """
+    print(printable(f"FAIL {message}"))
 
 
 VERSION_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
@@ -108,19 +130,19 @@ def validate_projected_descriptions(root: Path, canonical: str) -> bool:
         manifest, error = read_json_object(path)
         if error is not None:
             if relative_path not in HOST_VERSION_MANIFESTS:
-                print(printable(f"FAIL {relative_path} - {error}"))
+                fail(f"{relative_path} - {error}")
                 failed = True
             continue
         assert manifest is not None
         if not isinstance(manifest.get("plugins", []), list):
-            print(f"FAIL {relative_path} - plugins must be a list")
+            fail(f"{relative_path} - plugins must be a list")
             failed = True
             continue
 
         for label, description in described_paths(manifest):
             if not description.startswith(canonical):
-                print(
-                    f"FAIL {relative_path} - {label} must open with the description in "
+                fail(
+                    f"{relative_path} - {label} must open with the description in "
                     "distribution.json"
                 )
                 failed = True
@@ -281,25 +303,25 @@ def validate_install_pins(root: Path, repository: str, version: str) -> bool:
         refs, unreadable = install_refs(text, repository)
         relative_path = path.relative_to(root).as_posix()
         for unread in unreadable:
-            print(printable(f"FAIL {relative_path} - install ref {unread}"))
+            fail(f"{relative_path} - install ref {unread}")
             failed = True
         if not refs:
             continue
         carrying.add(relative_path)
         for stale in sorted(set(refs) - {expected}):
-            print(f"FAIL {relative_path} - install ref {stale} must be {expected}")
+            fail(f"{relative_path} - install ref {stale} must be {expected}")
             failed = True
 
     for relative_path in PINNED_INSTALL_DOCS:
         if relative_path not in carrying:
-            print(f"FAIL {relative_path} - a registered install doc carrying no pin")
+            fail(f"{relative_path} - a registered install doc carrying no pin")
             failed = True
 
     # An emptied registry is a failure whatever the scan found. Conjoining "and the
     # scan found nothing" made this unreachable in a tree whose documents still carry
     # pins — which is every real tree, and the state the comment claimed to cover.
     if not PINNED_INSTALL_DOCS:
-        print("FAIL distribution.json - no documented install pin names the release tag")
+        fail("distribution.json - no documented install pin names the release tag")
         failed = True
 
     return failed
@@ -310,7 +332,7 @@ def validate_distribution(root: Path) -> DistributionValidation:
     distribution_file = root / "distribution.json"
     distribution, error = read_json_object(distribution_file)
     if error is not None:
-        print(printable(f"FAIL distribution.json - {error}"))
+        fail(f"distribution.json - {error}")
         return DistributionValidation(False, None)
     assert distribution is not None
 
@@ -322,59 +344,59 @@ def validate_distribution(root: Path) -> DistributionValidation:
     skills_directory = distribution.get("skills_directory")
     repository = distribution.get("repository")
     if distribution.get("schema") != 1:
-        print("FAIL distribution.json - schema must be 1")
+        fail("distribution.json - schema must be 1")
         failed = True
     if not isinstance(name, str) or not NAME_PATTERN.fullmatch(name):
-        print("FAIL distribution.json - name must use lowercase hyphen-case")
+        fail("distribution.json - name must use lowercase hyphen-case")
         failed = True
     if not isinstance(version, str) or not VERSION_PATTERN.fullmatch(version):
-        print("FAIL distribution.json - version must use semantic version format x.y.z")
+        fail("distribution.json - version must use semantic version format x.y.z")
         failed = True
     if not isinstance(description, str) or not description:
-        print("FAIL distribution.json - description must be a non-empty string")
+        fail("distribution.json - description must be a non-empty string")
         failed = True
     canonical_publisher: str | None = None
     if not isinstance(publisher_id, str):
-        print("FAIL distribution.json - publisher_id must be a UUID")
+        fail("distribution.json - publisher_id must be a UUID")
         failed = True
     else:
         try:
             parsed_publisher = str(UUID(publisher_id))
         except ValueError:
-            print("FAIL distribution.json - publisher_id must be a UUID")
+            fail("distribution.json - publisher_id must be a UUID")
             failed = True
         else:
             if publisher_id != parsed_publisher:
-                print(
-                    "FAIL distribution.json - publisher_id must use canonical lowercase UUID form"
+                fail(
+                    "distribution.json - publisher_id must use canonical lowercase UUID form"
                 )
                 failed = True
             else:
                 canonical_publisher = parsed_publisher
     if skills_directory != "skills":
-        print("FAIL distribution.json - skills_directory must be skills")
+        fail("distribution.json - skills_directory must be skills")
         failed = True
 
     for relative_path in HOST_VERSION_MANIFESTS:
         path = root / relative_path
         manifest, error = read_json_object(path)
         if error is not None:
-            print(printable(f"FAIL {relative_path} - {error}"))
+            fail(f"{relative_path} - {error}")
             failed = True
             continue
         assert manifest is not None
         if manifest.get("name") != name:
-            print(f"FAIL {relative_path} - name must match distribution.json")
+            fail(f"{relative_path} - name must match distribution.json")
             failed = True
         if manifest.get("version") != version:
-            print(f"FAIL {relative_path} - version must match distribution.json")
+            fail(f"{relative_path} - version must match distribution.json")
             failed = True
 
     # Only when there is a release to compare pins against. An unusable version is
     # already reported above, and every pinned doc would repeat it once more.
     if isinstance(version, str) and VERSION_PATTERN.fullmatch(version):
         if not isinstance(repository, str) or not repository:
-            print("FAIL distribution.json - repository must be a non-empty string to check pins")
+            fail("distribution.json - repository must be a non-empty string to check pins")
             failed = True
         elif validate_install_pins(root, repository, version):
             failed = True
