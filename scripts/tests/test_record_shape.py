@@ -69,8 +69,16 @@ def tree(extra: str = "", rows: str = ONE_ROW) -> TemporaryDirectory:
 
 
 class DerivedShape(unittest.TestCase):
+    """The contract is read from the module's own root, not from the working directory.
+
+    test_check_citations asserts against check_citations.ROOT for the same reason: a
+    suite that resolves the repository as the process's cwd means something different
+    depending on where it was started, and the module already resolves it from its own
+    location.
+    """
+
     def test_the_five_checks_come_from_the_contract_and_not_from_here(self) -> None:
-        shape = record_shape.declared(Path("."))
+        shape = record_shape.declared(record_shape.ROOT)
 
         self.assertIsNone(shape.reason)
         self.assertEqual(
@@ -88,7 +96,7 @@ class DerivedShape(unittest.TestCase):
         # The template writes the domain with escaped pipes inside a cell, so a naive
         # split on the delimiter reads three broken values instead of three values.
         self.assertEqual(
-            record_shape.declared(Path(".")).results, ("pass", "mismatch", "not claimed")
+            record_shape.declared(record_shape.ROOT).results, ("pass", "mismatch", "not claimed")
         )
 
     def test_a_contract_with_no_marked_template_is_reported_as_that(self) -> None:
@@ -110,7 +118,7 @@ class DerivedShape(unittest.TestCase):
         # not see a heading — which is the same property that keeps an archived record's
         # quoted headings from being read as a document's own, and it is why the first
         # version of this derivation found no table at all.
-        text = (Path(".") / record_shape.CONTRACT).read_text(encoding="utf-8")
+        text = (record_shape.ROOT / record_shape.CONTRACT).read_text(encoding="utf-8")
 
         raw = text.split(record_shape.MARKER, 1)[1]
         self.assertIsNone(heading_section(raw, "Record integrity"))
@@ -158,7 +166,7 @@ class DeclaredInvariant(unittest.TestCase):
 
 class RecordIntegrityRows(unittest.TestCase):
     def test_the_real_repository_passes_its_own_check(self) -> None:
-        self.assertEqual(record_shape.check(Path(".")), [])
+        self.assertEqual(record_shape.check(record_shape.ROOT), [])
 
     def test_a_row_the_contract_does_not_declare_is_refused(self) -> None:
         row = "| Probe disclosure | one scratch probe | makes it checkable | pass |\n"
