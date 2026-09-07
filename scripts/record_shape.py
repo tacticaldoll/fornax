@@ -53,13 +53,13 @@ MARKER = "<!-- OUTPUT-TEMPLATE: disposition-record@1 text/markdown -->"
 
 INTEGRITY = "Record integrity"
 DISPOSITIONS = "Dispositions"
+RESULT = "Result"
 
 # A cell is bounded by the pipe the table defines, and GFM lets a cell hold one by
 # escaping it — which the contract's own Result column does. So the split reads to a
 # delimiter the construct defines and honours the construct's escape, rather than
 # guessing what a cell may contain. `AGENTS.md` is explicit that a reading of this kind
 # needs no owning parser; inventing a terminator list is what does.
-CELL = re.compile(r"(?<!\\)\|")
 SEPARATOR = re.compile(r"^[\s:|-]+$")
 
 
@@ -123,22 +123,77 @@ class Declared:
         return self.shape.results
 
 
-def rows(text: str) -> list[list[str]]:
-    """Every table row in *text*, as its cells, separator rows dropped.
+@dataclass(frozen=True)
+class Table:
+    """One Markdown table's header and body, apart.
+
+    Apart because every caller wanted the body and got a list whose first element was
+    the header, so each skipped it by the same index and the concept had no name. Worse,
+    a caller then read the Result by `[-1]` — the last cell of whatever the row happened
+    to hold — so a row written without its trailing pipe lost a cell and the diagnostic
+    named a neighbour as the verdict. A column is found by the name the header gives it
+    now, which is the only thing that survives a row of the wrong width.
+    """
+
+    header: list[str]
+    body: list[list[str]]
+
+    def column(self, row: list[str], name: str) -> str | None:
+        """One row's cell under the named column, or nothing when the row is too short."""
+        if name not in self.header:
+            return None
+        index = self.header.index(name)
+        return row[index] if index < len(row) else None
+
+
+def cells(line: str) -> list[str]:
+    """One table row's cells, with the escapes the table's own grammar defines consumed.
+
+    Read to the delimiter the construct defines rather than to a guess about what a cell
+    may contain, which `AGENTS.md` distinguishes from inventing a terminator list and
+    which needs no owning parser. What it does need is the construct's escape, and the
+    first version tested for one with a lookbehind instead of consuming it: any backslash
+    before a pipe read as escaping it, so a cell ending in an escaped backslash swallowed
+    the delimiter after it and two cells read as one. GFM escapes with a backslash and
+    escapes the backslash the same way, so the scan consumes both.
+    """
+    found: list[str] = []
+    current: list[str] = []
+    index = 0
+    while index < len(line):
+        character = line[index]
+        if character == "\\" and index + 1 < len(line):
+            current.append(line[index + 1])
+            index += 2
+            continue
+        if character == "|":
+            found.append("".join(current).strip())
+            current = []
+            index += 1
+            continue
+        current.append(character)
+        index += 1
+    found.append("".join(current).strip())
+    return found[1:-1] if len(found) > 2 else []
+
+
+def table(text: str) -> Table | None:
+    """The one table in *text*, header apart from body, or nothing when it holds none.
 
     Given text rather than a document, because which text is a table is the caller's
     question: the contract's rows come from inside a fenced template and a record's come
     from a heading section outside every fence. A reader that decided for both would
     answer one of them wrongly.
     """
-    found = []
+    rows: list[list[str]] = []
     for line in text.splitlines():
         stripped = line.strip()
         if not stripped.startswith("|") or SEPARATOR.match(stripped):
             continue
-        cells = [c.replace("\\|", "|").strip() for c in CELL.split(stripped)]
-        found.append([c for c in cells[1:-1]] if len(cells) > 2 else [])
-    return found
+        rows.append(cells(stripped))
+    if not rows:
+        return None
+    return Table(rows[0], rows[1:])
 
 
 def declared(root: Path) -> Declared:
@@ -162,15 +217,19 @@ def declared(root: Path) -> Declared:
     section = heading_section(marked[0].content, INTEGRITY)
     if section is None:
         return Declared(None, f"the template declares no {INTEGRITY} table")
-    table = rows(section)
-    if len(table) < 2:
+    declared_table = table(section)
+    if declared_table is None or not declared_table.body:
         return Declared(None, f"the template's {INTEGRITY} table declares no rows")
 
-    body = table[1:]
-    checks = tuple(row[0] for row in body if row)
-    domains = {tuple(v.strip() for v in row[-1].split("|")) for row in body if len(row) > 1}
+    checks = tuple(row[0] for row in declared_table.body if row)
+    domains = {
+        tuple(v.strip() for v in (declared_table.column(row, RESULT) or "").split("|"))
+        for row in declared_table.body
+        if row
+    }
     if len(domains) != 1:
-        return Declared(None, f"the template's {INTEGRITY} rows declare differing Result domains"
+        return Declared(
+            None, f"the template's {INTEGRITY} rows declare differing Result domains"
         )
     return Declared(Shape(checks, domains.pop()), None)
 
@@ -184,8 +243,9 @@ def record_defects(path: Path, shape: Declared) -> list[Diagnostic]:
 
     found: list[Diagnostic] = []
     section = heading_section(text, INTEGRITY)
-    if section is not None:
-        for row in rows(section)[1:]:
+    integrity = table(section) if section is not None else None
+    if integrity is not None:
+        for row in integrity.body:
             if not row:
                 continue
             if row[0] not in shape.checks:
@@ -197,19 +257,30 @@ def record_defects(path: Path, shape: Declared) -> list[Diagnostic]:
                         "input's own claims; a row about anything else has no seat here",
                     )
                 )
-            elif len(row) > 1 and not any(row[-1].startswith(v) for v in shape.results):
+                continue
+            verdict = integrity.column(row, RESULT)
+            if verdict is None:
                 found.append(
                     Diagnostic(
                         path,
-                        f"{INTEGRITY} row {row[0]!r} answers {row[-1]!r}, which begins with "
-                        f"none of {', '.join(shape.results)}",
+                        f"{INTEGRITY} row {row[0]!r} has no {RESULT} cell under the "
+                        f"column its own header names",
+                    )
+                )
+            elif not any(verdict.startswith(value) for value in shape.results):
+                found.append(
+                    Diagnostic(
+                        path,
+                        f"{INTEGRITY} row {row[0]!r} answers {verdict!r}, which begins "
+                        f"with none of {', '.join(shape.results)}",
                     )
                 )
 
     settled = heading_section(text, DISPOSITIONS)
-    if settled is not None:
+    dispositions = table(settled) if settled is not None else None
+    if dispositions is not None:
         seen: set[str] = set()
-        for row in rows(settled)[1:]:
+        for row in dispositions.body:
             if not row:
                 continue
             identifier = row[0].split(" — ")[0].strip()
