@@ -14,8 +14,14 @@ own kind and not a half-filled one. Nothing here names a line: `scripts/check_ci
 every symbol below, so an entry whose unit or guard is renamed away is loud rather than quietly
 wrong.
 
-Every finding a round accepted in this range has a row, closed ones included, and a finding whose
-repair nothing can guard has a row saying so rather than no row at all. The first version held only
+Every finding a round accepted **from the round this file began in onward** has a row, closed ones
+included, and a finding whose repair nothing can guard has a row saying so rather than no row at
+all. Rounds settled before that are not covered and are not being backfilled: a row's content is an
+instruction to revert a unit and expect a count, and for those repairs no count was ever recorded,
+so a row written now would be a reconstruction presented as a measurement. That is the same reason
+this file does not edit its own past numbers. The claim used to be unbounded and the file has never
+met it — an accepted finding in an earlier round would show up as a hole with nothing marking it,
+which is worse than a stated boundary. The first version held only
 the findings still carried, which read the ledger as a way out rather than as what it is — the
 record of what must break if a repair is undone, and a closed finding's repair can be undone like
 any other. The second version was written in the turn that repaired, before the round's own findings
@@ -179,53 +185,36 @@ the instruction produces, not a measure of the finding's size.
 | TRAILING-PIPE-ASSUMED-MANDATORY | `record_shape.table`'s use of `markdown_links.table_rows`, replaced by a row reader written beside it | `test_record_shape.RecordIntegrityRows.test_a_row_with_no_trailing_pipe_keeps_every_cell`, and 13 others — broad for the same reason | 14 |
 | MALFORMED-TABLE-READS-CLEAN | the no-readable-table diagnostic in `record_shape.record_defects` | `test_record_shape.RecordIntegrityRows.test_a_section_that_holds_no_readable_table_is_not_a_record_without_one` | 1 |
 
-## Accepted 2026-09-07, at the commit carrying this section, no repair landed
+## Measured 2026-09-07, at the commit carrying this section, the repair round
 
-Settled by `docs/dispositions/v0.4.1..d75d484.md`. **No row here carries a measured number, and none
-claims one.** `AGENTS.md` asks that the guards be written when the record is written rather than when
-the repair lands, and every finding in that round is open: there is nothing yet to revert, so a red
-count would be a number nobody ran. Each row states instead the guard its repair must make runnable,
-and the round that lands the repair replaces the row with a measured one in a dated section of its
-own.
+Settled by `docs/dispositions/v0.4.1..d75d484.md` and
+`docs/dispositions/7b98106..d75d484.second-reading.md`. This replaces the two prospective
+sections those records were written with: every number below is one run against this tree
+after all of the repairs landed, not a number carried forward from the turn that wrote the
+row. Three commit messages in this round first stated a count measured at an intermediate
+tree and were corrected, which is why the whole set was re-run at the end rather than
+collected as it went.
 
-That gap is the rule's, not this section's. A row's content as this file defines it — revert that
-unit, run that test, expect that many red — presupposes a landed repair, so a round that produces a
-record and lands no repair cannot fill one in the form the file asks for. Recorded here rather than
-resolved, because resolving it is a change to `AGENTS.md`.
+| Finding | Revert this | Guard | Red on revert |
+|---|---|---|---|
+| SECTION-ABSENCE-SKIPS-ITS-RULES | `record_shape.RequiredSections` from `record_shape.RECORD_RULES` | `test_record_shape.RecordCardinality` | 4 |
+| DUPLICATE-SECTION-READ-AS-ONE | `record_shape.OneSectionEach` from `record_shape.RECORD_RULES` | `test_record_shape.RecordCardinality` | 1 |
+| MALFORMED-TABLE-READS-CLEAN | `record_shape.ReadableTable` from `record_shape.RECORD_RULES` | `test_record_shape.RecordCardinality` | 2 |
+| ARCHIVE-BOUND-TO-CURRENT-CONTRACT | the history argument in `record_shape.audit`, so every record reads the working tree | `test_record_shape.SettledContract` | 3 |
+| SNAPSHOT-READS-AS-HISTORY | the historyless branch in `contract_revision.settled` | `test_record_shape.SettledContract` | 35 |
+| UNJUDGED-READS-AS-CLEAN | the `unjudged` append in `record_shape.audit` | `test_record_shape.SettledContract` | 1 |
+| SUBJECT-ABSENCE-READS-AS-CLEAN | the missing-subject report in `check_citations.check` | `test_check_citations.SubjectCorpus` | 1 |
+| CITATION-CORPUS-EMPTY-READS-AS-CLEAN | the empty-corpus failure in `check_citations.check` | `test_check_citations.SubjectCorpus` | 1 |
+| KEY-READ-BY-PREFIX | the whole read in `record_shape.UniqueFirstColumn`, restoring the prefix split | `test_record_shape.FindingKeyReadWhole` | 3 |
+| DISPOSITION-DOMAIN-UNCHECKED | `record_shape.ValueReadWhole` from the findings seat in `record_shape.rules_for` | `test_record_shape.FindingsDomain` | 3 |
+| DOMAIN-SHARED-ACROSS-SEATS | the per-column derivation in `record_shape._domains` | `test_record_shape.FindingsDomain` | 30 |
+| MISSING-RESULT-COLUMN-YIELDS-A-DOMAIN | the unread-contract branch in `record_shape.shape_of` | `test_record_shape.ContractWithoutAVerdictColumn` | 1 |
+| RULE-ANNOTATED-SHAPE-GETS-DECLARED | `record_shape.Declared.shape` at the call in `record_shape.record_defects`, handing over the outer type | `test_record_shape.FindingsDomain` | 39 |
+| ROW-SKIP-NOT-ASKED-OF-THE-WIRING | the `closed` condition in `record_shape.ValueReadWhole` | `test_record_shape.FindingsDomain` | 3 |
+| SHELL-COMMENT-RULE-NARROWER-THAN-CLAIMED | the operator lookbehind in `read_whole.COMMENT` | `test_read_whole.CommentRule` | 3 |
 
-The claim in this file's opening — that every finding a round accepted has a row — remains false and
-is `GUARDS-LEDGER-INCOMPLETE` in that record, accepted with its repair not yet taken. The rows below
-are this round's own; the backfill of earlier rounds is that finding's repair.
-
-| Finding | The guard its repair must establish |
-|---|---|
-| SECTION-ABSENCE-SKIPS-ITS-RULES | revert the record-level rule in `record_shape.record_defects`; a case in `test_record_shape.Seats` that deletes a record's whole Self-check section and expects a diagnostic must go red |
-| DUPLICATE-SECTION-READ-AS-ONE | revert the duplicate-heading rejection, wherever it lands between `markdown_links.heading_section` and `record_shape.record_defects`; a case appending a second governed heading carrying an undeclared label must go red |
-| SUBJECT-ABSENCE-READS-AS-CLEAN | revert the subject guard in `check_citations.subjects`; a case in `test_check_citations.ModuleIdentity` pointing the check at a root whose named subject is renamed away must go red |
-| KEY-READ-BY-PREFIX | revert the whole-cell read in `record_shape.UniqueFirstColumn`; a case in `test_record_shape.DispositionKeys` keying two rows alike under a separator spelling the code did not expect must go red |
-| UNIQUENESS-CONTROL-MISSING | none by test, and the absence is the finding — the unit is a missing negative control. What a later round re-runs is a reading: `test_record_shape.DispositionKeys` must hold both a near-miss sharing the accepted prefix and a valid alternate spelling of the same meaning, which is what `AGENTS.md` asks of a hand-written grammar matcher |
-| DISPOSITION-DOMAIN-UNCHECKED | revert the domain rule added for the findings seat in `record_shape.rules_for`; a case giving that seat's verdict column a value outside the declared domain must go red |
-| MISSING-RESULT-COLUMN-YIELDS-A-DOMAIN | revert the unread branch in `record_shape.declared`; a case in `test_record_shape.DeclaredInvariant` handing it a template whose integrity table declares no verdict column must go red |
-| TREE-COUNT-IN-NEW-PROSE | none by test — the units are sentences in a docstring and in this file, and no check decides which numbers the count rule reaches. The re-runnable reading is to grep the modules this range added for a number standing beside a noun naming a tree artifact, and to compare each against the derived source it transcribes |
-| UNDECLARED-LABEL-TALLY-WRONG | none by test — the unit is one sentence of `record_shape.Subject`. The re-runnable reading is the one that found it: collect the first-column labels of every Self-check table under `docs/dispositions/`, subtract the labels the contract declares, and compare the remainder against what the docstring says. It was run and the docstring was one high, because the same commit's own label edit removed one |
-| GUARDS-LEDGER-INCOMPLETE | none by test — the unit is this file. The re-runnable reading is to collect every accepted `Dispositions` id under `docs/dispositions/` and check each against the row keys here; it was run and reported a substantial shortfall, which is the finding |
-| SHIPPED-SKILL-CITATION-UNVERIFIED | revert whichever of `check_citations.SUBJECTS` or `check_citations.subjects` the repair widens; a case in `test_check_citations.SymbolCitations` placing a citation to a nonexistent symbol inside a shipped skill must go red |
-| AGENTS-POINTS-AT-THE-WRONG-SYMBOL | none by test — the unit is one sentence of `AGENTS.md`, and `check_citations` cannot catch it because the constant it names does exist and merely holds something else. The re-runnable reading is to compare that sentence against `check_citations.SUBJECTS` and `check_citations.RECORDS` |
-| SHIPPED-SKILL-NAMES-A-PRIVATE-SYMBOL | none by test — the unit is prose in a shipped skill. The re-runnable reading is to grep `skills/` for a citation of the form module-dot-symbol resolving into `scripts/`; it returns exactly one today, naming `evidence_currency.resolved_inside` |
-| SHELL-COMMENT-RULE-NARROWER-THAN-CLAIMED | revert the operator case in `read_whole.COMMENT`; a case in `test_read_whole.ShellWordTests` feeding a commented install after a control operator must go red. Until the repair lands, the re-runnable reading is to compare the entry's stated rule against what `bash -c` does with the same input |
-| NOQA-CLAIM-REFUTED | none by test — the unit is a comment in `ruff.toml`, and the directives it denies are well-formed, so neither suppression rule fires on them. The re-runnable reading is to grep the linted tree for the directive and compare the count against what the comment claims |
-| COMMENT-OUTLIVED-ITS-CODE | none by test — the unit is a comment. Reverting its deletion leaves every gate green, because nothing reads a comment's relevance to the code beneath it. The re-runnable reading is to grep `scripts/record_shape.py` for the phrase and confirm the module no longer performs the split it describes |
-
-## Accepted 2026-09-07, at the commit carrying this section, second reading, no repair landed
-
-Settled by `docs/dispositions/7b98106..d75d484.second-reading.md`. Prospective for the same reason as
-the section above: no repair has landed, so no row carries a measured number.
-
-| Finding | The guard its repair must establish |
-|---|---|
-| ARCHIVE-BOUND-TO-CURRENT-CONTRACT | revert whichever of `record_shape.RequiredKeys`, `record_shape.ClosedKeys` or `record_shape.check` the repair changes; a case in `test_record_shape.Seats` that reworks one declared label in the contract fixture and expects the archived records to stay quiet must go red. Until the repair lands, the re-runnable reading is the measurement that found it: reword one declared Self-check label in the contract and count the records reported, then rename one Record integrity check and count again — both report the whole corpus rather than the change |
-| LABEL-EDIT-RULE-UNWRITTEN | none by test — the unit is a clause absent from `AGENTS.md`, and no check decides which record edits are permitted. The re-runnable reading is to grep `AGENTS.md` for the label-versus-reading distinction; it returns nothing today, while the reasoning that authorises such an edit sits inside `docs/dispositions/v0.4.1..af01263.md` |
-| REVERT-CLAIM-NAMES-A-SHAPE | none by test, and the absence is half the finding — the unit is commit prose, which is history and not editable. What the repair establishes instead is a row in this file stating the measurement as a named unit; the reading a later round runs is to remove `record_shape.rules_for`'s subject branch by the row's own wording and confirm the stated count. Four sibling measurements in the same commit named a unit and each reproduced exactly; this one named a code shape and did not |
+Five findings this round accepted have no revert, and each is a row below rather than an
+omission: the prose ones, and the two the round chose to register rather than repair.
 
 ## Repairs with no guard, and why
 
@@ -274,6 +263,16 @@ the section above: no repair has landed, so no row carries a measured number.
 | FIXTURE-READ-AS-PRODUCT | Declined, with the weighing in `docs/dispositions/v0.4.1..c60a6ba.md`. The reviewed units are the deliberate defects of a micro-test fixture, and a guard against repairing them is the registry entry the fixture already has: `evidence_currency.py --check` ties the `static-review-gate5-ledger` scenario to the wording it measured, and `unaccounted_files` reports a scenario file no entry accounts for |
 | REVIEW-COVERAGE-AS-FINDING | Declined, with the weighing in `docs/dispositions/v0.4.1..c60a6ba.md`. A declined finding has no repair to guard |
 | ABSENT-CLAIM-AS-MISMATCH | none — the units are rows of a Record integrity table, and no test holds a table cell. Its second instance is why this row says more than that: the repair recorded for the first instance was the removal of one row, which landed and did not stop the next, so what a later round can re-run is not a revert but a reading — take the checks `skills/triage-findings/SKILL.md` declares and compare them to the row labels of each record under `docs/dispositions/`. A record carrying a sixth is the defect. That reading is repair `1b` in `docs/dispositions/c60a6ba..af1185a.md`, and running it is what found that the class was larger than the input showed — a sixth row in records no review had opened, some of them scoring an input `mismatch`. The condition for building the check that would do this automatically is stated there, and the `v0.4.1..6ec4d3b` round restated it because it keyed on a row's Result where the defect keys on its subject: a row whose `Input claim` cell does not name a claim the input actually made about itself |
+| TREE-COUNT-IN-NEW-PROSE | none by test — the units are sentences in `record_shape`'s docstrings and in this file, and no check decides which numbers the count rule reaches. The reading is to grep the modules this range added for a number standing beside a noun naming a tree artifact, then check each against the derived source it transcribes. It was run and the docstring's own tally was one high |
+| UNDECLARED-LABEL-TALLY-WRONG | none by test — the unit is one sentence of `record_shape.Subject`, now carrying no number. The reading that found it: collect the first-column labels of every Self-check table under `docs/dispositions/`, subtract what the contract declares, and compare the remainder against the sentence. The number was measured before the same commit's own label edit removed one, so it was false by the end of the commit that wrote it |
+| COMMENT-OUTLIVED-ITS-CODE | none — the unit was a comment. Reverting its deletion leaves every gate green, because nothing reads a comment's relevance to the code beneath it. The reading is to grep `scripts/record_shape.py` for the phrase and confirm the module performs no such split |
+| NOQA-CLAIM-REFUTED | none — the unit is a comment in `ruff.toml`, and the two directives it denied are well formed, so neither suppression rule fires on them. The reading is to grep the linted tree for the directive and compare what is there against what the comment claims |
+| AGENTS-POINTS-AT-THE-WRONG-SYMBOL | none — the unit is one sentence of `AGENTS.md`, and the citation gate cannot reach it because the constant it named does exist and merely held something else. The reading is to compare that sentence against `check_citations.SUBJECTS` and `check_citations.RECORDS` |
+| SHIPPED-SKILL-NAMES-A-PRIVATE-SYMBOL | none — the unit is prose in a shipped skill. The reading is to grep `skills/` for a dotted name resolving into `scripts/`; it returned one, naming `evidence_currency.resolved_inside`, and returns none now |
+| SHIPPED-SKILL-CITATION-UNVERIFIED | none, and not repaired — registered as `shipped-skill-prose-not-citation-checked`. Adding `skills/` to the subject set was measured and reports two findings, both false, so buying the check costs the exemptions `AGENTS.md` refuses. What closed the real instance was the row above |
+| LABEL-EDIT-RULE-UNWRITTEN | none — the unit is a clause that was absent from `AGENTS.md`, and no check decides which record edits are permitted. The reading is to grep `AGENTS.md` for the label-versus-answer distinction; it returned nothing before this round and the reasoning sat inside the record it authorised editing |
+| REVERT-CLAIM-NAMES-A-SHAPE | none by test, and the absence is half the finding — the unit is commit prose, which is history and not editable. What replaces a guard is this row: delete the two subject branches of `record_shape.rules_for`, so every seat falls through to the findings rules, and the suite reports 31 red. Stated as the deletion rather than as "the branch that lets the subject pick", because writing this row is where that difference stopped being theoretical — the first draft of it said 3, which is what a different mutation of the same function produces. The claim it corrects named "the branch that lets the subject pick at all", which two readers mutate differently — four sibling measurements in the same commit named a unit and each reproduced exactly, and this one did not |
+| GUARDS-LEDGER-INCOMPLETE | none — the unit is this file's opening claim, which is bounded now rather than unbounded. The reading is to collect every accepted `Dispositions` id from the rounds this file covers and check each against the row keys here; earlier rounds are stated as out of scope rather than left as unmarked holes |
 
 ## What was declined
 
