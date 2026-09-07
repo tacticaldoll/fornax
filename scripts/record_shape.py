@@ -325,8 +325,8 @@ def main(argv: list[str] | None = None) -> int:
         print(printable(f"FAIL {where} - {problem.message}"), file=sys.stderr)
     if problems:
         return 1
-    counted = len(sorted((root / RECORDS).glob("*.md")))
-    print(printable(f"OK   record shape in {counted} record(s)"))
+    read = len(list((root / RECORDS).glob("*.md")))
+    print(printable(f"OK   record shape in {read} record(s)"))
     return 0
 
 
