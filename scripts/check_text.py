@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import enum
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -22,6 +23,40 @@ class Diagnostic:
     message: str
 
 
+class Content(enum.Enum):
+    """What reading one tracked file established.
+
+    Three answers, not two. `bytes | None` carried the file's text, a file with no bytes,
+    and a read that failed — and the docstring above the return named two of the three,
+    while `check` treated the last two alike, so a zero-byte file took the same silent
+    path as an unresolvable one. At `v0.4.1` the empty case was an explicit `if not data:
+    continue`; folding it into `return data or None` moved a policy into a truthiness
+    expression and left nothing saying it was one.
+
+    `EMPTY` is policy, not failure. A file with no bytes has no last byte to be a
+    newline, and `test_an_empty_file_is_not_missing_a_newline` fixes that as the answer.
+    What one `None` could not say is that this is a decision rather than a file this
+    could not read.
+
+    The shape is `skill_yaml.Shape`'s, and the reason is the one `Shape.UNREAD` and
+    `path_boundary.Verdict.UNRESOLVABLE` were each added for: a state the code meant and
+    the type could not name. Three states rather than a payload-or-reason pair, because
+    only one of them carries bytes.
+    """
+
+    READ = "read"
+    EMPTY = "empty"
+    UNREADABLE = "unreadable"
+
+
+@dataclass(frozen=True)
+class Bytes:
+    """One tracked file's bytes, or the state saying why there are none to judge."""
+
+    state: Content
+    data: bytes = b""
+
+
 def check(files: list[Path], root: Path) -> list[Diagnostic]:
     """Read each tracked file once and hand its bytes to the policies that judge them.
 
@@ -33,36 +68,42 @@ def check(files: list[Path], root: Path) -> list[Diagnostic]:
     errors: list[Diagnostic] = []
     boundary = Boundary.at(root)
     for path in files:
-        data = _bytes(path, boundary, errors)
-        if data is None:
+        read = _bytes(path, boundary, errors)
+        if read.state is not Content.READ:
             continue
 
-        errors.extend(_hygiene(path, data))
-        content = _decoded(path, data, errors)
+        errors.extend(_hygiene(path, read.data))
+        content = _decoded(path, read.data, errors)
         if content is not None:
             errors.extend(_markdown_links(path, content, boundary))
     return errors
 
 
-def _bytes(path: Path, boundary: Boundary, errors: list[Diagnostic]) -> bytes | None:
-    """The file's bytes, or nothing plus whatever stopped this from reading them."""
+def _bytes(path: Path, boundary: Boundary, errors: list[Diagnostic]) -> Bytes:
+    """The file's bytes, the fact that it has none, or that they could not be read.
+
+    Each of the three is named rather than shared. Whatever stopped a read is reported
+    here as it happens; `EMPTY` reports nothing, because having no bytes is not a defect
+    and `Content` is where that is written down instead of in a truthiness test.
+    """
     tracked = resolve_within(path, boundary)
     if tracked.verdict is Verdict.UNRESOLVABLE:
         errors.append(Diagnostic(path, f"tracked path could not be resolved: {tracked.error}"))
-        return None
+        return Bytes(Content.UNREADABLE)
     if tracked.verdict is Verdict.OUTSIDE:
         errors.append(Diagnostic(path, "tracked path leaves repository"))
-        return None
+        return Bytes(Content.UNREADABLE)
     if tracked.verdict is Verdict.ABSENT:
-        return None  # git already reports the deletion, and there is no text to read
+        # git already reports the deletion, and there is no text to read
+        return Bytes(Content.UNREADABLE)
     if not path.is_file():
-        return None
+        return Bytes(Content.UNREADABLE)
     try:
         data = path.read_bytes()
     except OSError as error:
         errors.append(Diagnostic(path, str(error)))
-        return None
-    return data or None
+        return Bytes(Content.UNREADABLE)
+    return Bytes(Content.READ, data) if data else Bytes(Content.EMPTY)
 
 
 def _hygiene(path: Path, data: bytes) -> list[Diagnostic]:

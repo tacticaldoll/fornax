@@ -223,6 +223,35 @@ class TextHygiene(unittest.TestCase):
 
             self.assertEqual(check(document), [])
 
+    def test_a_file_with_no_bytes_is_told_apart_from_one_that_could_not_be_read(self) -> None:
+        # One `None` answered for both, so an empty file took the same silent path as an
+        # unresolvable one and nothing said which had happened. The states are what tell
+        # them apart: `EMPTY` is the policy the test below fixes, `UNREADABLE` is a
+        # failure this reports as it happens.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            boundary = check_text.Boundary.at(root)
+
+            empty = root / "empty.md"
+            empty.write_bytes(b"")
+            errors: list[check_text.Diagnostic] = []
+            self.assertEqual(
+                check_text._bytes(empty, boundary, errors).state, check_text.Content.EMPTY
+            )
+            self.assertEqual(errors, [])
+
+            absent = root / "gone.md"
+            self.assertEqual(
+                check_text._bytes(absent, boundary, errors).state,
+                check_text.Content.UNREADABLE,
+            )
+
+            held = root / "held.md"
+            held.write_bytes(b"text\n")
+            read = check_text._bytes(held, boundary, errors)
+            self.assertEqual(read.state, check_text.Content.READ)
+            self.assertEqual(read.data, b"text\n")
+
     def test_an_empty_file_is_not_missing_a_newline(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
