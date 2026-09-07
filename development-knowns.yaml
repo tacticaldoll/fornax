@@ -155,7 +155,7 @@ knowns:
     evidence:
       - A 103-character line carrying such a directive passed while a 116-character probe confirmed E501 was live.
       - PGH004 catches only a bare noqa with no codes; RUF100 catches only a directive suppressing nothing; the malformed-suffix form passes both.
-      - "The 103-character probe above does not isolate this mechanism, which a later round found by meeting the same silence with no directive present. That line held no whitespace after its indentation, which e501-exempts-a-whitespace-free-line covers, so the two causes were measured together and read as one. The directive form is still real and still passes both rules; what it does not do is account on its own for an unreported long line." 
+      - "The 103-character probe above does not isolate this mechanism, which a later round found by meeting the same silence with no directive present. That line held no whitespace after its indentation, which e501-exempts-a-whitespace-free-line covers, so the two causes were measured together and read as one. The directive form is still real and still passes both rules; what it does not do is account on its own for an unreported long line."
     declined-changes:
       - Claim PGH004 closes the case, which a probe of the exact form disproves.
     reconsider-when: A ruff release fails the run on an invalid directive, or a noqa is added to the tree.

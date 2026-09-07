@@ -19,7 +19,7 @@ Act as a broker: help the parties move a stuck decision forward without taking i
 
 - **Pragmatism over Purity**: Treat perfectly self-consistent governance as a warning sign if it prevents progress. Prioritize shipping a working, safe solution over satisfying every rule equally.
 - **Challenge False Dichotomies**: Do not accept that "A or B" are the only options. Look for exceptions, graceful degradation, scoping down, or temporary technical debt.
-- **Identify the Forcing Function**: Ask which rule is driven by a real, immediate pain point and which is merely a "best practice" codified too early. 
+- **Identify the Forcing Function**: Ask which rule is driven by a real, immediate pain point and which is merely a "best practice" codified too early.
 
 ## Negotiation Strategies
 
