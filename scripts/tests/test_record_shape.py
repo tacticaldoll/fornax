@@ -30,7 +30,7 @@ TEMPLATE = """# Triage
 
 | Finding | Cause | Disposition |
 |---|---|---|
-| id | # | accept |
+| id | # | accept \\| decline \\| defer |
 
 ### Self-check
 
@@ -151,9 +151,15 @@ class DeclaredInvariant(unittest.TestCase):
     """
 
     def test_a_shape_alone_is_the_read_state(self) -> None:
-        held = record_shape.Declared(record_shape.Shape({"S": ("a",)}, ("pass",)), None)
+        held = record_shape.Declared(
+            record_shape.Shape(
+                {record_shape.INTEGRITY: ("a",)},
+                {record_shape.INTEGRITY: {record_shape.RESULT: ("pass",)}},
+            ),
+            None,
+        )
 
-        self.assertEqual(held.keys, {"S": ("a",)})
+        self.assertEqual(held.keys, {record_shape.INTEGRITY: ("a",)})
         self.assertEqual(held.results, ("pass",))
 
     def test_neither_a_shape_nor_a_reason_is_refused(self) -> None:
@@ -162,7 +168,7 @@ class DeclaredInvariant(unittest.TestCase):
 
     def test_both_a_shape_and_a_reason_is_refused(self) -> None:
         with self.assertRaises(ValueError):
-            record_shape.Declared(record_shape.Shape({}, ()), "why")
+            record_shape.Declared(record_shape.Shape({}, {}), "why")
 
     def test_an_unread_contract_never_raises_without_saying_why(self) -> None:
         # The defect the collapse removes: an accessor that finds its own field empty
@@ -680,3 +686,62 @@ class FindingKeyReadWhole(unittest.TestCase):
     def test_an_id_alone_needs_no_separator(self) -> None:
         found = self._dispositions("| F1 | 1 | new | accept | — |")
         self.assertFalse(any("has no key" in m for m in found), found)
+
+
+class FindingsDomain(unittest.TestCase):
+    """The findings seat's declared domain is held, like the input seat's always was.
+
+    `ValueReadWhole` was parameterised by column name and used once. The one seat with a
+    declared three-value domain and no domain rule was the one the contract also declares
+    three values for, so `ACCEPTED-ish` and `totally bogus verdict` both passed -- the
+    prefix-and-domain defect the rule exists to stop, in the seat it was never wired to.
+    """
+
+    def test_a_disposition_outside_the_declared_domain_is_reported(self) -> None:
+        with tree(rows="| F1 — one | 1 | new | ACCEPTED-ish | — |") as t:
+            found = [p.message for p in record_shape.check(Path(t))]
+
+        self.assertTrue(any("ACCEPTED-ish" in m for m in found), found)
+
+    def test_a_value_sharing_a_prefix_with_a_disposition_is_not_one(self) -> None:
+        # The near-miss control: `accept` is in the domain and `accepted` is not.
+        with tree(rows="| F1 — one | 1 | new | accepted | — |") as t:
+            found = [p.message for p in record_shape.check(Path(t))]
+
+        self.assertTrue(any("'accepted'" in m for m in found), found)
+
+    def test_a_declared_disposition_with_a_qualifier_passes(self) -> None:
+        with tree(rows="| F1 — one | 1 | new | defer, until the seam lands | — |") as t:
+            self.assertEqual(record_shape.check(Path(t)), [])
+
+    def test_the_two_seats_are_held_to_their_own_domains_and_not_each_other_s(self) -> None:
+        # The reason the domain is per seat and per column: `pass` is the input seat's
+        # verdict and is not a disposition, and `accept` is the reverse.
+        with tree(rows="| F1 — one | 1 | new | pass | — |") as t:
+            found = [p.message for p in record_shape.check(Path(t))]
+
+        self.assertTrue(any("'pass'" in m for m in found), found)
+
+
+class ContractWithoutAVerdictColumn(unittest.TestCase):
+    """A template declaring no verdict column is an unread contract, not a domain of one.
+
+    Mapping the absent column to the empty string built a shape that looked usable and
+    then reported every record's verdict as outside a domain of nothing -- a misread
+    contract answering as though the records were at fault.
+    """
+
+    def test_a_template_with_no_verdict_column_is_reported_against_the_contract(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _lay_out(root, TEMPLATE.replace(
+                "| Check | Input claim | Reconciled evidence | Result |\n|---|---|---|---|",
+                "| Check | Input claim | Reconciled evidence |\n|---|---|---|",
+            ))
+            (root / "docs" / "dispositions" / "a..b.md").write_text(VALID, encoding="utf-8")
+
+            problems = record_shape.check(root)
+
+            self.assertEqual(len(problems), 1, problems)
+            self.assertIn("declares no Result column", problems[0].message)
+            self.assertEqual(problems[0].path.name, "SKILL.md")

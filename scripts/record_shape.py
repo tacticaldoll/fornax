@@ -79,6 +79,7 @@ INTEGRITY = "Record integrity"
 DISPOSITIONS = "Dispositions"
 SELF_CHECK = "Self-check"
 RESULT = "Result"
+DISPOSITION = "Disposition"
 
 # The contract declares a Result as one of its three values, optionally followed by `, `
 # and a qualifier saying why. Both halves matter and one was missing: the domain was
@@ -157,7 +158,15 @@ class Shape:
     """
 
     keys: dict[str, tuple[str, ...]]
-    results: tuple[str, ...]
+    #: Per seat, per column, the alternatives that column's template cell spells with
+    #: `|`. Derived for every such column rather than for one, because the two seats
+    #: carrying a verdict declare different domains — `Record integrity` answers
+    #: pass/mismatch/not claimed and `Dispositions` accept/decline/defer. It was one
+    #: tuple for one column, which is why the seat with a declared domain and no domain
+    #: rule went unchecked while the other was held to its. Which of these a rule reads
+    #: is `rules_for`'s answer; deriving them all keeps that wiring from also having to
+    #: state what the contract already says.
+    domains: dict[str, dict[str, tuple[str, ...]]]
 
 
 @dataclass(frozen=True)
@@ -203,7 +212,8 @@ class Declared:
 
     @property
     def results(self) -> tuple[str, ...]:
-        return self.shape.results
+        """The `Record integrity` verdict domain, which is the one callers named first."""
+        return self.shape.domains[INTEGRITY][RESULT]
 
 
 @dataclass(frozen=True)
@@ -291,27 +301,57 @@ def shape_of(text: str) -> Declared:
     if declared_table is None or not declared_table.body:
         return Declared(None, f"the template's {INTEGRITY} table declares no rows")
 
-    domains = {
+    results = {
         tuple(v.strip() for v in (declared_table.column(row, RESULT) or "").split("|"))
         for row in declared_table.body
         if row
     }
-    if len(domains) != 1:
+    if len(results) != 1:
         return Declared(
-            None, f"the template's {INTEGRITY} rows declare differing Result domains"
+            None, f"the template's {INTEGRITY} rows declare differing {RESULT} domains"
         )
+    if results == {("",)}:
+        # A template whose integrity table declares no verdict column is a contract this
+        # cannot read, not a domain of one empty string. Mapping the missing column to ""
+        # built a shape that looked usable and then reported every record's verdict as
+        # outside a domain of nothing — a misread contract answering as though the records
+        # were at fault.
+        return Declared(None, f"the template's {INTEGRITY} table declares no {RESULT} column")
 
     # Every seat's labels, not one seat's. A seat the template declares nothing for gets
     # no entry, which is how a rule asks whether the contract said anything at all.
     keys: dict[str, tuple[str, ...]] = {}
+    domains: dict[str, dict[str, tuple[str, ...]]] = {}
     for seat in SEATS:
         found = heading_section(template, seat.heading)
         if found is None:
             continue
         seat_table = table(found)
-        if seat_table is not None and seat_table.body:
-            keys[seat.heading] = tuple(row[0] for row in seat_table.body if row)
-    return Declared(Shape(keys, domains.pop()), None)
+        if seat_table is None or not seat_table.body:
+            continue
+        keys[seat.heading] = tuple(row[0] for row in seat_table.body if row)
+        domains[seat.heading] = _domains(seat_table)
+    return Declared(Shape(keys, domains), None)
+
+
+def _domains(declared_table: "Table") -> dict[str, tuple[str, ...]]:
+    """Every column whose template cell spells alternatives, and what they are.
+
+    Read from the first row that declares any, because the template writes one row per
+    kind and a later row abbreviates with a repeated-value mark. A column whose cell
+    carries no `|` declares no domain and gets no entry, which is how `ValueReadWhole`
+    asks whether the contract governs a column at all.
+    """
+    found: dict[str, tuple[str, ...]] = {}
+    for row in declared_table.body:
+        if not row:
+            continue
+        for column in declared_table.header:
+            cell = declared_table.column(row, column)
+            if cell is None or "|" not in cell or column in found:
+                continue
+            found[column] = tuple(value.strip() for value in cell.split("|"))
+    return found
 
 
 def verdict_grammar(results: tuple[str, ...]) -> re.Pattern[str]:
@@ -385,21 +425,36 @@ class ValueReadWhole(Rule):
     column: str
 
     def defects(self, seat: "Seat", found: "Table", shape: Shape) -> Iterator[str]:
-        declared_keys = shape.keys.get(seat.heading)
+        domain = shape.domains.get(seat.heading, {}).get(self.column)
+        if domain is None:
+            yield (
+                f"{CONTRACT.as_posix()} declares no {self.column} domain for "
+                f"{seat.heading}, so this rule has nothing to hold its rows to"
+            )
+            return
+        grammar = verdict_grammar(domain)
+        # One diagnostic per row: where `ClosedKeys` runs, it has already reported an
+        # undeclared label and the verdict on that row is not a second finding. Where it
+        # does not, the declared labels are a placeholder rather than a key set — the
+        # findings seat declares the single label `id` — and skipping every row whose key
+        # is not that word skipped every row there was. Asked of the wiring rather than
+        # restated, so the two cannot disagree.
+        closed = any(isinstance(rule, ClosedKeys) for rule in rules_for(seat.subject))
+        declared_keys = shape.keys.get(seat.heading) if closed else None
         for row in found.body:
             if not row or (declared_keys is not None and row[0] not in declared_keys):
-                continue  # ClosedKeys already reported it; one diagnostic per row
+                continue
             value = found.column(row, self.column)
             if value is None:
                 yield (
                     f"{seat.heading} declares no {self.column} column in its header, so "
                     f"the verdict on row {row[0]!r} cannot be read"
                 )
-            elif isinstance(whole(value, verdict_grammar(shape.results), "a verdict"), Unread):
+            elif isinstance(whole(value, grammar, "a verdict"), Unread):
                 yield (
-                    f"{seat.heading} row {row[0]!r} answers {value!r}, which is not one "
-                    f"of {', '.join(shape.results)}, with or without a "
-                    f"{QUALIFIER!r} qualifier"
+                    f"{seat.heading} row {row[0]!r} answers {value!r} under "
+                    f"{self.column}, which is not one of {', '.join(domain)}, with or "
+                    f"without a {QUALIFIER!r} qualifier"
                 )
 
 
@@ -447,14 +502,15 @@ class RecordRule(ABC):
     moves in with the other two, because an abstraction holding two of its three kinds is
     the inconsistency the decline was trying to avoid.
 
-    Takes `Declared` and not `Shape`, unlike `Rule`, whose annotation says `Shape` while
-    every caller hands it a `Declared` it satisfies only by proxy. That is a known finding
-    carried as deferred; this signature states what it receives rather than adding a second
-    instance of it.
+Takes a `Shape`, as `Rule` does. Both said so all along while every caller handed
+    them a `Declared` that satisfied the annotation by proxying two accessors; the proxy
+    ran out the moment a rule needed a third, and the run ended in an `AttributeError`
+    rather than a diagnostic. `Declared.shape` is the whole point of that type — it is
+    where the unread case has already been answered — so the callers hand it over now.
     """
 
     @abstractmethod
-    def defects(self, text: str, shape: "Declared") -> Iterator[str]:
+    def defects(self, text: str, shape: "Shape") -> Iterator[str]:
         """Every way this record departs from the clause this rule carries."""
 
 
@@ -468,7 +524,7 @@ class RequiredSections(RecordRule):
     exemption is needed for the one that carries none of these sections.
     """
 
-    def defects(self, text: str, shape: "Declared") -> Iterator[str]:
+    def defects(self, text: str, shape: "Shape") -> Iterator[str]:
         for seat in SEATS:
             if seat.heading not in shape.keys:
                 continue
@@ -488,7 +544,7 @@ class OneSectionEach(RecordRule):
     count comes from the parser that owns the grammar rather than from a scan here.
     """
 
-    def defects(self, text: str, shape: "Declared") -> Iterator[str]:
+    def defects(self, text: str, shape: "Shape") -> Iterator[str]:
         headings = heading_texts(text)
         for seat in SEATS:
             if headings.count(seat.heading) > 1:
@@ -506,7 +562,7 @@ class ReadableTable(RecordRule):
     unopened corpus passed before it was made a failure.
     """
 
-    def defects(self, text: str, shape: "Declared") -> Iterator[str]:
+    def defects(self, text: str, shape: "Shape") -> Iterator[str]:
         for seat in SEATS:
             section = heading_section(text, seat.heading)
             if section is not None and table(section) is None:
@@ -536,7 +592,7 @@ def rules_for(subject: Subject) -> tuple[Rule, ...]:
         return (ClosedKeys(), ValueReadWhole(RESULT))
     if subject is Subject.THIS_RECORD:
         return (RequiredKeys(),)
-    return (UniqueFirstColumn(),)
+    return (UniqueFirstColumn(), ValueReadWhole(DISPOSITION))
 
 
 def record_defects(path: Path, shape: Declared) -> list[Diagnostic]:
@@ -549,7 +605,8 @@ def record_defects(path: Path, shape: Declared) -> list[Diagnostic]:
     found: list[Diagnostic] = []
     for record_rule in RECORD_RULES:
         found.extend(
-            Diagnostic(path, message) for message in record_rule.defects(text, shape)
+            Diagnostic(path, message)
+            for message in record_rule.defects(text, shape.shape)
         )
     for seat in SEATS:
         section = heading_section(text, seat.heading)
@@ -560,7 +617,8 @@ def record_defects(path: Path, shape: Declared) -> list[Diagnostic]:
             continue  # ReadableTable reported it
         for rule in rules_for(seat.subject):
             found.extend(
-                Diagnostic(path, message) for message in rule.defects(seat, seated, shape)
+                Diagnostic(path, message)
+                for message in rule.defects(seat, seated, shape.shape)
             )
     return found
 
