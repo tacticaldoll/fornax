@@ -61,6 +61,21 @@ knowns:
     reconsider-when: An external symbol citation is found wrong, or the packaged names this repository cites come to be readable without asking a local environment.
     verification: None for the symbol; the module half is covered by test_check_citations.SymbolCitations, whose cases include a stdlib name, an imported third-party name, one nothing here imports, and misspellings of an internal module.
     updated: 2026-08-27
+  - id: shipped-skill-prose-not-citation-checked
+    statement: A symbol citation inside a shipped skill is checked by nobody, so a skill could name a module this repository does not have.
+    kind: debt
+    treatment: accept
+    rationale: "The check cannot tell an illustration from a claim, and a shipped skill is mostly illustration. Adding skills/ to the subject set was measured rather than assumed and reports two findings, both false: a teaching example in map-codebase deliberately shows what a line citation looks like, and orient-repo names a git config key whose shape is indistinguishable from a module and an attribute. Buying the check would cost the two exemptions AGENTS.md refuses, to guard a class that has occurred once and was repaired by deleting the citation rather than by resolving it."
+    evidence:
+      - Running scripts/check_citations.py over skills/ reports skills/map-codebase/references/tracing.md for a line citation that is the subject being taught, and skills/orient-repo/references/discovery-surfaces.md for a git config key read as a module and an attribute.
+      - The one real instance was a Reach example naming a private function in scripts/, which an installed user cannot resolve. It was removed rather than made to resolve, because a shipped skill should name nothing here at all.
+      - Every other backticked dotted name in skills/ is a filename, which check_citations already tells apart by its suffix.
+    declined-changes:
+      - Add skills/ to check_citations.SUBJECTS, which needs a per-file exemption for a taught example and a narrowing of the grammar for a config key, and reintroduces the maintained list of places a check does not apply.
+      - Forbid any dotted name in a shipped skill, which would reach the filenames and the config key the skill legitimately names.
+    reconsider-when: A shipped skill is found citing a module this repository does not have, or the citation grammar comes to tell a config key from a module without a list.
+    verification: None. What a later round can re-run is the grep in the evidence above, and the reading that skills/ names nothing resolving into scripts/.
+    updated: 2026-09-07
   - id: import-grouping-unchecked
     statement: Whether a module's imports are grouped as the files claim is checked by nobody, and a third-party import landed in the middle of a standard-library group with every gate green.
     kind: debt

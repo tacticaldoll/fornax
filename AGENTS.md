@@ -726,8 +726,11 @@ Keep scripts deterministic, portable, and easy to audit.
   and that a citation naming anything else names a module the standard library or this repository's
   own imports account for, which is what a mistyped internal module fails.
 
-  The subject is what this repository authors as durable reasoning, and `check_citations.SUBJECTS`
-  is where that set is written down — the records under `docs/dispositions/` are added there too.
+  The subject is what this repository authors as durable reasoning. `check_citations.SUBJECTS`
+  names the standing documents and `check_citations.RECORDS` the directory whose records join them;
+  two constants, because a directory read whole cannot go stale as a filename can. The rule named
+  only the first and said the records were in it, which is the enumeration and the code disagreeing
+  in the very sentence that warns about it.
   Naming the files here as well meant the enumeration and the code could disagree, and they did: a
   file was added to the check and not to the rule. Two things are
   outside it, and not by exemption. A Review Record's own evidence column is a coordinate into the
