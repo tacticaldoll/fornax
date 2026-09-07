@@ -29,7 +29,8 @@ being locatable, and the correct answer is the new name. The repository's own ru
 keying a finding says to preserve the logical unit when code moves, so a rename is
 already an occasion to touch the records that name it.
 
-The subject is what this repository authors as durable reasoning, listed in SUBJECTS.
+The subject is what this repository authors as durable reasoning: the standing documents
+`SUBJECTS` names, plus every record under the directory `RECORDS` names.
 Two things are outside it, and not by exemption: a Review Record's evidence column is a
 coordinate into the tree as reviewed and is read once, and raw scores under
 `scripts/tests/scenarios/` quote what an agent produced during a run, where an edit
@@ -85,13 +86,41 @@ class Diagnostic:
     message: str
 
 
-def subjects(root: Path) -> list[Path]:
-    """Every file whose citations this checks, in a stable order."""
-    found = [root / name for name in SUBJECTS if (root / name).is_file()]
+@dataclass(frozen=True)
+class Corpus:
+    """The files this will read, and every named subject it could not find.
+
+    `missing` is a field rather than a filter. `SUBJECTS` is a maintained list, and a
+    filename in a maintained list is exactly what goes stale — so a renamed subject used
+    to leave the corpus with no diagnostic at all, and the citations inside it stopped
+    being checked while the run still answered `OK`. Probed: renaming `docs/guards.md`
+    and putting both a line citation and a bogus symbol citation in it reported nothing.
+
+    `record_shape.audit` carries the same pair for the same reason, and `check_sources`
+    and `workspace_files` both say a check must not read an unopened corpus as an empty
+    one. This is the one that answered clean.
+    """
+
+    paths: list[Path]
+    missing: list[str]
+
+
+def subjects(root: Path) -> Corpus:
+    """Every file whose citations this checks, in a stable order, and what is absent."""
+    found: list[Path] = []
+    missing: list[str] = []
+    for name in SUBJECTS:
+        path = root / name
+        if path.is_file():
+            found.append(path)
+        else:
+            missing.append(name)
     records = root / RECORDS
     if records.is_dir():
         found.extend(sorted(records.glob("*.md")))
-    return found
+    else:
+        missing.append(f"{RECORDS.as_posix()}/")
+    return Corpus(found, missing)
 
 
 @dataclass
@@ -397,10 +426,22 @@ def check(root: Path) -> list[Diagnostic]:
         )
         for stem, paths in sorted(known.collisions.items())
     ]
+    corpus = subjects(root)
+    # A named subject that is not there is a defect in the naming, not a file to skip.
+    # The rule this enforces is maintained by hand, so its own list going stale is the
+    # failure most available to it.
+    found.extend(
+        Diagnostic(root, 0, f"{name} is named as a citation subject and is not there")
+        for name in corpus.missing
+    )
+    if not corpus.paths:
+        found.append(
+            Diagnostic(root, 0, "no citation subject could be opened, so nothing was read")
+        )
     external = citable(known)
     return found + [
         problem
-        for path in subjects(root)
+        for path in corpus.paths
         for problem in citations(known, root, path, external)
     ]
 
@@ -419,7 +460,7 @@ def main(argv: list[str] | None = None) -> int:
         print(printable(f"FAIL {where}:{problem.line} - {problem.message}"), file=sys.stderr)
     if problems:
         return 1
-    print(printable(f"OK   citations in {len(subjects(root))} document(s)"))
+    print(printable(f"OK   citations in {len(subjects(root).paths)} document(s)"))
     return 0
 
 

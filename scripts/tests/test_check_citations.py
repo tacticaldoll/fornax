@@ -23,6 +23,13 @@ def workspace(tmp: str, **files: str) -> Path:
         encoding="utf-8",
     )
     (root / "docs" / "dispositions").mkdir(parents=True)
+    # Every named subject exists by default, because an absent one is now a diagnostic in
+    # its own right: `SUBJECTS` is maintained by hand and a stale filename there used to
+    # shrink the corpus silently. A case that cares about one document overrides it below.
+    for name in check_citations.SUBJECTS:
+        blank = root / name
+        blank.parent.mkdir(parents=True, exist_ok=True)
+        blank.write_text("Nothing here cites anything.\n", encoding="utf-8")
     for name, content in files.items():
         path = root / name.replace("__", "/")
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -412,3 +419,53 @@ class EntryPoint(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SubjectCorpus(unittest.TestCase):
+    """A named subject that is not there is reported, not filtered away.
+
+    `SUBJECTS` is maintained by hand, and a filename in a maintained list is what goes
+    stale. Renaming `docs/guards.md` and putting both a line citation and a bogus symbol
+    citation into it used to report nothing at all: the run answered `OK` over a corpus it
+    had quietly shrunk. `check_sources` and `workspace_files` both say a check must not
+    read an unopened corpus as an empty one; this is the one that did.
+    """
+
+    def _tree(self, root: Path, subjects: tuple[str, ...]) -> None:
+        (root / "scripts").mkdir(parents=True, exist_ok=True)
+        (root / "scripts" / "thing.py").write_text("def here() -> None:\n    ...\n", "utf-8")
+        (root / "docs" / "dispositions").mkdir(parents=True, exist_ok=True)
+        for name in subjects:
+            path = root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("clean prose naming `thing.here`\n", encoding="utf-8")
+
+    def test_a_renamed_subject_is_reported_rather_than_skipped(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._tree(root, tuple(n for n in check_citations.SUBJECTS if n != "docs/guards.md"))
+
+            problems = check_citations.check(root)
+
+            self.assertTrue(
+                any("docs/guards.md is named as a citation subject" in p.message
+                    for p in problems), problems,
+            )
+
+    def test_a_corpus_with_nothing_to_open_is_a_failure_not_a_clean_answer(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "scripts").mkdir()
+
+            problems = check_citations.check(root)
+
+            self.assertTrue(
+                any("nothing was read" in p.message for p in problems), problems
+            )
+
+    def test_every_named_subject_present_reports_none_of_them(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._tree(root, check_citations.SUBJECTS)
+
+            self.assertEqual(check_citations.check(root), [])
