@@ -177,6 +177,38 @@ knowns:
     reconsider-when: A second over-width line reaches origin/main under this exemption, or a ruff release reports a whitespace-free line.
     verification: "None by check, which is what makes this debt rather than a resolved defect. The re-runnable reading is to measure every line under scripts/ and tools/ and test whether the content after its indentation holds whitespace; the exemption is stated in ruff.toml beside the width and in AGENTS.md beside the claim."
     updated: 2026-09-07
+  - id: record-shape-cannot-read-a-row-subject
+    statement: The record shape check refuses a Record integrity row by its key and never by its subject, so a row using a declared key while judging the wrong subject passes.
+    kind: debt
+    treatment: accept
+    rationale: No check decides whose conduct a sentence judges. A closed key set is a proxy that refuses every instance which has occurred, because each used an invented label; what it cannot refuse is the same defect under a label the contract declares.
+    evidence:
+      - "Probed at the commit that added the check: a row keyed Coverage, whose Input claim reads \"not stated\" and whose Result reads mismatch, passes clean. That is the cause ABSENT-CLAIM-AS-MISMATCH names, verbatim."
+      - scripts/record_shape.py states the boundary in its own module docstring, which is the only place it is written.
+      - "Every instance that has occurred used an undeclared key -- Range already settled, Triage, and two Probe disclosure rows -- so the proxy caught the class as it existed and not as it is defined."
+      - "The gate prints an OK line for this check on every commit, and a reader takes it to mean the subject separation AGENTS.md forbids violating is enforced."
+    declined-changes:
+      - Read the Input claim cell as prose and judge whether it names a claim, which compares free text and would guess.
+      - Report every row whose subject cannot be determined, which is every row.
+    reconsider-when: A Record integrity row is found convicting under a declared key on an Input claim cell that names no claim, which key-set closure cannot see.
+    verification: "None for the subject. The key half is covered by test_record_shape.RecordIntegrityRows, whose cases include an undeclared key scoring mismatch and one scoring pass."
+    updated: 2026-09-07
+  - id: lifecycle-partition-unreadable-in-prose
+    statement: Three of the five lifecycle sections a Disposition Record carries hold their finding ids in prose rather than in a table, so the partition invariant that has failed repeatedly is checked by nobody.
+    kind: debt
+    treatment: accept
+    rationale: Extracting ids from prose needs a grammar over an id namespace nothing declares, which is the class AGENTS.md says needs an owner or two negative controls and for which no owner exists. Requiring tables instead cannot reach records already archived, which the same file forbids rewriting.
+    evidence:
+      - "Dispositions is a table in every record and Closed is a table or the word none, so both are machine-readable. Carried forward, Out of scope this round and Undetermined hold their ids in prose in most records. Re-run the reading rather than trusting this list."
+      - "The defect this would catch has occurred more than once in one session: a tally counting rows while asserting about ids, an id counted in two lifecycle homes at once, and two ids dropped from every section."
+      - Each occurrence was found by a reading run against the record, and one was found by the record's own Self-check row rather than by any check.
+      - Uniqueness within the Dispositions table is the buildable part and is checked; it catches none of the occurrences above, which were all cross-section.
+    declined-changes:
+      - Match finding ids in prose with a pattern, which would also match verdict flags and any other screaming-case token a reason happens to hold.
+      - Require every lifecycle section to be a table, which would mean rewriting archived records that AGENTS.md protects.
+    reconsider-when: The lifecycle sections become tables for records written after a stated contract change, which is a predicate boundary rather than a list of exemptions.
+    verification: "None. The reading a round can run is to take the ids the prior record left open and require each to appear in exactly one lifecycle section of the current one; it has been run by hand and caught a defect each time."
+    updated: 2026-09-07
   - id: host-manifest-list-unguarded-additions
     statement: Nothing guards a host manifest the HOST_VERSION_MANIFESTS tuple does not name, so adding a host means editing that tuple.
     kind: debt
