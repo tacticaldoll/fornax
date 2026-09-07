@@ -764,6 +764,22 @@ Keep scripts deterministic, portable, and easy to audit.
   Record under `docs/dispositions/` is exempt and not by courtesy — editing its numbers to satisfy
   a later rule makes it a worse record of the reading it reports.
 
+  **A row's label is not one of its readings, and may be corrected; an answer may not.**
+  A check written after a record landed will find the record's labels spelled to an earlier
+  wording of the contract, and the choice then is to edit history, to keep a list of records
+  the check skips, or to leave the check convicting the archive — the first is what happened
+  once, for one label a word short of the declared check, disclosed at the point of the edit.
+  What makes that admissible is that a label names *which* check ran while the record's
+  answer to it stays untouched; correcting the name of a reading is not correcting the
+  reading. Editing a cell that reports what was read — a verdict, a count, a reconciliation —
+  is the thing forbidden above, and no later rule licenses it.
+
+  This was a judgment a round had to make with nothing here to consult, and it recorded the
+  reasoning inside the record it was editing, where the next round would not find it. Written
+  down so nobody decides it again. The occasion for it should also now be rare: a record is
+  judged against the contract revision it was settled under, so a contract edit no longer
+  reaches back.
+
   Deciding which a number is needs the sentence, so this is a judgment and nothing checks it. The
   forms a pattern would never catch are the ones that keep landing: an adverb rather than a noun
   phrase ("wrong twice", "diverged twice"), an ordinal standing in for the count it was rewritten
