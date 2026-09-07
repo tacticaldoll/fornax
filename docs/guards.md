@@ -129,6 +129,13 @@ this entry names a change to the product rather than to the test. Reverting a we
 reddens nothing by construction, so a test's own strength is a thing no revert of that test can
 guard.
 
+**A row state this ledger's schema did not anticipate.** Every round before `6ec4d3b..a7c40d1`
+landed its repairs in the turn that wrote its record, so every row could name a revert. That round
+accepted ten findings and routed their repairs onward instead, which leaves rows whose repair has
+not landed: there is no unit to revert and no test to redden, and the reason is neither "the unit is
+prose" nor "the repair is an equivalence". It is that the repair is planned and unbuilt. Such a row
+says so, and a later round reads it as work outstanding rather than as a finding nothing can guard.
+
 ## Repairs with no guard, and why
 
 | Finding | Why nothing goes red |
@@ -145,6 +152,16 @@ guard.
 | SELFCHECK-FOLDED-INTO-THE-INPUT-AUDIT | none by test — the units are rows of two records. The re-runnable reading is the one that found the class: take the five checks `skills/triage-findings/SKILL.md` declares and compare them to the row labels of every Record integrity table under `docs/dispositions/`. It was run after the repair and reports no extra row anywhere in the tree, which is the first time that reading has come back empty |
 | TRIGGER-KEYS-ON-THE-WEAKEST-AXIS | none — the unit is a condition written in prose, in this file and in `docs/dispositions/c60a6ba..af1185a.md`. No test holds a trigger. What replaces a guard is that the condition is now decidable from a row's own cells rather than from its verdict, so a later round can apply it by reading rather than by judging |
 | REVIEW-FILED-A-VIOLATION-AS-A-VERIFIED-CLAIM | none — the unit is a Claims Verified entry of `docs/reviews/v0.4.1..6ff702e.md`, and an archived Review Record is kept as received, so the repair is recorded in the settling record rather than written into the input. Nothing can hold where a review files a measurement it has already taken |
+| DECLARED-GUARDS-ONE-PAYLOAD | none yet — repair planned and unbuilt, routed to `plan-implementation` as cause 1 of `docs/dispositions/6ec4d3b..a7c40d1.md`. The reading a later round can re-run is the probe the review used: construct `record_shape.Declared` with a payload, no second payload and no reason, and watch it build rather than raise |
+| INVARIANT-SPELLED-TWO-WAYS | none yet — repair planned and unbuilt, same cause. Re-runnable as a reading: `grep` the four sibling guards and compare their spelling to `record_shape.Declared`'s |
+| RESULT-READ-BY-POSITION | none yet — repair planned and unbuilt, cause 2. The probe is a Record integrity row written without its trailing pipe, whose diagnostic then names a cell that is not the Result |
+| TABLE-BODY-HAS-NO-NAME | none yet — repair planned and unbuilt, cause 2. The reading is that `record_shape.rows` has three callers and each skips the header by the same index |
+| EMPTY-SCOPE-READS-AS-CLEAN | none yet — repair planned and unbuilt, cause 3. Re-runnable directly: point `record_shape.main` at a root holding the contract and no records, and read the `OK` line it prints |
+| ESCAPE-TESTED-NOT-CONSUMED | none yet — repair planned and unbuilt, cause 4. The probe is one row whose cell ends in an escaped backslash before a delimiter, which `record_shape.rows` reads as one cell where GFM reads two |
+| TEST-ROOT-BY-CWD | none yet — repair planned and unbuilt, cause 5. The reading is that `test_record_shape.DerivedShape` resolves the repository as the working directory while `test_check_citations` uses its module's own `ROOT` |
+| PROSE-WIDTH-UNENFORCED | none, and the absence is half the finding. Nothing checks a Markdown line's width, so no revert of the reflow can redden anything — the same shape as `WIDTH-EXEMPT-SINGLE-TOKEN` above, one language over. The reading is to measure the non-table lines of the two records named in cause 6 |
+| NO-OP-COMPREHENSION | none yet — repair planned and unbuilt, cause 7. No test holds an expression that computes the same value a shorter one would |
+| SORT-TO-COUNT | none yet — repair planned and unbuilt, cause 7. Same reason |
 | INPUT-PATTERN-SPLIT | An equivalence refactor: two patterns for one Markdown line became one, and the answers were measured identical over the label alone, a padded label, a full contract line and a line without one. Reverting it leaves the suite green by construction, which is what an equivalence claim means. What settles it is `validate_skills.INPUT_LINE` being one pattern where there were two |
 | CLOSURE-NAMES-WRONG-SYMBOL | Its guard is not a test but a gate step: `scripts/check_citations.py` refuses a citation whose symbol no module defines, which is the defect itself. It is verified by the gate being green over the records |
 | ORDINAL-IN-NEW-MODULE, REGISTRY-UNDERREPORT, LEDGER-TABLE-ROUNDS, RAWSCORES-PROVISIONAL, COUNTS-IN-THE-NEW-PROSE, ROUND-ENDS-WHEN-ASKED, RECONCILED-AGAINST-A-PARTIAL-COPY | The unit is prose. No test can hold a docstring's wording, and no gate opens over one. These close on the recorded reading that settled them, which is in each round's Disposition Record |
