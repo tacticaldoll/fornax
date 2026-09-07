@@ -35,8 +35,11 @@ quotation from being read as this document's own heading. Otherwise the standard
 from __future__ import annotations
 
 import argparse
+import enum
 import re
 import sys
+from abc import ABC, abstractmethod
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -54,6 +57,7 @@ MARKER = "<!-- OUTPUT-TEMPLATE: disposition-record@1 text/markdown -->"
 
 INTEGRITY = "Record integrity"
 DISPOSITIONS = "Dispositions"
+SELF_CHECK = "Self-check"
 RESULT = "Result"
 
 # The contract declares a Result as one of its three values, optionally followed by `, `
@@ -65,6 +69,44 @@ RESULT = "Result"
 # so one comparison carried domain membership and qualifier parsing at once and had no
 # token boundary anywhere.
 QUALIFIER = ", "
+
+
+class Subject(enum.Enum):
+    """Whose conduct a section's rows judge, which is what decides its key discipline.
+
+    Measured across every record here, and the asymmetry has a reason. A row under
+    `THE_INPUT` accuses a producer, so a label the contract does not declare is an
+    accusation with nothing behind it and the key set closes — that seat now carries no
+    undeclared row anywhere in the corpus. A row under `THIS_RECORD` judges the record
+    writing it, so an extra one is an author holding themselves to more than the template
+    asks: eight distinct undeclared labels across the corpus, among them commit
+    reachability, guards-row presence and citation existence. There the declared labels
+    are a floor and not a ceiling.
+
+    `AGENTS.md` states the separation these two express — "Keep facts about the input
+    apart from facts about the record being written… A self-check folded into an audit of
+    the input hides which of the two failed" — and it had been prose beside two tables.
+    Declaring it here is what lets it pick a rule rather than be remembered.
+    """
+
+    THE_INPUT = "the input"
+    THE_FINDINGS = "the findings this round settles"
+    THIS_RECORD = "this record"
+
+
+@dataclass(frozen=True)
+class Seat:
+    """One section the contract declares, and whose conduct its rows judge.
+
+    A declaration and not a behaviour. Its rules come from `rules_for`, derived from the
+    subject rather than listed here, so a seat cannot be given the wrong discipline by
+    whoever adds it — and a first sketch of this carried optional `keys`, `verdict_column`
+    and `unique_column` fields, which is the shape admitting states nobody means that
+    this module has been repaired for three times.
+    """
+
+    heading: str
+    subject: Subject
 
 # A cell is bounded by the pipe the table defines, and GFM lets a cell hold one by
 # escaping it — which the contract's own Result column does. So the split reads to a
@@ -81,9 +123,16 @@ class Diagnostic:
 
 @dataclass(frozen=True)
 class Shape:
-    """The two things the contract's template declares about a Record integrity table."""
+    """What the contract's template declares, per section that declares anything.
 
-    checks: tuple[str, ...]
+    `keys` maps a section's heading to the row labels the template lists under it. It was
+    one tuple for one section, which is why every seat but that one had to be checked by
+    hand or not at all — and the template declares labels for `Self-check` too, whose
+    subject is this record rather than the input and whose discipline is therefore
+    different.
+    """
+
+    keys: dict[str, tuple[str, ...]]
     results: tuple[str, ...]
 
 
@@ -125,8 +174,8 @@ class Declared:
         return self._shape
 
     @property
-    def checks(self) -> tuple[str, ...]:
-        return self.shape.checks
+    def keys(self) -> dict[str, tuple[str, ...]]:
+        return self.shape.keys
 
     @property
     def results(self) -> tuple[str, ...]:
@@ -199,14 +248,14 @@ def declared(root: Path) -> Declared:
     if len(marked) > 1:
         return Declared(None, f"{CONTRACT.as_posix()} marks more than one such template")
 
-    section = heading_section(marked[0].content, INTEGRITY)
+    template = marked[0].content
+    section = heading_section(template, INTEGRITY)
     if section is None:
         return Declared(None, f"the template declares no {INTEGRITY} table")
     declared_table = table(section)
     if declared_table is None or not declared_table.body:
         return Declared(None, f"the template's {INTEGRITY} table declares no rows")
 
-    checks = tuple(row[0] for row in declared_table.body if row)
     domains = {
         tuple(v.strip() for v in (declared_table.column(row, RESULT) or "").split("|"))
         for row in declared_table.body
@@ -216,7 +265,18 @@ def declared(root: Path) -> Declared:
         return Declared(
             None, f"the template's {INTEGRITY} rows declare differing Result domains"
         )
-    return Declared(Shape(checks, domains.pop()), None)
+
+    # Every seat's labels, not one seat's. A seat the template declares nothing for gets
+    # no entry, which is how a rule asks whether the contract said anything at all.
+    keys: dict[str, tuple[str, ...]] = {}
+    for seat in SEATS:
+        found = heading_section(template, seat.heading)
+        if found is None:
+            continue
+        seat_table = table(found)
+        if seat_table is not None and seat_table.body:
+            keys[seat.heading] = tuple(row[0] for row in seat_table.body if row)
+    return Declared(Shape(keys, domains.pop()), None)
 
 
 def verdict_grammar(results: tuple[str, ...]) -> re.Pattern[str]:
@@ -231,6 +291,119 @@ def verdict_grammar(results: tuple[str, ...]) -> re.Pattern[str]:
     return re.compile(f"(?:{values})(?:{re.escape(QUALIFIER)}.+)?")
 
 
+class Rule(ABC):
+    """One contract clause, asked of one section's table.
+
+    Yields strings and never `Diagnostic`s, so a rule cannot learn which file it is
+    judging — the path belongs to the caller, for the reason `path_boundary` returns
+    verdicts and never diagnostics. A rule that wants a second document is not a `Rule`
+    at all; that is the trigger for a record-level abstraction this module deliberately
+    does not have, because it would today hold one member.
+    """
+
+    @abstractmethod
+    def defects(self, seat: "Seat", found: "Table", shape: Shape) -> Iterator[str]:
+        """Every way this table departs from the clause this rule carries."""
+
+
+class ClosedKeys(Rule):
+    """No row may carry a label the contract does not declare for this seat."""
+
+    def defects(self, seat: "Seat", found: "Table", shape: Shape) -> Iterator[str]:
+        declared_keys = shape.keys.get(seat.heading)
+        if declared_keys is None:
+            return
+        for row in found.body:
+            if row and row[0] not in declared_keys:
+                yield (
+                    f"{seat.heading} carries the row {row[0]!r}, which "
+                    f"{CONTRACT.as_posix()} does not declare. This table's subject is "
+                    f"{seat.subject.value}; a row about anything else has no seat here"
+                )
+
+
+class RequiredKeys(Rule):
+    """Every label the contract declares for this seat must be present.
+
+    A floor rather than a ceiling, which is what a seat judging its own record earns: an
+    extra self-check is an author holding themselves to more, and a missing one is the
+    gap the contract asked them to close.
+    """
+
+    def defects(self, seat: "Seat", found: "Table", shape: Shape) -> Iterator[str]:
+        declared_keys = shape.keys.get(seat.heading)
+        if declared_keys is None:
+            return
+        present = {row[0] for row in found.body if row}
+        for label in declared_keys:
+            if label not in present:
+                yield (
+                    f"{seat.heading} answers none of {label!r}, which "
+                    f"{CONTRACT.as_posix()} declares it must"
+                )
+
+
+@dataclass(frozen=True)
+class ValueReadWhole(Rule):
+    """One column's value must be a declared verdict, read whole and not by its prefix."""
+
+    column: str
+
+    def defects(self, seat: "Seat", found: "Table", shape: Shape) -> Iterator[str]:
+        declared_keys = shape.keys.get(seat.heading)
+        for row in found.body:
+            if not row or (declared_keys is not None and row[0] not in declared_keys):
+                continue  # ClosedKeys already reported it; one diagnostic per row
+            value = found.column(row, self.column)
+            if value is None:
+                yield (
+                    f"{seat.heading} declares no {self.column} column in its header, so "
+                    f"the verdict on row {row[0]!r} cannot be read"
+                )
+            elif isinstance(whole(value, verdict_grammar(shape.results), "a verdict"), Unread):
+                yield (
+                    f"{seat.heading} row {row[0]!r} answers {value!r}, which is not one "
+                    f"of {', '.join(shape.results)}, with or without a "
+                    f"{QUALIFIER!r} qualifier"
+                )
+
+
+class UniqueFirstColumn(Rule):
+    """No two rows may key alike, taking a row's key up to the delimiter it uses."""
+
+    def defects(self, seat: "Seat", found: "Table", shape: Shape) -> Iterator[str]:
+        seen: set[str] = set()
+        for row in found.body:
+            if not row:
+                continue
+            identifier = row[0].split(" — ")[0].strip()
+            if identifier in seen:
+                yield f"{seat.heading} keys {identifier!r} more than once"
+            seen.add(identifier)
+
+
+SEATS = (
+    Seat(INTEGRITY, Subject.THE_INPUT),
+    Seat(DISPOSITIONS, Subject.THE_FINDINGS),
+    Seat(SELF_CHECK, Subject.THIS_RECORD),
+)
+
+
+def rules_for(subject: Subject) -> tuple[Rule, ...]:
+    """The rules a seat gets, derived from whose conduct its rows judge.
+
+    Derived rather than listed against each seat, which is what makes `Subject`
+    load-bearing instead of decorative: a seat added to `SEATS` cannot be given the wrong
+    discipline, and changing a seat's subject changes its discipline with it. A field
+    nothing reads is the debt `path_boundary.Resolved` names; this one picks the rule.
+    """
+    if subject is Subject.THE_INPUT:
+        return (ClosedKeys(), ValueReadWhole(RESULT))
+    if subject is Subject.THIS_RECORD:
+        return (RequiredKeys(),)
+    return (UniqueFirstColumn(),)
+
+
 def record_defects(path: Path, shape: Declared) -> list[Diagnostic]:
     """Every way one record's tables depart from the shape the contract declares."""
     try:
@@ -239,64 +412,25 @@ def record_defects(path: Path, shape: Declared) -> list[Diagnostic]:
         return []  # text hygiene owns unreadable files and reports them there
 
     found: list[Diagnostic] = []
-    section = heading_section(text, INTEGRITY)
-    integrity = table(section) if section is not None else None
-    if section is not None and integrity is None:
-        # A section that is there and holds no table this can read is not the same fact
-        # as a record that carries no such section — one record legitimately carries
-        # none. Collapsing the two would let a malformed table pass the way an unopened
-        # corpus passed before it was made a failure.
-        found.append(
-            Diagnostic(path, f"{INTEGRITY} carries no table this can read")
-        )
-    if integrity is not None:
-        for row in integrity.body:
-            if not row:
-                continue
-            if row[0] not in shape.checks:
-                found.append(
-                    Diagnostic(
-                        path,
-                        f"{INTEGRITY} carries the row {row[0]!r}, which "
-                        f"{CONTRACT.as_posix()} does not declare. The table's subject is the "
-                        "input's own claims; a row about anything else has no seat here",
-                    )
-                )
-                continue
-            verdict = integrity.column(row, RESULT)
-            if verdict is None:
-                found.append(
-                    Diagnostic(
-                        path,
-                        f"{INTEGRITY} declares no {RESULT} column in its header, so "
-                        f"the verdict on row {row[0]!r} cannot be read",
-                    )
-                )
-            else:
-                read = whole(verdict, verdict_grammar(shape.results), "a declared verdict")
-                if isinstance(read, Unread):
-                    found.append(
-                        Diagnostic(
-                            path,
-                            f"{INTEGRITY} row {row[0]!r} answers {verdict!r}, which is "
-                            f"not one of {', '.join(shape.results)}, with or without a "
-                            f"{QUALIFIER!r} qualifier",
-                        )
-                    )
-
-    settled = heading_section(text, DISPOSITIONS)
-    dispositions = table(settled) if settled is not None else None
-    if dispositions is not None:
-        seen: set[str] = set()
-        for row in dispositions.body:
-            if not row:
-                continue
-            identifier = row[0].split(" — ")[0].strip()
-            if identifier in seen:
-                found.append(
-                    Diagnostic(path, f"{DISPOSITIONS} keys {identifier!r} more than once")
-                )
-            seen.add(identifier)
+    for seat in SEATS:
+        section = heading_section(text, seat.heading)
+        if section is None:
+            continue  # one record legitimately carries no such section
+        seated = table(section)
+        if seated is None:
+            # A section that is there and holds no table this can read is not the same
+            # fact as a record carrying no such section. Collapsing the two would let a
+            # malformed table pass the way an unopened corpus passed before it was made
+            # a failure. This is the one rule about a record rather than about a table,
+            # and it stays here because an abstraction for it would hold only itself.
+            found.append(
+                Diagnostic(path, f"{seat.heading} carries no table this can read")
+            )
+            continue
+        for rule in rules_for(seat.subject):
+            found.extend(
+                Diagnostic(path, message) for message in rule.defects(seat, seated, shape)
+            )
     return found
 
 

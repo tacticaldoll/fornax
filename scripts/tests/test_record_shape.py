@@ -5,6 +5,7 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 import record_shape
 from markdown_links import heading_section, marked_code_blocks, table_rows
@@ -29,6 +30,13 @@ TEMPLATE = """# Triage
 | Finding | Cause | Disposition |
 |---|---|---|
 | id | # | accept |
+
+### Self-check
+
+| Check | This record's answer |
+|---|---|
+| Every prior id sits in exactly one exclusive lifecycle home | pass |
+| Every accepted cause carries at least one repair with an enumerated Reach | pass |
 ```
 """
 
@@ -49,7 +57,8 @@ RECORD = """# Disposition Record — `a..b`
 
 | Check | This record's answer |
 |---|---|
-| something | pass |
+| Every prior id sits in exactly one exclusive lifecycle home | pass |
+| Every accepted cause carries at least one repair with an enumerated Reach | pass |
 """
 
 
@@ -82,7 +91,7 @@ class DerivedShape(unittest.TestCase):
 
         self.assertIsNone(shape.reason)
         self.assertEqual(
-            shape.checks,
+            shape.keys[record_shape.INTEGRITY],
             (
                 "Verdict / Gate Index",
                 "Calibration / Gate Index",
@@ -91,6 +100,9 @@ class DerivedShape(unittest.TestCase):
                 "Non-finding sections",
             ),
         )
+        # And every other seat the template declares labels for, which is what lets a
+        # seat judging its own record be held to a floor.
+        self.assertEqual(len(shape.keys[record_shape.SELF_CHECK]), 2)
 
     def test_the_result_domain_comes_from_the_contract_too(self) -> None:
         # The template writes the domain with escaped pipes inside a cell, so a naive
@@ -110,7 +122,7 @@ class DerivedShape(unittest.TestCase):
             self.assertIsNotNone(shape.reason)
             self.assertIn("carries no", shape.reason or "")
             with self.assertRaises(ValueError):
-                shape.checks
+                shape.keys
 
     def test_the_derivation_reads_the_fence_content_and_not_the_raw_document(self) -> None:
         # The reason it goes through `marked_code_blocks`. Splitting on the marker string
@@ -138,9 +150,9 @@ class DeclaredInvariant(unittest.TestCase):
     """
 
     def test_a_shape_alone_is_the_read_state(self) -> None:
-        held = record_shape.Declared(record_shape.Shape(("a",), ("pass",)), None)
+        held = record_shape.Declared(record_shape.Shape({"S": ("a",)}, ("pass",)), None)
 
-        self.assertEqual(held.checks, ("a",))
+        self.assertEqual(held.keys, {"S": ("a",)})
         self.assertEqual(held.results, ("pass",))
 
     def test_neither_a_shape_nor_a_reason_is_refused(self) -> None:
@@ -149,7 +161,7 @@ class DeclaredInvariant(unittest.TestCase):
 
     def test_both_a_shape_and_a_reason_is_refused(self) -> None:
         with self.assertRaises(ValueError):
-            record_shape.Declared(record_shape.Shape((), ()), "why")
+            record_shape.Declared(record_shape.Shape({}, ()), "why")
 
     def test_an_unread_contract_never_raises_without_saying_why(self) -> None:
         # The defect the collapse removes: an accessor that finds its own field empty
@@ -157,7 +169,7 @@ class DeclaredInvariant(unittest.TestCase):
         # the guard admits no other.
         unread = record_shape.Declared(None, "the template carries no marker")
 
-        for accessor in ("shape", "checks", "results"):
+        for accessor in ("shape", "keys", "results"):
             with self.subTest(accessor=accessor):
                 with self.assertRaises(ValueError) as raised:
                     getattr(unread, accessor)
@@ -244,8 +256,12 @@ class RecordIntegrityRows(unittest.TestCase):
 
             problems = record_shape.check(Path(holder))
 
-            self.assertEqual(len(problems), 1, problems)
-            self.assertIn("carries no table this can read", problems[0].message)
+            # The fixture's delimiter row serves every table in it, so every seat
+            # reports; what matters is that a section present with no readable table is
+            # not silence.
+            self.assertTrue(problems)
+            self.assertIn("Record integrity carries no table this can read",
+                          [problem.message for problem in problems])
 
     def test_a_non_punctuation_escape_keeps_its_backslash(self) -> None:
         # CommonMark escapes ASCII punctuation and nothing else, so a backslash before
@@ -341,6 +357,68 @@ class EmptyScope(unittest.TestCase):
 
             self.assertEqual(len(problems), 1, problems)
             self.assertIn("not a directory", problems[0].message)
+
+
+class Seats(unittest.TestCase):
+    """The subject decides the discipline, and a seat cannot be given the wrong one."""
+
+    def test_a_seat_judging_the_input_closes_its_key_set(self) -> None:
+        rules = record_shape.rules_for(record_shape.Subject.THE_INPUT)
+
+        self.assertTrue(any(isinstance(rule, record_shape.ClosedKeys) for rule in rules))
+        self.assertFalse(any(isinstance(rule, record_shape.RequiredKeys) for rule in rules))
+
+    def test_a_seat_judging_this_record_gets_a_floor_and_no_ceiling(self) -> None:
+        # Measured across the corpus: eight distinct undeclared Self-check labels, all of
+        # them a record holding itself to more than the template asks. A closed key set
+        # there would refuse commit reachability, guards-row presence and citation
+        # existence — checks worth having.
+        rules = record_shape.rules_for(record_shape.Subject.THIS_RECORD)
+
+        self.assertTrue(any(isinstance(rule, record_shape.RequiredKeys) for rule in rules))
+        self.assertFalse(any(isinstance(rule, record_shape.ClosedKeys) for rule in rules))
+
+    def test_a_record_omitting_a_declared_self_check_is_reported(self) -> None:
+        # The check the subject asymmetry buys, and it found a real one on its first run:
+        # a record whose second Self-check label read "with enumerated Reach", a word
+        # short of the contract's.
+        thin = RECORD.replace(
+            "| Every accepted cause carries at least one repair with an enumerated Reach"
+            " | pass |\n", "",
+        )
+        with tree() as holder:
+            path = Path(holder) / "docs" / "dispositions" / "a..b.md"
+            path.write_text(thin.format(extra="", rows=ONE_ROW), encoding="utf-8")
+
+            problems = record_shape.check(Path(holder))
+
+            self.assertEqual(len(problems), 1, problems)
+            self.assertIn("answers none of", problems[0].message)
+
+    def test_an_extra_self_check_row_is_not_a_defect(self) -> None:
+        rich = RECORD.replace(
+            "| Every accepted cause carries at least one repair with an enumerated Reach"
+            " | pass |",
+            "| Every accepted cause carries at least one repair with an enumerated Reach"
+            " | pass |\n| Every commit this record names is reachable from HEAD | pass |",
+        )
+        with tree() as holder:
+            path = Path(holder) / "docs" / "dispositions" / "a..b.md"
+            path.write_text(rich.format(extra="", rows=ONE_ROW), encoding="utf-8")
+
+            self.assertEqual(record_shape.check(Path(holder)), [])
+
+    def test_a_seat_added_to_the_tuple_needs_no_edit_to_the_loop(self) -> None:
+        # What the declaration buys: the loop does not name a section, so a seat is added
+        # by declaring it. Here one is declared for a heading the fixture carries.
+        extra_seat = record_shape.Seat("Dispositions", record_shape.Subject.THE_FINDINGS)
+        with patch.object(record_shape, "SEATS", (extra_seat,)):
+            pair = f"{ONE_ROW}\n| ONE — again | 2 | new | accept | — |"
+            with tree(rows=pair) as holder:
+                problems = record_shape.check(Path(holder))
+
+                self.assertEqual(len(problems), 1, problems)
+                self.assertIn("keys 'ONE' more than once", problems[0].message)
 
 
 class DispositionKeys(unittest.TestCase):

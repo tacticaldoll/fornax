@@ -172,6 +172,8 @@ the instruction produces, not a measure of the finding's size.
 
 | Finding | Revert this | Guard | Red on revert |
 |---|---|---|---|
+| SELFCHECK-FLOOR-UNENFORCED | `record_shape.RequiredKeys` from what `record_shape.rules_for` returns for `THIS_RECORD` | `test_record_shape.Seats.test_a_record_omitting_a_declared_self_check_is_reported` | 2 |
+| SUBJECT-DOES-NOT-PICK-THE-RULE | the `THE_INPUT` branch of `record_shape.rules_for`, so every seat falls through to one discipline | `test_record_shape.Seats.test_a_seat_judging_the_input_closes_its_key_set`, and twelve others | 13 |
 | VERDICT-READ-BY-PREFIX | the `whole()` read in `record_shape.record_defects`, back to the `startswith` test it replaced | `test_record_shape.RecordIntegrityRows.test_a_value_merely_sharing_a_prefix_with_a_verdict_is_not_one`, and five others | 6 |
 | ESCAPE-EATS-A-NON-PUNCTUATION-PAIR | the `table` rule on `markdown_links.PARSER` | `test_record_shape.RecordIntegrityRows.test_a_non_punctuation_escape_keeps_its_backslash`, and 18 others — the revert is broad, see above | 19 |
 | TRAILING-PIPE-ASSUMED-MANDATORY | `record_shape.table`'s use of `markdown_links.table_rows`, replaced by a row reader written beside it | `test_record_shape.RecordIntegrityRows.test_a_row_with_no_trailing_pipe_keeps_every_cell`, and 13 others — broad for the same reason | 14 |
