@@ -24,7 +24,14 @@ import re
 import shlex
 from dataclasses import dataclass
 
-COMMENT = re.compile(r"(?:(?<=\s)|^)#")
+# A `#` begins a word at the start of the line, after whitespace, or after an operator —
+# the last of which this missed. `bash -c 'echo a;# echo b'` prints only `a`, while
+# splitting on whitespace alone left `;`, `#` and every following word in the stream. It
+# was contained rather than harmless: `runtime_contract._installs` judges by command
+# position and sees `#` there, so a commented-out install was never read as one. The
+# containment is not the rule, and `development-knowns.yaml` stated the rule this now
+# implements rather than the one it had.
+COMMENT = re.compile(r"(?:(?<=\s)|(?<=[;&|()<>])|^)#")
 
 
 @dataclass(frozen=True)

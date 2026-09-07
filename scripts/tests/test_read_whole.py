@@ -96,3 +96,44 @@ class ShellWordTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CommentRule(unittest.TestCase):
+    """A `#` begins a word after an operator too, which is where this fell short.
+
+    `development-knowns.yaml` states the rule as a hash that begins a word, and the
+    matcher implemented a narrower one: a hash after whitespace or at the start. So
+    `pip install a==1;# pip install evil==9` lexed the commented words into the stream,
+    where `bash -c` prints nothing after the hash. It was contained rather than harmless
+    -- `runtime_contract._installs` judges by command position and sees `#` there -- and
+    the containment was never the claim.
+    """
+
+    def test_a_comment_after_an_operator_is_cut(self) -> None:
+        for command in (
+            "pip install a==1;# pip install evil==9",
+            "true&&# pip install evil==9",
+            "true|# pip install evil==9",
+            "(pip install a==1)#x",
+        ):
+            with self.subTest(command=command):
+                words = read_whole.shell_words(command)
+
+                self.assertNotIn("evil==9", words)
+                self.assertNotIn("#", words)
+
+    def test_a_hash_inside_a_word_is_not_a_comment(self) -> None:
+        # The near-miss control: the same character, not beginning a word. bash prints
+        # both of these whole, and a pin or a URL fragment must survive.
+        self.assertEqual(
+            read_whole.shell_words("pip install a==1#notacomment"),
+            ["pip", "install", "a==1#notacomment"],
+        )
+        self.assertEqual(
+            read_whole.shell_words("pip install git+https://h/p#egg=z"),
+            ["pip", "install", "git+https://h/p#egg=z"],
+        )
+
+    def test_a_comment_after_whitespace_or_at_the_start_still_goes(self) -> None:
+        self.assertEqual(read_whole.shell_words("pip install a==1 # x"), ["pip", "install", "a==1"])
+        self.assertEqual(read_whole.shell_words("# pip install evil==9"), [])
