@@ -208,6 +208,36 @@ class RecordIntegrityRows(unittest.TestCase):
             self.assertEqual(record_shape.check(Path(t)), [])
 
 
+class EmptyScope(unittest.TestCase):
+    def test_a_root_with_no_records_is_a_failure_not_a_clean_answer(self) -> None:
+        # check_sources says a missing interpreter is a failure and not a skip;
+        # workspace_files says an unlistable workspace must not read as an empty one.
+        # This reported OK over a corpus it never opened.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "skills" / "triage-findings").mkdir(parents=True)
+            skill = root / "skills" / "triage-findings" / "SKILL.md"
+            skill.write_text(TEMPLATE, encoding="utf-8")
+            (root / "docs" / "dispositions").mkdir(parents=True)
+
+            problems = record_shape.check(root)
+
+            self.assertEqual(len(problems), 1, problems)
+            self.assertIn("no record to check", problems[0].message)
+
+    def test_a_missing_records_directory_is_a_failure_too(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "skills" / "triage-findings").mkdir(parents=True)
+            skill = root / "skills" / "triage-findings" / "SKILL.md"
+            skill.write_text(TEMPLATE, encoding="utf-8")
+
+            problems = record_shape.check(root)
+
+            self.assertEqual(len(problems), 1, problems)
+            self.assertIn("not a directory", problems[0].message)
+
+
 class DispositionKeys(unittest.TestCase):
     def test_one_finding_keyed_twice_is_refused(self) -> None:
         with tree(

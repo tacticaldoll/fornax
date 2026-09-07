@@ -299,11 +299,15 @@ def check(root: Path) -> list[Diagnostic]:
         return [Diagnostic(root / CONTRACT, shape.reason)]
     records = root / RECORDS
     if not records.is_dir():
-        return []
+        return [Diagnostic(records, f"{RECORDS.as_posix()} is not a directory")]
+    found = sorted(records.glob("*.md"))
+    if not found:
+        # A check that inspected nothing must not report what a check that inspected
+        # everything reports. `check_sources` says the same about a missing interpreter,
+        # and `workspace_files` about an unlistable workspace; this answered clean.
+        return [Diagnostic(records, f"{RECORDS.as_posix()} holds no record to check")]
     return [
-        problem
-        for path in sorted(records.glob("*.md"))
-        for problem in record_defects(path, shape)
+        problem for path in found for problem in record_defects(path, shape)
     ]
 
 
@@ -321,7 +325,8 @@ def main(argv: list[str] | None = None) -> int:
         print(printable(f"FAIL {where} - {problem.message}"), file=sys.stderr)
     if problems:
         return 1
-    print(printable(f"OK   record shape in {len(sorted((root / RECORDS).glob('*.md')))} record(s)"))
+    counted = len(sorted((root / RECORDS).glob("*.md")))
+    print(printable(f"OK   record shape in {counted} record(s)"))
     return 0
 
 
