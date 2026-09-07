@@ -1,7 +1,14 @@
 # Style gate for the repository's Python, checked in CI and never auto-applied:
 # see the Testing Strategy section of AGENTS.md.
 #
-# 100 is the width the Python and the markdown already use.
+# 100 is the width the Python and the markdown already use, with one exemption that is
+# ruff's and not this file's: E501 does not report a line whose content after the
+# indentation holds no whitespace. Measured with a matched pair at 106 characters — the
+# one carrying a single interior space is reported, the one carrying none is not — so a
+# long unbreakable token is exempt however long it is. A 103-character assertion stood
+# in the tree under a green gate because of it. Registered as
+# `e501-exempts-a-whitespace-free-line`; the width above is the claim, and this is the
+# part of it the tool does not hold.
 #
 # `preview` is on because the pycodestyle whitespace rules sit behind it, and a
 # missing space around an assignment operator is the exact defect that reached

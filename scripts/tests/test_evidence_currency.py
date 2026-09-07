@@ -571,7 +571,9 @@ class SpelledInsideTests(unittest.TestCase):
         # host readings while `record` kept a local POSIX-only test 35 lines below, so
         # a backslash parent segment came back as an ownership root that escapes the
         # scenario tree on a Windows host.
-        self.assertIsNone(evidence_currency.scenario_root("scripts/tests/scenarios/..\\esc/README.md"))
+        self.assertIsNone(
+            evidence_currency.scenario_root("scripts/tests/scenarios/..\\esc/README.md")
+        )
         self.assertIsNone(evidence_currency.scenario_root("C:/x/README.md"))
         self.assertEqual(
             evidence_currency.scenario_root("scripts/tests/scenarios/x/README.md"),

@@ -621,6 +621,17 @@ Prefer lightweight tests that match the risk of the change.
   run by the workspace gate, so the pre-commit hook and CI reach the same answer. Never auto-apply
   a fix as part of another change, and treat a ruff version bump as its own commit — preview rules move
   between releases.
+
+  The width is the claim; `E501` is narrower than it. Ruff does not report a line whose content
+  after the indentation holds no whitespace, so an unbreakable token is exempt however long it
+  runs, and an over-width assertion stood here under a green gate. The exemption is in
+  `ruff.toml` beside the width and in `development-knowns.yaml`, because the same silence has now
+  had two causes and the registry recorded only the first: a malformed `noqa` was measured on a
+  103-character line and read as the whole reason it did not fire. **When a claim rests on a rule
+  someone else owns, probe that rule's own boundary with a matched pair** — two lines of the same
+  length differing in one interior space — and record what the probe finds where the claim is
+  written. The two-negative-control rule below asks this of a hand-written matcher; a borrowed one
+  is no different, and a borrowed one is the case where nobody thinks to look.
 - `.python-version` is the single source for the minimum maintenance runtime. CI consumes it
   directly, and `scripts/runtime_contract.py` keeps Ruff's syntax target aligned. The pre-commit
   hook uses the same pinned environment from `.venv`; it never installs or upgrades dependencies
