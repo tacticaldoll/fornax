@@ -7,7 +7,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import record_shape
-from markdown_links import heading_section, marked_code_blocks
+from markdown_links import heading_section, marked_code_blocks, table_rows
 
 TEMPLATE = """# Triage
 
@@ -193,24 +193,73 @@ class RecordIntegrityRows(unittest.TestCase):
             self.assertEqual(len(problems), 1, problems)
             self.assertIn("begins with none of", problems[0].message)
 
-    def test_a_row_of_the_wrong_width_names_the_column_and_not_a_neighbour(self) -> None:
-        # GFM lets a row omit its trailing pipe, which costs a cell. Reading the Result
-        # as the last cell of whatever the row held then blamed a neighbour for a verdict
-        # it never carried. The column the header names is what survives the wrong width.
-        short = "| Coverage | stated | enumerated\n"
-        with tree(extra=short) as t:
-            problems = record_shape.check(Path(t))
+    def test_a_row_with_no_trailing_pipe_keeps_every_cell(self) -> None:
+        # GFM makes the pipes on either end of a row optional. The reader this replaced
+        # dropped the last segment of every row unconditionally, so a legal complete row
+        # written without its trailing pipe lost its Result and was reported as missing
+        # the column it in fact carried. This test previously asserted that rejection as
+        # correct, which is the premise a review refuted.
+        legal = "| Coverage | stated | enumerated | pass\n"
+        with tree(extra=legal) as holder:
+            self.assertEqual(record_shape.check(Path(holder)), [])
+
+    def test_a_short_row_is_padded_by_the_parser_and_read_as_empty(self) -> None:
+        # GFM inserts empty cells for a row with fewer than the header declares, and the
+        # parser does that before the check sees it. So a short row's Result exists and
+        # is empty, which the domain rule reports — the row cannot lose a cell, which is
+        # what the reader that dropped its last segment got wrong.
+        rows = table_rows("| A | B | C |\n|---|---|---|\n| x | y |\n")
+        self.assertEqual(rows[1], ["x", "y", ""])
+
+        with tree(extra="| Coverage | stated |\n") as holder:
+            problems = record_shape.check(Path(holder))
 
             self.assertEqual(len(problems), 1, problems)
-            self.assertIn("no Result cell under the column", problems[0].message)
-            self.assertNotIn("enumerated", problems[0].message)
+            self.assertIn("begins with none of", problems[0].message)
 
-    def test_a_cell_ending_in_an_escaped_backslash_does_not_eat_the_delimiter(self) -> None:
-        # The lookbehind this replaced read any backslash before a pipe as escaping it,
-        # so two cells read as one. GFM escapes the backslash the same way it escapes
-        # the pipe, so the scan consumes both.
-        self.assertEqual(record_shape.cells(r"| a\\| b |"), ["a\\", "b"])
-        self.assertEqual(record_shape.cells(r"| a\| b |"), ["a| b"])
+    def test_a_header_with_no_result_column_is_reported_as_that(self) -> None:
+        # The one way a column reads as absent now: the header never declared it. The
+        # delimiter row has to match the header's width or GFM recognises no table.
+        record = RECORD.replace(
+            "| Check | Input claim | Reconciled evidence | Result |\n|---|---|---|---|",
+            "| Check | Input claim | Reconciled evidence |\n|---|---|---|",
+        )
+        with tree() as holder:
+            path = Path(holder) / "docs" / "dispositions" / "a..b.md"
+            path.write_text(record.format(extra="", rows=ONE_ROW), encoding="utf-8")
+
+            problems = record_shape.check(Path(holder))
+
+            self.assertEqual(len(problems), 1, problems)
+            self.assertIn("declares no Result column", problems[0].message)
+
+    def test_a_section_that_holds_no_readable_table_is_not_a_record_without_one(self) -> None:
+        # A malformed table would otherwise pass the way an unopened corpus once did:
+        # table() answers None both for "no table here" and "nothing recognisable", and
+        # one record legitimately carries no Record integrity section at all.
+        record = RECORD.replace("|---|---|---|---|", "not a delimiter row")
+        with tree() as holder:
+            path = Path(holder) / "docs" / "dispositions" / "a..b.md"
+            path.write_text(record.format(extra="", rows=ONE_ROW), encoding="utf-8")
+
+            problems = record_shape.check(Path(holder))
+
+            self.assertEqual(len(problems), 1, problems)
+            self.assertIn("carries no table this can read", problems[0].message)
+
+    def test_a_non_punctuation_escape_keeps_its_backslash(self) -> None:
+        # CommonMark escapes ASCII punctuation and nothing else, so a backslash before
+        # `q` is a backslash and a q. A hand-written reader consumed any character after
+        # a backslash, silently rewriting legal cell content. This is the negative
+        # control the suite lacked: an escape that is not escapable.
+        rows = table_rows("| H | I |\n|---|---|\n| ONE\\q | x |\n")
+
+        self.assertEqual(rows[1][0], "ONE\\q")
+
+    def test_two_ids_differing_only_by_an_escape_are_not_one(self) -> None:
+        pair = "| ONEq — one | 1 | new | accept | — |\n| ONE\\q — another | 2 | new | accept | — |"
+        with tree(rows=pair) as holder:
+            self.assertEqual(record_shape.check(Path(holder)), [])
 
     def test_a_qualified_verdict_passes_because_the_rule_is_a_prefix(self) -> None:
         # The corpus carries `mismatch, stated by the input` and two more like it. A

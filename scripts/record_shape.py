@@ -35,7 +35,6 @@ quotation from being read as this document's own heading. Otherwise the standard
 from __future__ import annotations
 
 import argparse
-import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -43,7 +42,7 @@ from pathlib import Path
 from outcome import paired
 
 from diagnostic_text import printable
-from markdown_links import heading_section, marked_code_blocks
+from markdown_links import heading_section, marked_code_blocks, table_rows
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -60,7 +59,6 @@ RESULT = "Result"
 # delimiter the construct defines and honours the construct's escape, rather than
 # guessing what a cell may contain. `AGENTS.md` is explicit that a reading of this kind
 # needs no owning parser; inventing a terminator list is what does.
-SEPARATOR = re.compile(r"^[\s:|-]+$")
 
 
 @dataclass(frozen=True)
@@ -139,58 +137,33 @@ class Table:
     body: list[list[str]]
 
     def column(self, row: list[str], name: str) -> str | None:
-        """One row's cell under the named column, or nothing when the row is too short."""
+        """One row's cell under the named column, or nothing when the header has none.
+
+        The row cannot be too short. GFM inserts empty cells for a row with fewer than
+        the header declares, and the parser does that before this sees it — which is why
+        a row written without its optional trailing pipe carries every cell, and why the
+        reader that dropped its last segment was wrong twice over. So the one way this
+        answers nothing is a header that never declared the column.
+        """
         if name not in self.header:
             return None
-        index = self.header.index(name)
-        return row[index] if index < len(row) else None
-
-
-def cells(line: str) -> list[str]:
-    """One table row's cells, with the escapes the table's own grammar defines consumed.
-
-    Read to the delimiter the construct defines rather than to a guess about what a cell
-    may contain, which `AGENTS.md` distinguishes from inventing a terminator list and
-    which needs no owning parser. What it does need is the construct's escape, and the
-    first version tested for one with a lookbehind instead of consuming it: any backslash
-    before a pipe read as escaping it, so a cell ending in an escaped backslash swallowed
-    the delimiter after it and two cells read as one. GFM escapes with a backslash and
-    escapes the backslash the same way, so the scan consumes both.
-    """
-    found: list[str] = []
-    current: list[str] = []
-    index = 0
-    while index < len(line):
-        character = line[index]
-        if character == "\\" and index + 1 < len(line):
-            current.append(line[index + 1])
-            index += 2
-            continue
-        if character == "|":
-            found.append("".join(current).strip())
-            current = []
-            index += 1
-            continue
-        current.append(character)
-        index += 1
-    found.append("".join(current).strip())
-    return found[1:-1] if len(found) > 2 else []
+        return row[self.header.index(name)]
 
 
 def table(text: str) -> Table | None:
     """The one table in *text*, header apart from body, or nothing when it holds none.
 
-    Given text rather than a document, because which text is a table is the caller's
-    question: the contract's rows come from inside a fenced template and a record's come
-    from a heading section outside every fence. A reader that decided for both would
-    answer one of them wrongly.
+    The rows come from `markdown_links.table_rows`, which is the parser that owns the
+    grammar. A reader written here instead read a backslash before any character as
+    escaping it, so a legal `\\q` in a cell lost its backslash and two distinct finding
+    ids collided under one; and it dropped the last segment of every row, so a row whose
+    optional trailing pipe GFM permits omitting lost a cell and was reported as missing
+    the column it in fact carried. Both are grammar the owner already knew.
+
+    Which text is a table stays the caller's question: the contract's rows come from
+    inside a fenced template and a record's from a heading section outside every fence.
     """
-    rows: list[list[str]] = []
-    for line in text.splitlines():
-        stripped = line.strip()
-        if not stripped.startswith("|") or SEPARATOR.match(stripped):
-            continue
-        rows.append(cells(stripped))
+    rows = table_rows(text)
     if not rows:
         return None
     return Table(rows[0], rows[1:])
@@ -244,6 +217,14 @@ def record_defects(path: Path, shape: Declared) -> list[Diagnostic]:
     found: list[Diagnostic] = []
     section = heading_section(text, INTEGRITY)
     integrity = table(section) if section is not None else None
+    if section is not None and integrity is None:
+        # A section that is there and holds no table this can read is not the same fact
+        # as a record that carries no such section — one record legitimately carries
+        # none. Collapsing the two would let a malformed table pass the way an unopened
+        # corpus passed before it was made a failure.
+        found.append(
+            Diagnostic(path, f"{INTEGRITY} carries no table this can read")
+        )
     if integrity is not None:
         for row in integrity.body:
             if not row:
@@ -263,8 +244,8 @@ def record_defects(path: Path, shape: Declared) -> list[Diagnostic]:
                 found.append(
                     Diagnostic(
                         path,
-                        f"{INTEGRITY} row {row[0]!r} has no {RESULT} cell under the "
-                        f"column its own header names",
+                        f"{INTEGRITY} declares no {RESULT} column in its header, so "
+                        f"the verdict on row {row[0]!r} cannot be read",
                     )
                 )
             elif not any(verdict.startswith(value) for value in shape.results):

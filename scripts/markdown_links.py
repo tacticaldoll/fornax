@@ -1,10 +1,19 @@
 #!/usr/bin/env python3
-"""CommonMark link and section extraction for repository maintenance checks.
+"""CommonMark link, section and table extraction for repository maintenance checks.
 
 This module owns the repository's CommonMark parser. Every operation that needs the
 grammar lives here rather than beside its caller — each names itself below. Writing the
 grammar again beside a caller is how a fingerprint came to cover part of the section it
 named.
+
+The `table` rule is enabled on top of the CommonMark preset, because a table is GFM and
+not CommonMark and the preset carries no rule for one. That was measured before it was
+turned on: over every Markdown file this repository tracks, every answer the four
+operations below give is identical with the rule on and off. It was turned on because a
+caller had hand-written a table row reader on the assumption that the operation needed no
+parser — and that reader ate a non-punctuation backslash escape CommonMark preserves, and
+dropped a cell from a row whose trailing pipe GFM makes optional. Both are grammar this
+module owns the parser for.
 """
 
 from __future__ import annotations
@@ -24,7 +33,7 @@ EXTERNAL_SCHEME = re.compile(r"^[a-z][a-z0-9+.-]*:", re.IGNORECASE)
 #: The depths a record's sections use. A parameter stood here with one caller,
 #: which took the default, and no test supplying anything else.
 RECORD_DEPTHS = (2, 3)
-PARSER = MarkdownIt("commonmark")
+PARSER = MarkdownIt("commonmark").enable("table")
 
 
 @dataclass(frozen=True)
@@ -150,6 +159,32 @@ def marked_code_blocks(text: str) -> list[MarkedBlock]:
             continue
         blocks.append(MarkedBlock(introduction.content.strip(), token.info, token.content))
     return blocks
+
+
+def table_rows(text: str) -> list[list[str]]:
+    """Every table row in *text*, as its cells, in document order.
+
+    The grammar is the parser's, and every part of it that a hand-written reader got
+    wrong is a part the parser already knew: a backslash escapes only ASCII punctuation,
+    so `\\q` keeps its backslash; the pipes on either end of a row are optional, so a
+    row without a trailing one loses no cell; and a cell's own escaped pipe is content
+    rather than a boundary.
+
+    Separator rows are not rows and do not appear. The header is the first row returned,
+    which is the caller's to separate — which text is a table is the caller's question
+    too, since the contract's rows come from inside a fenced template and a record's from
+    a heading section outside every fence.
+    """
+    tokens = list(PARSER.parse(text))
+    rows: list[list[str]] = []
+    current: list[str] = []
+    for index, token in enumerate(tokens):
+        if token.type in ("th_open", "td_open"):
+            current.append(tokens[index + 1].content.strip() if index + 1 < len(tokens) else "")
+        elif token.type == "tr_close":
+            rows.append(current)
+            current = []
+    return rows
 
 
 def prose_lines(text: str) -> list[tuple[int, str]]:
