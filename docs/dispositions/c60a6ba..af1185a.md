@@ -94,9 +94,23 @@ which this round did run. Buying a parser for a fenced table before trying the r
 turn that discovered the rule was missing, is a check bought instead of a repair attempted.
 
 What replaces the retracted trigger is a condition the sweep can decide: **the next round that finds
-a new invented row scored `mismatch` — one written after this record — is the evidence that `1b`
-does not bind, and `1c` is then the repair.** The two `mismatch` rows the sweep found are not that
-evidence; they predate the rule and are recorded below as standing work rather than as a test of it.
+a row whose `Input claim` cell does not name a claim the input actually made about itself is the
+evidence that `1b` does not bind, and `1c` is then the repair.** The rows the sweep found are not
+that evidence; they predate the rule and are recorded below as standing work rather than as a test
+of it.
+
+**This condition was itself retriggered, by the `v0.4.1..6ec4d3b` round, and the first version of it
+is above only as the thing that was wrong.** It read "a new invented row scored `mismatch`", which
+keys on the weakest of the three axes a row varies along. A row asserts that the input claimed X,
+that reconciling X against the input's own contents gives Y, and therefore a Result — and
+`mismatch` is only the Result. Measured against the four rows the sweep had already found, that
+condition both under- and over-fires: two rows scoring `pass` fold a self-check into an audit of the
+input, which `AGENTS.md` forbids by name under "Keep facts about the input apart from facts about the
+record being written", and one row scoring `mismatch` carries a sound reconciliation under an
+invented label, whose repair is a merge into the declared check rather than a removal. The condition
+now reads off the row itself and is independent of its verdict, which is what lets it separate the
+three defects the old one ran together: an absent claim convicted, a self-check misfiled, and a true
+proposition mis-keyed.
 A count of what already existed cannot measure whether a rule written today binds tomorrow.
 
 ## Pattern
@@ -205,8 +219,10 @@ None.
   is sent back for review rather than added. They are named so the next round's coverage can include
   them. Two further undeclared rows, both `Probe disclosure` scored `pass`, are the lighter kind: a
   row outside the contract's table that accuses nothing.
-- **Repair `1c` unbuilt, with its trigger restated after the sweep retracted the first one.** A new
-  invented row scored `mismatch`, written after this record, is the evidence that `1b` does not bind.
+- **Repair `1c` unbuilt, with its trigger restated twice.** The sweep retracted the first version;
+  the `v0.4.1..6ec4d3b` round retracted the second, which keyed on a row's Result rather than on its
+  subject. The condition is now a row whose `Input claim` cell does not name a claim the input made
+  about itself, and the reasoning is in the Weighing section above.
 - **That the weighing for `1c` first counted only the instances the input named.** The sweep was run
   because `AGENTS.md` requires it, and it found the count wrong — inside the paragraph deciding the
   repair for a finding about taking a reading from the input instead of from the tree. Recorded
