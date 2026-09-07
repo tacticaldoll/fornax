@@ -23,10 +23,23 @@ instead of what the tree holds. The template became reachable when it gained its
 `OUTPUT-TEMPLATE` marker; before that a table inside an unmarked fence was the reason this
 check was priced as needing a parser it does not need.
 
-The rule applies to a section that exists. One record carries no Record integrity table at
-all — the round recorded as accepted debt in `development-knowns.yaml`, whose Review
-Record was never persisted — and a predicate covering that costs nothing, where a list of
-files it does not apply to is the shape `AGENTS.md` refuses.
+**Which revision of the contract, and why that is not the current one.** Holding every
+archived record to the working tree's contract was measured as the wrong reading: rewording
+one declared label reported the whole corpus rather than the change, and the only exits
+were editing history, an exemption list `AGENTS.md` refuses, or an unstated freeze on the
+wording. So a record is judged against the contract at the commit that added it, which
+`contract_revision` reads and which needs no stamp in the record — stamping would have
+meant editing every archived record to repair a check about editing archived records.
+
+A record git has never seen is the one this round is writing, and it answers to the working
+tree in full. That is what keeps the check useful rather than historical.
+
+What this stops claiming as an exception. A record settled before the template carried its
+`OUTPUT-TEMPLATE` marker had no declared shape to answer to, so it is reported as unjudged
+and counted, which is neither clean nor defective. The record carrying none of these
+sections is the clearest case and needs no special mention: its revision declared nothing,
+so the absence is derived rather than excused. A predicate written to excuse it would be
+the list of files `AGENTS.md` refuses, one entry long.
 
 Depends on `markdown_links` for CommonMark, which is what keeps a `##` inside a fenced
 quotation from being read as this document's own heading. Otherwise the standard library.
@@ -46,6 +59,7 @@ from pathlib import Path
 from outcome import paired
 
 from diagnostic_text import printable
+import contract_revision
 from markdown_links import heading_section, marked_code_blocks, table_rows
 from read_whole import Unread, whole
 
@@ -231,12 +245,23 @@ def table(text: str) -> Table | None:
 
 
 def declared(root: Path) -> Declared:
-    """The checks and the Result domain the contract's template declares."""
+    """The shape the contract in *root* declares, or why it could not be read.
+
+    Reading is this function's job; parsing is `shape_of`'s. They were one body until a
+    record had to be judged against the contract revision it was settled under, which
+    supplies its text from git rather than from a path — the same split
+    `check_citations.prose` took, and for the same reason its docstring gives.
+    """
     path = root / CONTRACT
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeError) as error:
         return Declared(None, f"{CONTRACT.as_posix()} could not be read: {error}")
+    return shape_of(text)
+
+
+def shape_of(text: str) -> Declared:
+    """The checks and the Result domain *text*'s marked template declares."""
     # Taken from the parser rather than by splitting on the marker string. The template
     # sits inside a fence, so `heading_section` over the raw text finds nothing — a `###`
     # inside a fenced block is not a heading, which is the property that keeps an archived
@@ -434,23 +459,82 @@ def record_defects(path: Path, shape: Declared) -> list[Diagnostic]:
     return found
 
 
-def check(root: Path) -> list[Diagnostic]:
-    """Every record's departures from the contract, plus a contract that will not read."""
-    shape = declared(root)
-    if shape.reason is not None:
-        return [Diagnostic(root / CONTRACT, shape.reason)]
+@dataclass(frozen=True)
+class Audit:
+    """What one run judged, what it could not, and every departure it found.
+
+    `unjudged` is a field rather than a silence. A record settled under a revision whose
+    contract declares no readable shape is neither clean nor defective, and reporting it
+    as either is wrong — so it is counted and named in the summary. The whole reason this
+    type exists is that a count nobody prints is the failure this module was repaired for
+    twice.
+    """
+
+    problems: list[Diagnostic]
+    judged: list[Path]
+    unjudged: list[tuple[str, str]]
+    history: contract_revision.Past
+
+    @property
+    def read(self) -> int:
+        return len(self.judged) + len(self.unjudged)
+
+
+def audit(root: Path) -> Audit:
+    """Judge every record against the contract revision it was settled under.
+
+    The working tree's contract must read and declare a shape whatever the corpus holds:
+    it is the one an uncommitted record — the record the current round is writing — is
+    settled against, so a broken contract now is a failure now.
+
+    A committed record is read against its own revision instead. Before the template
+    gained its `OUTPUT-TEMPLATE` marker there was no shape to declare, so a record older
+    than the marker is unjudgeable rather than compliant, and says so.
+    """
+    working = declared(root)
+    if working.reason is not None:
+        broken = Diagnostic(root / CONTRACT, working.reason)
+        return Audit([broken], [], [], contract_revision.past(root))
     records = root / RECORDS
+    history = contract_revision.past(root)
     if not records.is_dir():
-        return [Diagnostic(records, f"{RECORDS.as_posix()} is not a directory")]
+        return Audit(
+            [Diagnostic(records, f"{RECORDS.as_posix()} is not a directory")], [], [], history
+        )
     found = sorted(records.glob("*.md"))
     if not found:
         # A check that inspected nothing must not report what a check that inspected
         # everything reports. `check_sources` says the same about a missing interpreter,
         # and `workspace_files` about an unlistable workspace; this answered clean.
-        return [Diagnostic(records, f"{RECORDS.as_posix()} holds no record to check")]
-    return [
-        problem for path in found for problem in record_defects(path, shape)
-    ]
+        return Audit(
+            [Diagnostic(records, f"{RECORDS.as_posix()} holds no record to check")],
+            [], [], history,
+        )
+
+    problems: list[Diagnostic] = []
+    judged: list[Path] = []
+    unjudged: list[str] = []
+    shapes: dict[str, Declared] = {contract_revision.WORKING_TREE: working}
+    for path in found:
+        settled = contract_revision.settled(root, path, CONTRACT, history)
+        if settled.reason is not None:
+            problems.append(Diagnostic(path, settled.reason))
+            continue
+        source = settled.source
+        if source.where not in shapes:
+            shapes[source.where] = shape_of(source.text)
+        shape = shapes[source.where]
+        if shape.reason is not None:
+            unjudged.append((path.name, f"{shape.reason}"))
+            continue
+        judged.append(path)
+        problems.extend(record_defects(path, shape))
+    return Audit(problems, judged, unjudged, history)
+
+
+def check(root: Path) -> list[Diagnostic]:
+    """Every record's departures from the contract, plus a contract that will not read."""
+    return audit(root).problems
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -459,16 +543,29 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     root = Path(args.root) if args.root else ROOT
 
-    problems = check(root)
-    for problem in problems:
+    result = audit(root)
+    for problem in result.problems:
         where = problem.path
         if where.is_relative_to(root):
             where = where.relative_to(root)
         print(printable(f"FAIL {where} - {problem.message}"), file=sys.stderr)
-    if problems:
+    if result.problems:
         return 1
-    read = len(list((root / RECORDS).glob("*.md")))
-    print(printable(f"OK   record shape in {read} record(s)"))
+
+    # The unjudged count is printed, not held. A record this could not judge is not a
+    # record it found clean, and the only thing that keeps those two apart for a reader
+    # is this line saying which is which.
+    summary = f"OK   record shape in {len(result.judged)} of {result.read} record(s)"
+    if not result.history.available:
+        summary += f", all against the working tree ({result.history.why})"
+    print(printable(summary))
+    # Grouped by reason rather than one line per record: the corpus shares a single
+    # reason today, and twenty-four identical lines would bury the count they carry.
+    reasons: dict[str, int] = {}
+    for _, reason in result.unjudged:
+        reasons[reason] = reasons.get(reason, 0) + 1
+    for reason, count in sorted(reasons.items()):
+        print(printable(f"     {count} not judged: {reason}"))
     return 0
 
 

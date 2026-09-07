@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -442,3 +443,116 @@ class DispositionKeys(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+VALID = RECORD.format(extra="", rows="| F1 | 1 | new | accept | — |")
+# A record missing one label the contract declares for a seat judging its own work.
+INCOMPLETE = VALID.replace(
+    "| Every accepted cause carries at least one repair with an enumerated Reach | pass |\n", ""
+)
+
+
+def _repo(root: Path) -> None:
+    """A worktree with an identity, so a commit needs nothing from the ambient config."""
+    subprocess.run(["git", "init", "-q", str(root)], check=True)
+    for key, value in (("user.email", "t@example.com"), ("user.name", "t")):
+        subprocess.run(["git", "-C", str(root), "config", key, value], check=True)
+
+
+def _commit(root: Path, message: str) -> None:
+    subprocess.run(["git", "-C", str(root), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(root), "commit", "-q", "-m", message], check=True)
+
+
+def _lay_out(root: Path, template: str) -> Path:
+    (root / "skills" / "triage-findings").mkdir(parents=True, exist_ok=True)
+    contract = root / "skills" / "triage-findings" / "SKILL.md"
+    contract.write_text(template, encoding="utf-8")
+    (root / "docs" / "dispositions").mkdir(parents=True, exist_ok=True)
+    return contract
+
+
+class SettledContract(unittest.TestCase):
+    """A record is judged against the contract revision it was settled under.
+
+    Holding every archived record to the working tree's contract was the defect: rewording
+    one declared label reported the whole corpus rather than the change, and the exits were
+    editing history, an exemption list `AGENTS.md` refuses, or an unstated freeze on the
+    wording. These drive `record_shape.audit` rather than `contract_revision` alone — a test
+    that exercises the helper and never the caller is what let an ownership move pass here
+    once while the consumer stayed broken.
+    """
+
+    def test_a_committed_record_is_not_convicted_by_a_later_contract_edit(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _repo(root)
+            contract = _lay_out(root, TEMPLATE)
+            (root / "docs" / "dispositions" / "a..b.md").write_text(VALID, encoding="utf-8")
+            _commit(root, "settle a..b")
+
+            # The contract now asks for a label no settled record could have carried.
+            contract.write_text(
+                TEMPLATE.replace(
+                    "Every prior id sits in exactly one exclusive lifecycle home",
+                    "Every prior id sits in exactly one lifecycle home",
+                ),
+                encoding="utf-8",
+            )
+
+            self.assertEqual(record_shape.check(root), [])
+
+    def test_the_record_being_written_is_held_to_the_current_contract(self) -> None:
+        # The half that keeps the check useful: a record git has never seen is the one this
+        # round is producing, so it answers to the wording in the working tree in full.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _repo(root)
+            _lay_out(root, TEMPLATE)
+            (root / "docs" / "dispositions" / "a..b.md").write_text(VALID, encoding="utf-8")
+            _commit(root, "settle a..b")
+            (root / "docs" / "dispositions" / "c..d.md").write_text(
+                INCOMPLETE, encoding="utf-8"
+            )
+
+            problems = record_shape.check(root)
+
+            self.assertTrue(problems, "an uncommitted record must still be judged")
+            self.assertTrue(
+                all(problem.path.name == "c..d.md" for problem in problems), problems
+            )
+
+    def test_a_root_with_no_history_judges_everything_against_its_own_snapshot(self) -> None:
+        # A release tarball or a `git archive` export carries its contract and its records
+        # as one snapshot, so holding them to that snapshot is the strict answer. What must
+        # not happen is answering as though a reading of history had taken place.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _lay_out(root, TEMPLATE)
+            (root / "docs" / "dispositions" / "a..b.md").write_text(VALID, encoding="utf-8")
+
+            result = record_shape.audit(root)
+
+            self.assertEqual(result.problems, [])
+            self.assertFalse(result.history.available)
+            self.assertIn("not a git worktree", result.history.why or "")
+            self.assertEqual(len(result.judged), 1)
+
+    def test_a_record_older_than_the_marker_is_unjudged_and_counted(self) -> None:
+        # Neither clean nor defective. The count is the point: a record this cannot judge
+        # must not be reported as one it found clean.
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _repo(root)
+            contract = _lay_out(root, TEMPLATE.replace(record_shape.MARKER, ""))
+            (root / "docs" / "dispositions" / "old.md").write_text(VALID, encoding="utf-8")
+            _commit(root, "a round settled before the template was marked")
+            contract.write_text(TEMPLATE, encoding="utf-8")
+
+            result = record_shape.audit(root)
+
+            self.assertEqual(result.problems, [])
+            self.assertEqual(result.judged, [])
+            self.assertEqual(len(result.unjudged), 1, result.unjudged)
+            self.assertEqual(result.unjudged[0][0], "old.md")
+            self.assertEqual(result.read, 1)
