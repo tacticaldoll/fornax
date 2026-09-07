@@ -127,12 +127,6 @@ class Seat:
     heading: str
     subject: Subject
 
-# A cell is bounded by the pipe the table defines, and GFM lets a cell hold one by
-# escaping it — which the contract's own Result column does. So the split reads to a
-# delimiter the construct defines and honours the construct's escape, rather than
-# guessing what a cell may contain. `AGENTS.md` is explicit that a reading of this kind
-# needs no owning parser; inventing a terminator list is what does.
-
 
 @dataclass(frozen=True)
 class Diagnostic:
