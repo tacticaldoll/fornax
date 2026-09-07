@@ -135,8 +135,9 @@ recorded with a single repair hides the choice from whoever plans the work.
 
 Each repair carries two things.
 
-**Reach** — every location the repair touches, enumerated as a file plus the unit inside it: a
-symbol (`evidence_currency.resolved_inside`), or a quoted phrase where no symbol owns the text.
+**Reach** — every location the repair touches, enumerated as a file plus the unit inside it: the
+name of the function, type, or section that owns the change, or a quoted phrase where no name owns
+the text.
 Enumerate; do not classify. Whether a repair is confined to the finding's own place, spans several,
 or dissolves them is then read off the list itself.
 
