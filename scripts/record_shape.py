@@ -60,7 +60,12 @@ from outcome import paired
 
 from diagnostic_text import printable
 import contract_revision
-from markdown_links import heading_section, marked_code_blocks, table_rows
+from markdown_links import (
+    heading_section,
+    heading_texts,
+    marked_code_blocks,
+    table_rows,
+)
 from read_whole import Unread, whole
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -407,6 +412,86 @@ class UniqueFirstColumn(Rule):
             seen.add(identifier)
 
 
+class RecordRule(ABC):
+    """One contract clause asked of a whole record rather than of one of its tables.
+
+    Deliberately not built when `Rule` landed, on the ground that it would hold a single
+    member — the malformed-table reading, which stayed inline saying so. Three clauses want
+    it now: a governed section that is absent, one that appears twice, and one whose table
+    cannot be read. The ground for declining is gone rather than overruled, and the third
+    moves in with the other two, because an abstraction holding two of its three kinds is
+    the inconsistency the decline was trying to avoid.
+
+    Takes `Declared` and not `Shape`, unlike `Rule`, whose annotation says `Shape` while
+    every caller hands it a `Declared` it satisfies only by proxy. That is a known finding
+    carried as deferred; this signature states what it receives rather than adding a second
+    instance of it.
+    """
+
+    @abstractmethod
+    def defects(self, text: str, shape: "Declared") -> Iterator[str]:
+        """Every way this record departs from the clause this rule carries."""
+
+
+class RequiredSections(RecordRule):
+    """A seat the contract declares rows for must have a section in the record.
+
+    Requiredness is derived, not declared: the contract listing labels under a heading is
+    what makes that heading owed. A `required` field on `Seat` would be a second list able
+    to disagree with the template, which is the failure this module derives its keys to
+    avoid — and a record predating the template's marker is never judged at all, so no
+    exemption is needed for the one that carries none of these sections.
+    """
+
+    def defects(self, text: str, shape: "Declared") -> Iterator[str]:
+        for seat in SEATS:
+            if seat.heading not in shape.keys:
+                continue
+            if heading_section(text, seat.heading) is None:
+                yield (
+                    f"{seat.heading} is absent, and {CONTRACT.as_posix()} declares rows "
+                    f"for it. Deleting the section skipped every rule for a seat whose "
+                    f"subject is {seat.subject.value}"
+                )
+
+
+class OneSectionEach(RecordRule):
+    """A governed heading may appear once, because only the first is ever read.
+
+    `heading_section` answers with the first match, so a second section carrying an
+    undeclared label and a verdict outside the domain was judged by nothing at all. The
+    count comes from the parser that owns the grammar rather than from a scan here.
+    """
+
+    def defects(self, text: str, shape: "Declared") -> Iterator[str]:
+        headings = heading_texts(text)
+        for seat in SEATS:
+            if headings.count(seat.heading) > 1:
+                yield (
+                    f"{seat.heading} appears {headings.count(seat.heading)} times; only "
+                    f"the first is read, so every later one is judged by nothing"
+                )
+
+
+class ReadableTable(RecordRule):
+    """A governed section that is present must hold a table this can read.
+
+    A section that is there and holds no readable table is not the same fact as a record
+    carrying no such section. Collapsing the two let a malformed table pass the way an
+    unopened corpus passed before it was made a failure.
+    """
+
+    def defects(self, text: str, shape: "Declared") -> Iterator[str]:
+        for seat in SEATS:
+            section = heading_section(text, seat.heading)
+            if section is not None and table(section) is None:
+                yield f"{seat.heading} carries no table this can read"
+
+
+RECORD_RULES: tuple[RecordRule, ...] = (
+    RequiredSections(), OneSectionEach(), ReadableTable(),
+)
+
 SEATS = (
     Seat(INTEGRITY, Subject.THE_INPUT),
     Seat(DISPOSITIONS, Subject.THE_FINDINGS),
@@ -437,21 +522,17 @@ def record_defects(path: Path, shape: Declared) -> list[Diagnostic]:
         return []  # text hygiene owns unreadable files and reports them there
 
     found: list[Diagnostic] = []
+    for record_rule in RECORD_RULES:
+        found.extend(
+            Diagnostic(path, message) for message in record_rule.defects(text, shape)
+        )
     for seat in SEATS:
         section = heading_section(text, seat.heading)
         if section is None:
-            continue  # one record legitimately carries no such section
+            continue  # RequiredSections reported it, where the contract declares rows
         seated = table(section)
         if seated is None:
-            # A section that is there and holds no table this can read is not the same
-            # fact as a record carrying no such section. Collapsing the two would let a
-            # malformed table pass the way an unopened corpus passed before it was made
-            # a failure. This is the one rule about a record rather than about a table,
-            # and it stays here because an abstraction for it would hold only itself.
-            found.append(
-                Diagnostic(path, f"{seat.heading} carries no table this can read")
-            )
-            continue
+            continue  # ReadableTable reported it
         for rule in rules_for(seat.subject):
             found.extend(
                 Diagnostic(path, message) for message in rule.defects(seat, seated, shape)

@@ -318,16 +318,21 @@ class RecordIntegrityRows(unittest.TestCase):
         self.assertIsNone(grammar.fullmatch("pass"))
         self.assertIsNone(grammar.fullmatch("yesterday"))
 
-    def test_a_record_carrying_no_such_table_is_not_a_defect(self) -> None:
-        # One record has none, and its round is registered debt. A predicate covers it
-        # where a list of files it does not apply to would be the thing AGENTS.md refuses.
+    def test_a_record_carrying_none_of_the_declared_sections_is_reported(self) -> None:
+        # This asserted the opposite until deleting a section was found to skip every rule
+        # for that seat. The record that prompted the old exemption is covered by its
+        # contract revision instead, which declares nothing and leaves it unjudged -- so
+        # the exemption is derived where it applies rather than granted to every record.
         with tree() as t:
             path = Path(t) / "docs" / "dispositions" / "a..b.md"
             path.write_text(
                 "# Disposition Record — `a..b`\n\n## Causes\n\nnone\n", encoding="utf-8"
             )
 
-            self.assertEqual(record_shape.check(Path(t)), [])
+            problems = record_shape.check(Path(t))
+
+            absent = [p.message for p in problems if "is absent" in p.message]
+            self.assertEqual(len(absent), 3, problems)
 
 
 class EmptyScope(unittest.TestCase):
@@ -556,3 +561,61 @@ class SettledContract(unittest.TestCase):
             self.assertEqual(len(result.unjudged), 1, result.unjudged)
             self.assertEqual(result.unjudged[0][0], "old.md")
             self.assertEqual(result.read, 1)
+
+
+class RecordCardinality(unittest.TestCase):
+    """A governed section must be there, and must be there once.
+
+    Both were silent. Deleting `Self-check`, `Dispositions` or `Record integrity` entirely
+    returned no diagnostic, because the seat loop read a section-or-nothing and skipped the
+    nothing; and appending a second `Record integrity` carrying an undeclared label and a
+    verdict outside the domain returned none either, because only the first is read.
+    """
+
+    def test_deleting_a_governed_section_is_reported_for_each_seat(self) -> None:
+        for heading in (record_shape.INTEGRITY, record_shape.DISPOSITIONS,
+                        record_shape.SELF_CHECK):
+            with self.subTest(heading=heading):
+                section = heading_section(VALID, heading)
+                assert section is not None
+                with tree() as t:
+                    path = Path(t) / "docs" / "dispositions" / "a..b.md"
+                    path.write_text(VALID.replace(section, ""), encoding="utf-8")
+
+                    problems = record_shape.check(Path(t))
+
+                    self.assertTrue(
+                        any(f"{heading} is absent" in p.message for p in problems), problems
+                    )
+
+    def test_a_second_governed_section_is_reported_rather_than_ignored(self) -> None:
+        second = (
+            "\n## Record integrity\n\n"
+            "| Check | Input claim | Reconciled evidence | Result |\n"
+            "|---|---|---|---|\n"
+            "| Probe disclosure | a row the contract does not declare | none | bogus |\n"
+        )
+        with tree() as t:
+            path = Path(t) / "docs" / "dispositions" / "a..b.md"
+            path.write_text(VALID + second, encoding="utf-8")
+
+            problems = record_shape.check(Path(t))
+
+            self.assertTrue(
+                any("appears 2 times" in p.message for p in problems), problems
+            )
+
+    def test_a_section_holding_no_readable_table_still_reports_through_the_rule(self) -> None:
+        # The reading that used to sit inline in record_defects, now the third RecordRule.
+        with tree() as t:
+            path = Path(t) / "docs" / "dispositions" / "a..b.md"
+            path.write_text(
+                VALID.replace("|---|---|---|---|", "not a delimiter row", 1), encoding="utf-8"
+            )
+
+            problems = record_shape.check(Path(t))
+
+            self.assertTrue(
+                any("carries no table this can read" in p.message for p in problems),
+                problems,
+            )
