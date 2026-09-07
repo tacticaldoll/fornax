@@ -69,4 +69,11 @@ class ModuleClaimTests(unittest.TestCase):
         # would have passed the whole time.
         self.assertIn("markdown_it", third_party("markdown_links"))
         self.assertIn("markdown_it", third_party("seam_contract"))
-        self.assertNotIn("seam_contract", LOCAL - {"seam_contract"})
+
+        # And the path has to still be the transitive one for the two above to be
+        # measuring transitivity at all. The assertion that stood here compared
+        # "seam_contract" against `LOCAL - {"seam_contract"}` — the element the
+        # subtraction removes, so it held for any tree, any import and any deletion,
+        # in the one test whose name claims to see through a sibling.
+        self.assertIn("markdown_links", imports("seam_contract"))
+        self.assertNotIn("markdown_it", imports("seam_contract"))
