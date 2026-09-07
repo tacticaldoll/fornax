@@ -30,9 +30,15 @@
 # Neither rule closes that case, which was measured rather than assumed. PGH004 catches
 # a bare `# noqa` with no codes at all; RUF100 catches a directive suppressing nothing.
 # The malformed-suffix form passes both. They are here because they are the closest
-# available guard and cost nothing — no `# noqa` exists in the tree today — not because
-# the hole is closed. Closing it needs the warning to fail the run, which this pinned
-# ruff has no setting for.
+# available guard and cost nothing on what the tree holds — not because the hole is
+# closed. Closing it needs the warning to fail the run, which this pinned ruff has no
+# setting for.
+#
+# This said no `# noqa` exists in the tree, and the pinned CLI adapter carries two of
+# them for E402, on imports that follow a path insertion. They are well formed, so
+# neither rule fires and the "cost nothing" half holds; what was false is the claim that
+# there is nothing here to get this wrong. Appending prose after those codes is exactly
+# the malformed form above, and it would go silent.
 
 # Keep aligned mechanically with .python-version through scripts/runtime_contract.py.
 target-version = "py310"
