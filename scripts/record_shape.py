@@ -35,6 +35,7 @@ quotation from being read as this document's own heading. Otherwise the standard
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -43,6 +44,7 @@ from outcome import paired
 
 from diagnostic_text import printable
 from markdown_links import heading_section, marked_code_blocks, table_rows
+from read_whole import Unread, whole
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -53,6 +55,16 @@ MARKER = "<!-- OUTPUT-TEMPLATE: disposition-record@1 text/markdown -->"
 INTEGRITY = "Record integrity"
 DISPOSITIONS = "Dispositions"
 RESULT = "Result"
+
+# The contract declares a Result as one of its three values, optionally followed by `, `
+# and a qualifier saying why. Both halves matter and one was missing: the domain was
+# tested with `startswith`, which is a prefix and not a read, so `passenger`,
+# `mismatchable` and `not claimedly` all answered clean — a well-formed value passing
+# its next comparison, which is the failure `AGENTS.md` names where it says to read a
+# token whole and never a prefix of it. The qualifier grammar had no definition at all,
+# so one comparison carried domain membership and qualifier parsing at once and had no
+# token boundary anywhere.
+QUALIFIER = ", "
 
 # A cell is bounded by the pipe the table defines, and GFM lets a cell hold one by
 # escaping it — which the contract's own Result column does. So the split reads to a
@@ -207,6 +219,18 @@ def declared(root: Path) -> Declared:
     return Declared(Shape(checks, domains.pop()), None)
 
 
+def verdict_grammar(results: tuple[str, ...]) -> re.Pattern[str]:
+    """One of the declared values, optionally qualified — built from the values, not fixed.
+
+    Compiled from what the contract declares so a fourth value cannot appear here without
+    appearing there, which is the same reason the keys are derived rather than copied. The
+    qualifier is bounded by the delimiter the contract names, so this reads to a boundary
+    the construct defines rather than guessing where a verdict gives out.
+    """
+    values = "|".join(re.escape(value) for value in results)
+    return re.compile(f"(?:{values})(?:{re.escape(QUALIFIER)}.+)?")
+
+
 def record_defects(path: Path, shape: Declared) -> list[Diagnostic]:
     """Every way one record's tables depart from the shape the contract declares."""
     try:
@@ -248,14 +272,17 @@ def record_defects(path: Path, shape: Declared) -> list[Diagnostic]:
                         f"the verdict on row {row[0]!r} cannot be read",
                     )
                 )
-            elif not any(verdict.startswith(value) for value in shape.results):
-                found.append(
-                    Diagnostic(
-                        path,
-                        f"{INTEGRITY} row {row[0]!r} answers {verdict!r}, which begins "
-                        f"with none of {', '.join(shape.results)}",
+            else:
+                read = whole(verdict, verdict_grammar(shape.results), "a declared verdict")
+                if isinstance(read, Unread):
+                    found.append(
+                        Diagnostic(
+                            path,
+                            f"{INTEGRITY} row {row[0]!r} answers {verdict!r}, which is "
+                            f"not one of {', '.join(shape.results)}, with or without a "
+                            f"{QUALIFIER!r} qualifier",
+                        )
                     )
-                )
 
     settled = heading_section(text, DISPOSITIONS)
     dispositions = table(settled) if settled is not None else None

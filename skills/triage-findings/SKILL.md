@@ -205,7 +205,11 @@ returning next round, so a disposition without one has not actually been made.
 [`not claimed` when the input carries no such claim at all — a record predating a field, or one from
 another producer, has nothing to reconcile and is neither consistent nor contradictory about it.
 Do not read a missing claim as a passing one. Code defects the review missed do not belong here —
-send those back for review.]
+send those back for review.
+
+A Result may carry a **qualifier**: one of the three values, then `, `, then what the qualifier says
+— `mismatch, stated by the input`. The three values are the domain and the qualifier says why; there
+is no fourth value, and a Result that merely begins with one of the three is not one of them.]
 
 ### Prior scope resolution
 

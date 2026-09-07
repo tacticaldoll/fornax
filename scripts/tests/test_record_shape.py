@@ -191,7 +191,7 @@ class RecordIntegrityRows(unittest.TestCase):
             problems = record_shape.check(Path(t))
 
             self.assertEqual(len(problems), 1, problems)
-            self.assertIn("begins with none of", problems[0].message)
+            self.assertIn("is not one of", problems[0].message)
 
     def test_a_row_with_no_trailing_pipe_keeps_every_cell(self) -> None:
         # GFM makes the pipes on either end of a row optional. The reader this replaced
@@ -215,7 +215,7 @@ class RecordIntegrityRows(unittest.TestCase):
             problems = record_shape.check(Path(holder))
 
             self.assertEqual(len(problems), 1, problems)
-            self.assertIn("begins with none of", problems[0].message)
+            self.assertIn("is not one of", problems[0].message)
 
     def test_a_header_with_no_result_column_is_reported_as_that(self) -> None:
         # The one way a column reads as absent now: the header never declared it. The
@@ -271,6 +271,35 @@ class RecordIntegrityRows(unittest.TestCase):
                 extra=f"| Coverage | stated | enumerated | {qualified} |\n"
             ) as t:
                 self.assertEqual(record_shape.check(Path(t)), [])
+
+    def test_a_value_merely_sharing_a_prefix_with_a_verdict_is_not_one(self) -> None:
+        # The controls this suite lacked. `startswith` accepted every one of these: a
+        # well-formed value passing its next comparison, which is the failure AGENTS.md
+        # names where it says to read a token whole and never a prefix of it.
+        for near in ("passenger", "mismatchable", "not claimedly", "passable", "mismatchXYZ"):
+            with self.subTest(near=near), tree(
+                extra=f"| Coverage | stated | enumerated | {near} |\n"
+            ) as holder:
+                problems = record_shape.check(Path(holder))
+
+                self.assertEqual(len(problems), 1, problems)
+                self.assertIn("is not one of", problems[0].message)
+
+    def test_a_qualifier_needs_the_delimiter_the_contract_declares(self) -> None:
+        # The contract declares a comma and a space. A qualifier run onto the value
+        # without it is a different token, not a qualified verdict.
+        with tree(extra="| Coverage | stated | enumerated | mismatch,narrowed |\n") as holder:
+            self.assertEqual(len(record_shape.check(Path(holder))), 1)
+
+    def test_the_verdict_grammar_is_built_from_what_the_contract_declares(self) -> None:
+        # Not a fixed pattern: a fourth value cannot be accepted here without appearing
+        # in the template, which is the same reason the keys are derived rather than copied.
+        grammar = record_shape.verdict_grammar(("yes", "no"))
+
+        self.assertIsNotNone(grammar.fullmatch("yes"))
+        self.assertIsNotNone(grammar.fullmatch("no, with a reason"))
+        self.assertIsNone(grammar.fullmatch("pass"))
+        self.assertIsNone(grammar.fullmatch("yesterday"))
 
     def test_a_record_carrying_no_such_table_is_not_a_defect(self) -> None:
         # One record has none, and its round is registered debt. A predicate covers it

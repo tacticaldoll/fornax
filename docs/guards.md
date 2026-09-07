@@ -172,6 +172,7 @@ the instruction produces, not a measure of the finding's size.
 
 | Finding | Revert this | Guard | Red on revert |
 |---|---|---|---|
+| VERDICT-READ-BY-PREFIX | the `whole()` read in `record_shape.record_defects`, back to the `startswith` test it replaced | `test_record_shape.RecordIntegrityRows.test_a_value_merely_sharing_a_prefix_with_a_verdict_is_not_one`, and five others | 6 |
 | ESCAPE-EATS-A-NON-PUNCTUATION-PAIR | the `table` rule on `markdown_links.PARSER` | `test_record_shape.RecordIntegrityRows.test_a_non_punctuation_escape_keeps_its_backslash`, and 18 others — the revert is broad, see above | 19 |
 | TRAILING-PIPE-ASSUMED-MANDATORY | `record_shape.table`'s use of `markdown_links.table_rows`, replaced by a row reader written beside it | `test_record_shape.RecordIntegrityRows.test_a_row_with_no_trailing_pipe_keeps_every_cell`, and 13 others — broad for the same reason | 14 |
 | MALFORMED-TABLE-READS-CLEAN | the no-readable-table diagnostic in `record_shape.record_defects` | `test_record_shape.RecordIntegrityRows.test_a_section_that_holds_no_readable_table_is_not_a_record_without_one` | 1 |
