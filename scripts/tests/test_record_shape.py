@@ -193,6 +193,25 @@ class RecordIntegrityRows(unittest.TestCase):
             self.assertEqual(len(problems), 1, problems)
             self.assertIn("begins with none of", problems[0].message)
 
+    def test_a_row_of_the_wrong_width_names_the_column_and_not_a_neighbour(self) -> None:
+        # GFM lets a row omit its trailing pipe, which costs a cell. Reading the Result
+        # as the last cell of whatever the row held then blamed a neighbour for a verdict
+        # it never carried. The column the header names is what survives the wrong width.
+        short = "| Coverage | stated | enumerated\n"
+        with tree(extra=short) as t:
+            problems = record_shape.check(Path(t))
+
+            self.assertEqual(len(problems), 1, problems)
+            self.assertIn("no Result cell under the column", problems[0].message)
+            self.assertNotIn("enumerated", problems[0].message)
+
+    def test_a_cell_ending_in_an_escaped_backslash_does_not_eat_the_delimiter(self) -> None:
+        # The lookbehind this replaced read any backslash before a pipe as escaping it,
+        # so two cells read as one. GFM escapes the backslash the same way it escapes
+        # the pipe, so the scan consumes both.
+        self.assertEqual(record_shape.cells(r"| a\\| b |"), ["a\\", "b"])
+        self.assertEqual(record_shape.cells(r"| a\| b |"), ["a| b"])
+
     def test_a_qualified_verdict_passes_because_the_rule_is_a_prefix(self) -> None:
         # The corpus carries `mismatch, stated by the input` and two more like it. A
         # membership test would need an exemption for each; a prefix test needs none,

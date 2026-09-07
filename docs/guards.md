@@ -136,6 +136,28 @@ not landed: there is no unit to revert and no test to redden, and the reason is 
 prose" nor "the repair is an equivalence". It is that the repair is planned and unbuilt. Such a row
 says so, and a later round reads it as work outstanding rather than as a finding nothing can guard.
 
+## Measured 2026-09-07, at the commit carrying this section
+
+Each revert applied to the tree, confirmed to have landed by reading the changed line back, the
+named test run, the tree restored, and the whole suite confirmed green afterwards at 448 tests. The
+tree is named as the commit carrying this section for the reason the section above gives.
+
+Every unit below was created by the `6ec4d3b..a7c40d1` round's repairs and exists at no earlier
+tree, which is why this section is its own.
+
+**One of these numbers was wrong on its first run, and the way it was wrong is the one this file's
+preamble warns about.** `ESCAPE-TESTED-NOT-CONSUMED` first measured 10, from a revert that removed
+escape handling altogether — which is not what the code was. The pre-repair code read escapes with
+a lookbehind, which handles the common `\|` correctly and fails only where a backslash is itself
+escaped. Reverting to *that* reddens 1. The instruction below names the lookbehind, not its absence.
+
+| Finding | Revert this | Guard | Red on revert |
+|---|---|---|---|
+| DECLARED-GUARDS-ONE-PAYLOAD | the reason an unread `record_shape.Declared` carries, so its accessor raises with nothing to say — which is what the two-field version did by construction | `test_record_shape.DeclaredInvariant.test_an_unread_contract_never_raises_without_saying_why` | 3 |
+| RESULT-READ-BY-POSITION | `record_shape.record_defects`' use of `record_shape.Table.column`, back to reading the last cell of the row | `test_record_shape.RecordIntegrityRows.test_a_row_of_the_wrong_width_names_the_column_and_not_a_neighbour` | 1 |
+| EMPTY-SCOPE-READS-AS-CLEAN | the empty-corpus diagnostic in `record_shape.check` | `test_record_shape.EmptyScope.test_a_root_with_no_records_is_a_failure_not_a_clean_answer` | 1 |
+| ESCAPE-TESTED-NOT-CONSUMED | `record_shape.cells`' escape scan, back to the lookbehind split it replaced | `test_record_shape.RecordIntegrityRows.test_a_cell_ending_in_an_escaped_backslash_does_not_eat_the_delimiter` | 1 |
+
 ## Repairs with no guard, and why
 
 | Finding | Why nothing goes red |
@@ -152,16 +174,12 @@ says so, and a later round reads it as work outstanding rather than as a finding
 | SELFCHECK-FOLDED-INTO-THE-INPUT-AUDIT | none by test — the units are rows of two records. The re-runnable reading is the one that found the class: take the five checks `skills/triage-findings/SKILL.md` declares and compare them to the row labels of every Record integrity table under `docs/dispositions/`. It was run after the repair and reports no extra row anywhere in the tree, which is the first time that reading has come back empty |
 | TRIGGER-KEYS-ON-THE-WEAKEST-AXIS | none — the unit is a condition written in prose, in this file and in `docs/dispositions/c60a6ba..af1185a.md`. No test holds a trigger. What replaces a guard is that the condition is now decidable from a row's own cells rather than from its verdict, so a later round can apply it by reading rather than by judging |
 | REVIEW-FILED-A-VIOLATION-AS-A-VERIFIED-CLAIM | none — the unit is a Claims Verified entry of `docs/reviews/v0.4.1..6ff702e.md`, and an archived Review Record is kept as received, so the repair is recorded in the settling record rather than written into the input. Nothing can hold where a review files a measurement it has already taken |
-| DECLARED-GUARDS-ONE-PAYLOAD | none yet — repair planned and unbuilt, routed to `plan-implementation` as cause 1 of `docs/dispositions/6ec4d3b..a7c40d1.md`. The reading a later round can re-run is the probe the review used: construct `record_shape.Declared` with a payload, no second payload and no reason, and watch it build rather than raise |
-| INVARIANT-SPELLED-TWO-WAYS | none yet — repair planned and unbuilt, same cause. Re-runnable as a reading: `grep` the four sibling guards and compare their spelling to `record_shape.Declared`'s |
-| RESULT-READ-BY-POSITION | none yet — repair planned and unbuilt, cause 2. The probe is a Record integrity row written without its trailing pipe, whose diagnostic then names a cell that is not the Result |
-| TABLE-BODY-HAS-NO-NAME | none yet — repair planned and unbuilt, cause 2. The reading is that `record_shape.table` returns the header apart from the body, where its predecessor returned one list whose first element every caller skipped by the same index |
-| EMPTY-SCOPE-READS-AS-CLEAN | none yet — repair planned and unbuilt, cause 3. Re-runnable directly: point `record_shape.main` at a root holding the contract and no records, and read the `OK` line it prints |
-| ESCAPE-TESTED-NOT-CONSUMED | none yet — repair planned and unbuilt, cause 4. The probe is one row whose cell ends in an escaped backslash before a delimiter, which `record_shape.cells` must read as two cells and its lookbehind predecessor read as one |
-| TEST-ROOT-BY-CWD | none yet — repair planned and unbuilt, cause 5. The reading is that `test_record_shape.DerivedShape` resolves the repository as the working directory while `test_check_citations` uses its module's own `ROOT` |
-| PROSE-WIDTH-UNENFORCED | none, and the absence is half the finding. Nothing checks a Markdown line's width, so no revert of the reflow can redden anything — the same shape as `WIDTH-EXEMPT-SINGLE-TOKEN` above, one language over. The reading is to measure the non-table lines of the two records named in cause 6 |
-| NO-OP-COMPREHENSION | none yet — repair planned and unbuilt, cause 7. No test holds an expression that computes the same value a shorter one would |
-| SORT-TO-COUNT | none yet — repair planned and unbuilt, cause 7. Same reason |
+| INVARIANT-SPELLED-TWO-WAYS | none, by construction — an equivalence. Reverting only the spelling of `record_shape.Declared`'s guard leaves the suite green, measured, which is what an equivalence claim means. What settles it is that no hand-written form of the predicate remains anywhere: `outcome.paired` is the only one, and reverting *it* to a no-op turns 8 red |
+| TABLE-BODY-HAS-NO-NAME | none — the repair is that `record_shape.Table` names the header and the body apart, and no test holds whether a concept has a name. Its consequence is guarded under `RESULT-READ-BY-POSITION`, which is the defect the missing name produced |
+| TEST-ROOT-BY-CWD | none — the unit is the suite's own root resolution, and reverting a test's resolution reddens nothing when the run starts at the repository root, which is where the gate starts it. The re-runnable measurement is to run `test_record_shape` from another working directory: it failed before and passes now |
+| NO-OP-COMPREHENSION | none — the unit is an expression computing the value a shorter one computes. Its line moved into `record_shape.cells` with the table reader's rewrite |
+| SORT-TO-COUNT | none — the unit is a sort taken for a length in `record_shape.main`. No test holds how a count is obtained |
+| PROSE-WIDTH-UNENFORCED | none, and the absence is half the finding. Nothing measures a Markdown line's width, so no revert of the reflow can redden anything — the same shape as `WIDTH-EXEMPT-SINGLE-TOKEN`, one language over, and now registered with it under `e501-exempts-a-whitespace-free-line`. The reading is to measure the non-table lines of the two records cause 6 names |
 | INPUT-PATTERN-SPLIT | An equivalence refactor: two patterns for one Markdown line became one, and the answers were measured identical over the label alone, a padded label, a full contract line and a line without one. Reverting it leaves the suite green by construction, which is what an equivalence claim means. What settles it is `validate_skills.INPUT_LINE` being one pattern where there were two |
 | CLOSURE-NAMES-WRONG-SYMBOL | Its guard is not a test but a gate step: `scripts/check_citations.py` refuses a citation whose symbol no module defines, which is the defect itself. It is verified by the gate being green over the records |
 | ORDINAL-IN-NEW-MODULE, REGISTRY-UNDERREPORT, LEDGER-TABLE-ROUNDS, RAWSCORES-PROVISIONAL, COUNTS-IN-THE-NEW-PROSE, ROUND-ENDS-WHEN-ASKED, RECONCILED-AGAINST-A-PARTIAL-COPY | The unit is prose. No test can hold a docstring's wording, and no gate opens over one. These close on the recorded reading that settled them, which is in each round's Disposition Record |

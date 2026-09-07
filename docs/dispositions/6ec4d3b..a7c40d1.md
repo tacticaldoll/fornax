@@ -105,8 +105,13 @@ two by writing the boundary down, which is not the same as closing it.
 
 ## Coupling
 
-- `1a` is **voided by** `1b` — the owner makes the local collapse unnecessary, and `1b`'s enumeration
-  reaches `Declared` first.
+- `1a` is a **prerequisite of** `1b`, and this row first said it was voided by it. Corrected while
+  the repairs were being planned: `outcome.paired` takes one payload and one reason, so a type
+  carrying two payload fields that travel together cannot be handed to it at all. The collapse is
+  what makes `Declared` able to call the owner. That is also the sharpest argument for the owner —
+  it refuses the shape that broke rather than only deduplicating the shape that held — and the
+  reading was available in this record's own cause 1 statement, which says the fifth copy "was
+  incomplete for a type carrying two payload fields rather than one".
 - `4b` is **voided by** `4a`; they are alternatives and `4a` is the stronger, because what the commit
   message got wrong is the escape rule rather than the delimiter.
 - `8a` and `8b` are not alternatives: `8b` is what stands while `8a` is unbuilt.
