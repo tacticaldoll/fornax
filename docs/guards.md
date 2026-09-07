@@ -154,9 +154,27 @@ escaped. Reverting to *that* reddens 1. The instruction below names the lookbehi
 | Finding | Revert this | Guard | Red on revert |
 |---|---|---|---|
 | DECLARED-GUARDS-ONE-PAYLOAD | the reason an unread `record_shape.Declared` carries, so its accessor raises with nothing to say — which is what the two-field version did by construction | `test_record_shape.DeclaredInvariant.test_an_unread_contract_never_raises_without_saying_why` | 3 |
-| RESULT-READ-BY-POSITION | `record_shape.record_defects`' use of `record_shape.Table.column`, back to reading the last cell of the row | `test_record_shape.RecordIntegrityRows.test_a_row_of_the_wrong_width_names_the_column_and_not_a_neighbour` | 1 |
+| RESULT-READ-BY-POSITION | `record_shape.record_defects`' use of `record_shape.Table.column`, back to reading the last cell of the row | `test_record_shape.RecordIntegrityRows.test_a_short_row_is_padded_by_the_parser_and_read_as_empty` | 1 |
 | EMPTY-SCOPE-READS-AS-CLEAN | the empty-corpus diagnostic in `record_shape.check` | `test_record_shape.EmptyScope.test_a_root_with_no_records_is_a_failure_not_a_clean_answer` | 1 |
-| ESCAPE-TESTED-NOT-CONSUMED | `record_shape.cells`' escape scan, back to the lookbehind split it replaced | `test_record_shape.RecordIntegrityRows.test_a_cell_ending_in_an_escaped_backslash_does_not_eat_the_delimiter` | 1 |
+| ESCAPE-TESTED-NOT-CONSUMED | the routing of `record_shape.table` through `markdown_links.table_rows`, back to a row reader written beside its caller — **superseded**: the repair this row first named was a hand-written escape scan, which a later review refuted for eating a non-punctuation escape. The unit to revert is now the routing, and the reader it replaced is gone | `test_record_shape.RecordIntegrityRows.test_a_non_punctuation_escape_keeps_its_backslash` | 1 |
+
+## Measured 2026-09-07, at the commit carrying this section, second round of the day
+
+The `6ec4d3b..59d7fb1` round's repairs. Each revert applied, confirmed landed by reading the changed
+line back, the named test run, the tree restored, and the whole suite confirmed green afterwards at
+452 tests.
+
+Two of these reverts are **broad**, and the ledger says so rather than letting a reader take the
+number for a narrow guarantee. Both findings share one repair — routing table rows through the
+parser that owns the grammar — so both share one revert, and undoing it removes several correct
+readings at once because the reader it replaced was wrong in more than one way. The number is what
+the instruction produces, not a measure of the finding's size.
+
+| Finding | Revert this | Guard | Red on revert |
+|---|---|---|---|
+| ESCAPE-EATS-A-NON-PUNCTUATION-PAIR | the `table` rule on `markdown_links.PARSER` | `test_record_shape.RecordIntegrityRows.test_a_non_punctuation_escape_keeps_its_backslash`, and 18 others — the revert is broad, see above | 19 |
+| TRAILING-PIPE-ASSUMED-MANDATORY | `record_shape.table`'s use of `markdown_links.table_rows`, replaced by a row reader written beside it | `test_record_shape.RecordIntegrityRows.test_a_row_with_no_trailing_pipe_keeps_every_cell`, and 13 others — broad for the same reason | 14 |
+| MALFORMED-TABLE-READS-CLEAN | the no-readable-table diagnostic in `record_shape.record_defects` | `test_record_shape.RecordIntegrityRows.test_a_section_that_holds_no_readable_table_is_not_a_record_without_one` | 1 |
 
 ## Repairs with no guard, and why
 
@@ -177,7 +195,7 @@ escaped. Reverting to *that* reddens 1. The instruction below names the lookbehi
 | INVARIANT-SPELLED-TWO-WAYS | none, by construction — an equivalence. Reverting only the spelling of `record_shape.Declared`'s guard leaves the suite green, measured, which is what an equivalence claim means. What settles it is that no hand-written form of the predicate remains anywhere: `outcome.paired` is the only one, and reverting *it* to a no-op turns 8 red |
 | TABLE-BODY-HAS-NO-NAME | none — the repair is that `record_shape.Table` names the header and the body apart, and no test holds whether a concept has a name. Its consequence is guarded under `RESULT-READ-BY-POSITION`, which is the defect the missing name produced |
 | TEST-ROOT-BY-CWD | none — the unit is the suite's own root resolution, and reverting a test's resolution reddens nothing when the run starts at the repository root, which is where the gate starts it. The re-runnable measurement is to run `test_record_shape` from another working directory: it failed before and passes now |
-| NO-OP-COMPREHENSION | none — the unit is an expression computing the value a shorter one computes. Its line moved into `record_shape.cells` with the table reader's rewrite |
+| NO-OP-COMPREHENSION | none — the unit is an expression computing the value a shorter one computes. Its line moved into the table reader's rewrite and then out of the tree with it, when the reader was replaced by `markdown_links.table_rows` |
 | SORT-TO-COUNT | none — the unit is a sort taken for a length in `record_shape.main`. No test holds how a count is obtained |
 | PROSE-WIDTH-UNENFORCED | none, and the absence is half the finding. Nothing measures a Markdown line's width, so no revert of the reflow can redden anything — the same shape as `WIDTH-EXEMPT-SINGLE-TOKEN`, one language over, and now registered with it under `e501-exempts-a-whitespace-free-line`. The reading is to measure the non-table lines of the two records cause 6 names |
 | INPUT-PATTERN-SPLIT | An equivalence refactor: two patterns for one Markdown line became one, and the answers were measured identical over the label alone, a padded label, a full contract line and a line without one. Reverting it leaves the suite green by construction, which is what an equivalence claim means. What settles it is `validate_skills.INPUT_LINE` being one pattern where there were two |
