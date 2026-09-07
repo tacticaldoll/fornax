@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Hold a Disposition Record's tables to the shape its own contract declares.
 
-The contract states five checks for a Record integrity table, a three-value domain for
-each Result, and — in two places, plus a third in `AGENTS.md` — that Record integrity
+The contract states a set of checks for a Record integrity table, a closed domain for
+each Result, and — in more than one place, `AGENTS.md` among them — that Record integrity
 audits the input while Self-check audits the record being written. All of it is prose,
-and prose is what a round after round of these records failed against: four tables
-carried a sixth row, one of them convicting a producer that was following the contract,
-and that one reached the shared branch inside a record that read as settled.
+and prose is what round after round of these records failed against: table after table
+carried a row the contract never declared, one of them convicting a producer that was
+following the contract, and that one reached the shared branch inside a record that read
+as settled.
 
 What this checks and what it cannot. A row asserts that the input claimed X, that
 reconciling X against the input's own contents gives Y, and therefore a Result — three
@@ -16,7 +17,7 @@ whose subject is the triager rather than the input has no seat to sit in, and th
 a `Probe disclosure` is refused rather than by understanding it. Whether an `Input claim`
 cell names a claim the input actually made has no proxy at all, and is not checked.
 
-The five keys are derived from the marked output template rather than copied here. A copy
+The keys are derived from the marked output template rather than copied here. A copy
 is a second list that can disagree with the contract, which is the failure this repository
 has recorded more than once — most recently as a check enumerating what an input named
 instead of what the tree holds. The template became reachable when it gained its
@@ -98,9 +99,9 @@ class Subject(enum.Enum):
     accusation with nothing behind it and the key set closes — that seat now carries no
     undeclared row anywhere in the corpus. A row under `THIS_RECORD` judges the record
     writing it, so an extra one is an author holding themselves to more than the template
-    asks: eight distinct undeclared labels across the corpus, among them commit
-    reachability, guards-row presence and citation existence. There the declared labels
-    are a floor and not a ceiling.
+    asks: label after label across the corpus that the template never declared, among them
+    commit reachability, guards-row presence and citation existence. There the declared
+    labels are a floor and not a ceiling.
 
     `AGENTS.md` states the separation these two express — "Keep facts about the input
     apart from facts about the record being written… A self-check folded into an audit of
