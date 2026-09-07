@@ -186,7 +186,7 @@ None.
 
 | Check | This record's answer |
 |---|---|
-| Every prior id sits in exactly one exclusive lifecycle home | pass — answered from the prior record's own tables: `ABSENT-CLAIM-AS-MISMATCH` is re-reported here, three ids are Closed, eleven are Carried forward, one is Out of scope this round, and F-11 / F-12 are Undetermined |
+| Every prior id sits in exactly one exclusive lifecycle home | pass — answered from the prior record's own tables: `ABSENT-CLAIM-AS-MISMATCH` is re-reported here, three ids are Closed, twelve are Carried forward across eleven rows — the last row carries two ids — one is Out of scope this round, and F-11 / F-12 are Undetermined. Corrected by the `v0.4.1..6ff702e` round: this cell read `eleven`, which counted the table's rows while the check it answers is about ids, and the paragraph above it said twelve |
 | Every accepted cause carries at least one repair with an enumerated Reach | pass — cause 1 lists three repairs; `1a`'s Reach names each record and the row inside it, `1b` names the authoring step, and `1c` names the files a check would touch and is not taken |
 | Every commit this record names is reachable from HEAD | pass — `c60a6ba` and `af1185a` were checked with `cat-file -e` then `merge-base --is-ancestor` against HEAD. The settling commit is deliberately unnamed: it is the commit carrying this file, and naming it would require reading a hash that does not exist yet |
 | Every finding this record accepts has a row in `docs/guards.md` | pass — `ABSENT-CLAIM-AS-MISMATCH` has a row saying nothing can turn red and why, and the three closures keep the guarded rows they already had |
@@ -195,7 +195,7 @@ None.
 ## What this round leaves standing
 
 - **F-11 / F-12**, unchanged.
-- **Eleven carried dispositions** whose repairs have landed and which the next round closes if its
+- **Twelve carried dispositions** whose repairs have landed and which the next round closes if its
   coverage opens a gate over `docs/`. This round proves the mechanism works: the three findings whose
   units were gate-reviewed closed on their input's own falsifiers.
 - **Two invented rows scored `mismatch` in records outside this round's coverage**:
