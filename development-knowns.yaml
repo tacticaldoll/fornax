@@ -173,6 +173,7 @@ knowns:
     declined-changes:
       - "Add a width check over scripts/ that exempts nothing. Weighed as admissible rather than refused: unlike the candidate checks this repository has declined, it needs no list of places it does not apply. What it lacks is a failure that left the workspace, and adding a gate step while repairing the defect it would have caught is a check bought instead of a repair verified."
       - Raise the configured line-length so the reported width matches what the rule actually enforces, which changes what is checked in order to make a claim true.
+      - "The same configuration claims one width for the Python and the markdown, and only the Python half is enforced at all. Ruff reads no Markdown, and no check in this repository measures a Markdown line, so the claim covering the larger of the two corpora rests on authoring alone. Two prose lines were added at 101 characters inside the range that registered this entry, in records whose own convention is the stated width."
     reconsider-when: A second over-width line reaches origin/main under this exemption, or a ruff release reports a whitespace-free line.
     verification: "None by check, which is what makes this debt rather than a resolved defect. The re-runnable reading is to measure every line under scripts/ and tools/ and test whether the content after its indentation holds whitespace; the exemption is stated in ruff.toml beside the width and in AGENTS.md beside the claim."
     updated: 2026-09-07
