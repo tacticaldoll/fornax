@@ -179,6 +179,54 @@ the instruction produces, not a measure of the finding's size.
 | TRAILING-PIPE-ASSUMED-MANDATORY | `record_shape.table`'s use of `markdown_links.table_rows`, replaced by a row reader written beside it | `test_record_shape.RecordIntegrityRows.test_a_row_with_no_trailing_pipe_keeps_every_cell`, and 13 others — broad for the same reason | 14 |
 | MALFORMED-TABLE-READS-CLEAN | the no-readable-table diagnostic in `record_shape.record_defects` | `test_record_shape.RecordIntegrityRows.test_a_section_that_holds_no_readable_table_is_not_a_record_without_one` | 1 |
 
+## Accepted 2026-09-07, at the commit carrying this section, no repair landed
+
+Settled by `docs/dispositions/v0.4.1..d75d484.md`. **No row here carries a measured number, and none
+claims one.** `AGENTS.md` asks that the guards be written when the record is written rather than when
+the repair lands, and every finding in that round is open: there is nothing yet to revert, so a red
+count would be a number nobody ran. Each row states instead the guard its repair must make runnable,
+and the round that lands the repair replaces the row with a measured one in a dated section of its
+own.
+
+That gap is the rule's, not this section's. A row's content as this file defines it — revert that
+unit, run that test, expect that many red — presupposes a landed repair, so a round that produces a
+record and lands no repair cannot fill one in the form the file asks for. Recorded here rather than
+resolved, because resolving it is a change to `AGENTS.md`.
+
+The claim in this file's opening — that every finding a round accepted has a row — remains false and
+is `GUARDS-LEDGER-INCOMPLETE` in that record, accepted with its repair not yet taken. The rows below
+are this round's own; the backfill of earlier rounds is that finding's repair.
+
+| Finding | The guard its repair must establish |
+|---|---|
+| SECTION-ABSENCE-SKIPS-ITS-RULES | revert the record-level rule in `record_shape.record_defects`; a case in `test_record_shape.Seats` that deletes a record's whole Self-check section and expects a diagnostic must go red |
+| DUPLICATE-SECTION-READ-AS-ONE | revert the duplicate-heading rejection, wherever it lands between `markdown_links.heading_section` and `record_shape.record_defects`; a case appending a second governed heading carrying an undeclared label must go red |
+| SUBJECT-ABSENCE-READS-AS-CLEAN | revert the subject guard in `check_citations.subjects`; a case in `test_check_citations.ModuleIdentity` pointing the check at a root whose named subject is renamed away must go red |
+| KEY-READ-BY-PREFIX | revert the whole-cell read in `record_shape.UniqueFirstColumn`; a case in `test_record_shape.DispositionKeys` keying two rows alike under a separator spelling the code did not expect must go red |
+| UNIQUENESS-CONTROL-MISSING | none by test, and the absence is the finding — the unit is a missing negative control. What a later round re-runs is a reading: `test_record_shape.DispositionKeys` must hold both a near-miss sharing the accepted prefix and a valid alternate spelling of the same meaning, which is what `AGENTS.md` asks of a hand-written grammar matcher |
+| DISPOSITION-DOMAIN-UNCHECKED | revert the domain rule added for the findings seat in `record_shape.rules_for`; a case giving that seat's verdict column a value outside the declared domain must go red |
+| MISSING-RESULT-COLUMN-YIELDS-A-DOMAIN | revert the unread branch in `record_shape.declared`; a case in `test_record_shape.DeclaredInvariant` handing it a template whose integrity table declares no verdict column must go red |
+| TREE-COUNT-IN-NEW-PROSE | none by test — the units are sentences in a docstring and in this file, and no check decides which numbers the count rule reaches. The re-runnable reading is to grep the modules this range added for a number standing beside a noun naming a tree artifact, and to compare each against the derived source it transcribes |
+| UNDECLARED-LABEL-TALLY-WRONG | none by test — the unit is one sentence of `record_shape.Subject`. The re-runnable reading is the one that found it: collect the first-column labels of every Self-check table under `docs/dispositions/`, subtract the labels the contract declares, and compare the remainder against what the docstring says. It was run and the docstring was one high, because the same commit's own label edit removed one |
+| GUARDS-LEDGER-INCOMPLETE | none by test — the unit is this file. The re-runnable reading is to collect every accepted `Dispositions` id under `docs/dispositions/` and check each against the row keys here; it was run and reported a substantial shortfall, which is the finding |
+| SHIPPED-SKILL-CITATION-UNVERIFIED | revert whichever of `check_citations.SUBJECTS` or `check_citations.subjects` the repair widens; a case in `test_check_citations.SymbolCitations` placing a citation to a nonexistent symbol inside a shipped skill must go red |
+| AGENTS-POINTS-AT-THE-WRONG-SYMBOL | none by test — the unit is one sentence of `AGENTS.md`, and `check_citations` cannot catch it because the constant it names does exist and merely holds something else. The re-runnable reading is to compare that sentence against `check_citations.SUBJECTS` and `check_citations.RECORDS` |
+| SHIPPED-SKILL-NAMES-A-PRIVATE-SYMBOL | none by test — the unit is prose in a shipped skill. The re-runnable reading is to grep `skills/` for a citation of the form module-dot-symbol resolving into `scripts/`; it returns exactly one today, naming `evidence_currency.resolved_inside` |
+| SHELL-COMMENT-RULE-NARROWER-THAN-CLAIMED | revert the operator case in `read_whole.COMMENT`; a case in `test_read_whole.ShellWordTests` feeding a commented install after a control operator must go red. Until the repair lands, the re-runnable reading is to compare the entry's stated rule against what `bash -c` does with the same input |
+| NOQA-CLAIM-REFUTED | none by test — the unit is a comment in `ruff.toml`, and the directives it denies are well-formed, so neither suppression rule fires on them. The re-runnable reading is to grep the linted tree for the directive and compare the count against what the comment claims |
+| COMMENT-OUTLIVED-ITS-CODE | none by test — the unit is a comment. Reverting its deletion leaves every gate green, because nothing reads a comment's relevance to the code beneath it. The re-runnable reading is to grep `scripts/record_shape.py` for the phrase and confirm the module no longer performs the split it describes |
+
+## Accepted 2026-09-07, at the commit carrying this section, second reading, no repair landed
+
+Settled by `docs/dispositions/7b98106..d75d484.second-reading.md`. Prospective for the same reason as
+the section above: no repair has landed, so no row carries a measured number.
+
+| Finding | The guard its repair must establish |
+|---|---|
+| ARCHIVE-BOUND-TO-CURRENT-CONTRACT | revert whichever of `record_shape.RequiredKeys`, `record_shape.ClosedKeys` or `record_shape.check` the repair changes; a case in `test_record_shape.Seats` that reworks one declared label in the contract fixture and expects the archived records to stay quiet must go red. Until the repair lands, the re-runnable reading is the measurement that found it: reword one declared Self-check label in the contract and count the records reported, then rename one Record integrity check and count again — both report the whole corpus rather than the change |
+| LABEL-EDIT-RULE-UNWRITTEN | none by test — the unit is a clause absent from `AGENTS.md`, and no check decides which record edits are permitted. The re-runnable reading is to grep `AGENTS.md` for the label-versus-reading distinction; it returns nothing today, while the reasoning that authorises such an edit sits inside `docs/dispositions/v0.4.1..af01263.md` |
+| REVERT-CLAIM-NAMES-A-SHAPE | none by test, and the absence is half the finding — the unit is commit prose, which is history and not editable. What the repair establishes instead is a row in this file stating the measurement as a named unit; the reading a later round runs is to remove `record_shape.rules_for`'s subject branch by the row's own wording and confirm the stated count. Four sibling measurements in the same commit named a unit and each reproduced exactly; this one named a code shape and did not |
+
 ## Repairs with no guard, and why
 
 | Finding | Why nothing goes red |
