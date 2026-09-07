@@ -159,7 +159,7 @@ class Shape:
 
     keys: dict[str, tuple[str, ...]]
     #: Per seat, per column, the alternatives that column's template cell spells with
-    #: `|`. Derived for every such column rather than for one, because the two seats
+    #: `|`. Derived for every such column rather than for one, because the seats
     #: carrying a verdict declare different domains — `Record integrity` answers
     #: pass/mismatch/not claimed and `Dispositions` accept/decline/defer. It was one
     #: tuple for one column, which is why the seat with a declared domain and no domain
