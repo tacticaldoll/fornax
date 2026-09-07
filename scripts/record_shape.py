@@ -40,6 +40,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from outcome import paired
+
 from diagnostic_text import printable
 from markdown_links import heading_section, marked_code_blocks
 
@@ -101,10 +103,10 @@ class Declared:
     reason: str | None
 
     def __post_init__(self) -> None:
-        if (self._shape is None) == (self.reason is None):
-            raise ValueError(
-                "declared holds the contract's shape or a reason, never both or neither"
-            )
+        paired(
+            self._shape, self.reason,
+            "declared holds the contract's shape or a reason, never both or neither",
+        )
 
     @property
     def shape(self) -> "Shape":

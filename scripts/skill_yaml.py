@@ -48,6 +48,8 @@ from dataclasses import dataclass
 
 import yaml
 
+from outcome import paired
+
 
 class Shape(enum.Enum):
     """What reading one key established.
@@ -102,8 +104,10 @@ class Document:
     reason: str | None
 
     def __post_init__(self) -> None:
-        if (self._mapping is None) == (self.reason is None):
-            raise ValueError("a document holds a mapping or a reason, never both or neither")
+        paired(
+            self._mapping, self.reason,
+            "a document holds a mapping or a reason, never both or neither",
+        )
 
     def require(self) -> dict[str, object]:
         """The mapping, for a caller that has already dealt with `reason`."""

@@ -20,6 +20,8 @@ import enum
 from dataclasses import dataclass
 from pathlib import Path
 
+from outcome import paired
+
 
 class Verdict(enum.Enum):
     """What resolving one candidate against one boundary established."""
@@ -51,10 +53,10 @@ class Boundary:
         # no code meant, and a type that admits a state nobody means is where a caller
         # eventually reads the one that is not there. Found by sweeping for the shape
         # after the same defect was reported against skill_yaml.Document.
-        if (self.root is None) == (self.error is None):
-            raise ValueError(
-                "a boundary holds a resolved root or the failure, never both or neither"
-            )
+        paired(
+            self.root, self.error,
+            "a boundary holds a resolved root or the failure, never both or neither",
+        )
 
     @classmethod
     def at(cls, root: Path) -> "Boundary":

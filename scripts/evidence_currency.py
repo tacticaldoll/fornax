@@ -40,6 +40,7 @@ from constrained_yaml import raw_scalar
 from diagnostic_text import printable
 from host_paths import has_parent_segment_anywhere, is_absolute_anywhere
 from markdown_links import heading_section
+from outcome import paired
 from path_boundary import Boundary, Verdict, resolve_within
 
 
@@ -266,8 +267,10 @@ class Fingerprint:
     reason: str | None
 
     def __post_init__(self) -> None:
-        if (self._digest is None) == (self.reason is None):
-            raise ValueError("a fingerprint holds a digest or a reason, never both or neither")
+        paired(
+            self._digest, self.reason,
+            "a fingerprint holds a digest or a reason, never both or neither",
+        )
 
     @property
     def digest(self) -> str:

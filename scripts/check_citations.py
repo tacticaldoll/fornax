@@ -46,6 +46,8 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from outcome import paired
+
 from diagnostic_text import printable
 from markdown_links import prose_lines
 
@@ -150,8 +152,10 @@ class Symbols:
     _imports: frozenset[str] = frozenset()
 
     def __post_init__(self) -> None:
-        if (self._names is None) == (self.reason is None):
-            raise ValueError("symbols hold a mapping or a reason, never both or neither")
+        paired(
+            self._names, self.reason,
+            "symbols hold a mapping or a reason, never both or neither",
+        )
 
     @property
     def names(self) -> dict[str, set[str]]:
