@@ -19,6 +19,8 @@ import sys
 import unittest
 from pathlib import Path
 
+import workspace_files
+
 CLAIM = "Standard library only"
 SCRIPTS = Path(__file__).resolve().parent.parent
 LOCAL = {path.stem for path in SCRIPTS.glob("*.py")}
@@ -51,7 +53,42 @@ def third_party(module: str, seen: set[str] | None = None) -> set[str]:
     return found
 
 
-TESTS = Path(__file__).resolve().parent
+ROOT = SCRIPTS.parent
+
+
+def test_modules(root: Path) -> list[Path]:
+    """Every test module this workspace carries, as git sees it.
+
+    Not a glob on one directory. The check read `scripts/tests` alone and said so
+    nowhere, so `tools/fornax-cli/tests` was outside it by accident rather than by a
+    decision anybody recorded — and that suite is the one `AGENTS.md` already treats
+    specially, which is exactly the kind of exclusion that needs stating if it is meant.
+    `workspace_files` is the owner of "what does this workspace hold", and asking git is
+    what keeps `.venv` out without a skip list that would go stale beside `.gitignore`.
+    """
+    files, reason = workspace_files.listed(root)
+    if files is None:
+        raise AssertionError(reason)
+    return sorted(f for f in files if f.suffix == ".py" and f.name.startswith("test_"))
+
+
+def main_guard(test: ast.expr) -> bool:
+    """Whether *test* compares `__name__` against `"__main__"`, in either order.
+
+    Matched on the tree rather than on unparsed text. One spelling was compared against
+    one literal string, so `if "__main__" == __name__:` — the same construct written the
+    other way round — ran `unittest.main()` while the check answered that nothing was
+    there. A near-miss like `"__main_"` is refused because the literal is compared, not
+    searched for.
+    """
+    if not isinstance(test, ast.Compare) or len(test.ops) != 1:
+        return False
+    if not isinstance(test.ops[0], ast.Eq):
+        return False
+    sides = (test.left, test.comparators[0])
+    names = {side.id for side in sides if isinstance(side, ast.Name)}
+    literals = {side.value for side in sides if isinstance(side, ast.Constant)}
+    return names == {"__name__"} and literals == {"__main__"}
 
 
 def entry_point_out_of_place(source: str) -> bool:
@@ -60,17 +97,19 @@ def entry_point_out_of_place(source: str) -> bool:
     `unittest.main()` collects the classes that exist when it runs, so a block above a
     class leaves that class uncollected on a direct run while discovery still finds it.
     The gate discovers, so it never saw this; a contributor running one file did, and so
-    would a later round running the test a `docs/guards.md` row names. Measured before
-    the repair: one module collected thirty-three tests directly against fifty-two
-    discovered, and among the classes it skipped was the one written that round to guard
-    a finding.
+    would a later round running the test a `docs/guards.md` row names. The measurement
+    that found it is recorded under its own dated heading in that file.
 
     Scoped to test modules because theirs is the silent case. A script whose entry point
     calls a function defined below it raises on the spot.
+
+    Deliberately stricter than the collection loss: a block followed by a module-level
+    constant is reported and costs no test. The rule stays readable from a file's shape
+    that way, and the shape is what an author can check.
     """
     body = ast.parse(source).body
     for index, node in enumerate(body):
-        if isinstance(node, ast.If) and ast.unparse(node.test) == "__name__ == '__main__'":
+        if isinstance(node, ast.If) and main_guard(node.test):
             return index != len(body) - 1
     return False
 
@@ -104,16 +143,31 @@ class ModuleClaimTests(unittest.TestCase):
 
 
 class EntryPointPlacement(unittest.TestCase):
-    """A test module's entry point runs after everything it defines, or it collects less."""
+    """No test module places its entry point above something it defines.
+
+    Stated as the shape rather than as the collection loss, which is what the check
+    decides; `entry_point_out_of_place` says why the two differ.
+    """
 
     def test_every_test_module_places_its_entry_point_last(self) -> None:
         misplaced = [
             path.name
-            for path in sorted(TESTS.glob("test_*.py"))
+            for path in test_modules(ROOT)
             if entry_point_out_of_place(path.read_text(encoding="utf-8"))
         ]
 
         self.assertEqual(misplaced, [])
+
+    def test_the_set_reaches_every_tests_directory_the_workspace_holds(self) -> None:
+        # The bound the glob left unstated: the CLI suite is a test module too.
+        found = {path.parent.name for path in test_modules(ROOT)}
+
+        self.assertIn("tests", found)
+        outside_scripts = {
+            path.relative_to(ROOT).parts[0] for path in test_modules(ROOT)
+        } - {"scripts"}
+
+        self.assertEqual(outside_scripts, {"tools"})
 
     def test_the_check_sees_an_entry_point_above_a_class(self) -> None:
         above = (
@@ -130,6 +184,31 @@ class EntryPointPlacement(unittest.TestCase):
         self.assertTrue(entry_point_out_of_place(above))
         self.assertFalse(entry_point_out_of_place(below))
 
+    def test_the_check_sees_the_guard_written_the_other_way_round(self) -> None:
+        # The alternate spelling of the same meaning, which a comparison against one
+        # unparsed string missed while `unittest.main()` ran either way.
+        reversed_guard = (
+            "import unittest\n\n"
+            'if "__main__" == __name__:\n    unittest.main()\n\n\n'
+            "class Late(unittest.TestCase):\n    pass\n"
+        )
+
+        self.assertTrue(entry_point_out_of_place(reversed_guard))
+
+    def test_a_near_miss_literal_is_not_an_entry_point(self) -> None:
+        # The near-miss control, sharing the accepted prefix: nothing runs here.
+        near_miss = (
+            "import unittest\n\n"
+            'if __name__ == "__main_":\n    unittest.main()\n\n\n'
+            "class Late(unittest.TestCase):\n    pass\n"
+        )
+
+        self.assertFalse(entry_point_out_of_place(near_miss))
+
     def test_a_module_with_no_entry_point_is_not_reported(self) -> None:
-        # The third answer: absence is not misplacement, and most of this tree has none.
+        # The third answer: a module may have none, and some here do.
         self.assertFalse(entry_point_out_of_place("import unittest\n"))
+
+
+if __name__ == "__main__":
+    unittest.main()

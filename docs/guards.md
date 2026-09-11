@@ -387,6 +387,23 @@ shortfall class is empty: no command is read as a shorter well-formed word list.
 divergences are substitution constructs where this returns *more* words than bash, which cannot
 hide a pin and fail loudly at `packaging` instead.
 
+## Measured 2026-09-11, at the commit carrying this section, the entry-point check
+
+| Finding | Revert this | Guard | Red on revert |
+|---|---|---|---|
+| ENTRY-POINT-CHECK-READS-ONE-SPELLING | the structural match in `test_module_claims.main_guard`, restoring the comparison of unparsed text against one literal | `test_module_claims.EntryPointPlacement.test_the_check_sees_the_guard_written_the_other_way_round` | 1 |
+| ENTRY-POINT-CHECK-BOUND-UNDECLARED | the workspace-wide set in `test_module_claims.test_modules`, restoring a glob on one directory | `test_module_claims.EntryPointPlacement.test_the_set_reaches_every_tests_directory_the_workspace_holds` | 1 |
+
+The set comes from `workspace_files` now rather than from a glob, so the bound is git's and not a
+directory named here; the suite it used to miss is the CLI one, which is the suite `AGENTS.md`
+already treats specially and therefore exactly the exclusion that would have needed stating.
+
+MESSAGE-NUMBERS-IN-A-DOCSTRING, WORD-SPELLED-TREE-TOTAL and ENTRY-POINT-CLASS-OVERCLAIMS are
+repaired in the same docstrings and have no guard: nothing reads a docstring's figures against the
+tree, counts what a comment says "most" of, or tests a class docstring against what its check
+decides. Their rows are in the no-guard table, and the measurement the figures reported now lives
+under its own dated heading here, where it is quotable with the tree it names.
+
 ## Written 2026-09-11, prospective — the 2c1b448 round, nothing measured
 
 The round settled in `docs/dispositions/8a45707..2c1b448.md` accepted fourteen findings and
@@ -403,8 +420,6 @@ question leaves a refusal to guard, while a better proxy leaves another boundary
 |---|---|---|---|
 | QUOTED-HASH-CUT-BEFORE-THE-LEXER | for 1a, the refusal of a command holding a hash-opening word in `read_whole.shell_words`; for 1c, the widened escape test | a case asserting that a hash after an escaped separator and after a substitution is not read as a comment — for 1a by refusal, for 1c by the word surviving | not measured — no repair has landed |
 | OPERATOR-BRANCH-UNCONTROLLED | for 1c, the negative control itself | a case asserting that an operator-shaped scan token which does not end a bash word leaves the hash uncut; voided if 1a lands, the branch going with it | not measured |
-| ENTRY-POINT-CHECK-READS-ONE-SPELLING | the structural construct match in `test_module_claims.entry_point_out_of_place`, restoring the comparison against one unparsed literal | a case placing a reversed comparison above a class and asserting it is reported, with a near-miss asserted not to be | not measured |
-| ENTRY-POINT-CHECK-BOUND-UNDECLARED | the widened directory set in `test_module_claims.TESTS` | a case asserting that a misplaced entry point under every tests directory the repository holds is reported, not only under one | not measured |
 | CONTROL-MISLABELLED | the accepted-side alternate spelling added to `test_read_whole.RequirementsComment` | a case asserting that a hash after a tab begins a comment, which `\s` admits and nothing exercises | not measured |
 
 ## Repairs with no guard, and why
@@ -470,10 +485,10 @@ question leaves a refusal to guard, while a better proxy leaves another boundary
 | STATEMENT-OVERRUN-BY-ITS-EVIDENCE | none — the unit is the `statement` field of the same registry entry, and no check tests a statement against the evidence listed under it. The re-runnable reading is to read each evidence item and ask whether it names a hand-written bounding the statement omits; `distribution_manifest.install_refs` is one |
 | SHELL-WORDS-CLAIMS-A-REFUSAL-IT-DOES-NOT-MAKE | none — the unit is a docstring sentence, and nothing tests prose against the code beneath it. The re-runnable reading is to take the sentence "Where that question cannot be answered the command is refused" and find an unanswerable case: an escaped separator two tokens back is one, and it is read short |
 | PROSPECTIVE-SECTION-SPLICED | none — the unit is a paragraph in this file. The re-runnable reading is to measure every prose line here against the width the rest of the file holds, and to check that a section promising rows has them; this section has neither |
-| MESSAGE-NUMBERS-IN-A-DOCSTRING | none — the unit is a docstring, and nothing compares its figures against the tree. The re-runnable reading is to collect every number in an undated docstring and measure it; the transcribed pair was true at the tree the message described and is not at this one |
-| WORD-SPELLED-TREE-TOTAL | none — the hygiene rule that forbids this is a judgement and nothing checks it. The re-runnable reading is to count the test modules carrying an entry-point block and compare that against the comment, which says most have none |
+| MESSAGE-NUMBERS-IN-A-DOCSTRING | none, and the repair has landed — the unit is a docstring, and nothing compares its figures against the tree. The re-runnable reading is to collect every number in an undated docstring and measure it; the transcribed pair was true at the tree the message described and is not at this one |
+| WORD-SPELLED-TREE-TOTAL | none, and the repair has landed — the hygiene rule that forbids this is a judgement and nothing checks it. The re-runnable reading is to count the test modules carrying an entry-point block and compare that against the comment, which says most have none |
 | REVERT-INSTRUCTION-AMBIGUOUS | none — the unit is a row in this file, and nothing checks that a row admits one reading. The re-runnable reading is to perform each reading its wording allows and compare the answers; two readings give two numbers, neither of them the one recorded |
-| ENTRY-POINT-CLASS-OVERCLAIMS | none — the unit is a class docstring. The re-runnable reading is to construct the shape the check reports and ask whether anything is uncollected: a block followed by a module-level constant is reported and loses nothing |
+| ENTRY-POINT-CLASS-OVERCLAIMS | none, and the repair has landed — the unit is a class docstring. The re-runnable reading is to construct the shape the check reports and ask whether anything is uncollected: a block followed by a module-level constant is reported and loses nothing |
 | COMMENTRULE-CITES-A-REMOVED-WORDING | none — the citation gate refuses a symbol that no longer resolves and does not read a quoted wording. The re-runnable reading is to search `development-knowns.yaml` for the phrase the docstring attributes to it; this range removed it |
 
 ## What was declined
