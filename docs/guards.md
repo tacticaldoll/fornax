@@ -213,6 +213,21 @@ collected as it went.
 | ROW-SKIP-NOT-ASKED-OF-THE-WIRING | the `closed` condition in `record_shape.ValueReadWhole` | `test_record_shape.FindingsDomain` | 3 |
 | SHELL-COMMENT-RULE-NARROWER-THAN-CLAIMED | the operator lookbehind in `read_whole.COMMENT` | `test_read_whole.CommentRule` | 3 |
 
+**This row cannot be run any more, and the finding it guarded is closed.** Its revert names an
+operator lookbehind that no longer exists: `read_whole.COMMENT` was narrowed when the shell stopped
+sharing it, and its guard `test_read_whole.CommentRule` stopped reaching the pattern at all when
+that call was severed — both symbols staying in place, so the citation gate had nothing to refuse.
+The reading of 3 stands as written, being true of the tree this heading names. What replaces it is
+the row under "the severed-guard repair", where the subject is reached directly and the revert is
+to put the retired form back.
+
+The row went quiet for two rounds before anyone ran it, which is the finding
+GUARD-DIED-WITH-ITS-ONLY-CALLER. A rename is refused by a check; a guard that stops reaching its
+subject is refused by nothing, and re-measuring the rows a repair's Reach touches is the discipline
+that catches it. That discipline missed this row twice, because the repairs that killed it named
+`read_whole.shell_words` while the row names `read_whole.COMMENT` — which is why the repair routed
+for it keys rows by the symbols their instructions name rather than by what an author recalls.
+
 Five findings this round accepted have no revert, and each is a row below rather than an
 omission: the prose ones, and the two the round chose to register rather than repair.
 
