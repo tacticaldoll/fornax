@@ -264,8 +264,14 @@ caused it rather than a round later.
 
 | Finding | Revert this | Guard | Red on revert |
 |---|---|---|---|
-| QUOTED-HASH-CUT-BEFORE-THE-LEXER | the begins-a-word test in `read_whole.shell_words`, leaving the bare check that a token starts with a hash | `test_read_whole.ShellWordTests.test_a_hash_after_a_closing_quote_stays_in_its_word` | 1 |
+| QUOTED-HASH-CUT-BEFORE-THE-LEXER | the `start == 0 or gap or operator` condition in `read_whole.shell_words` and nothing else, leaving the `startswith` test it guarded | `test_read_whole.ShellWordTests.test_a_hash_after_a_closing_quote_stays_in_its_word` | 1 |
 | QUOTED-HASH-CUT-BEFORE-THE-LEXER | the escaped-separator refusal in `read_whole.shell_words`, so a token ending in a backslash no longer stops the reading | `test_read_whole.ShellWordTests.test_a_hash_after_an_escaped_separator_keeps_its_word` | 1 |
+
+**Which revert was measured.** The instruction above named "the begins-a-word test", which two
+readers undo differently: removing the condition alone reddens one case, and removing the whole
+block back to what the tree held before reddens two. The reading measured was the first, and the
+cell now names the condition rather than the test, so one reading is available. A row is an
+instruction a later round runs, and an instruction with two answers is not one.
 
 **Superseded by the round below.** The two reverts these rows name no longer exist: the
 begins-a-word test and the escaped-separator refusal were both deleted when the question they
