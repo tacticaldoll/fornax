@@ -120,9 +120,15 @@ def shell_words(command: str) -> list[str] | Unread:
     is the question with no owner. `tool==1.0#x` is unaffected: the hash is inside the
     word, not opening it.
 
-    What this costs is stated rather than discovered: a `run:` line carrying an inline
-    comment is refused, so the comment moves to a line of its own. Nothing in this
-    repository carries one.
+    What this costs, in the forms it actually takes. An inline comment is refused, and
+    the comment moves to a line of its own. An escaped hash is refused, posix `shlex`
+    unescaping it into the token a comment produces. And a hash the author *quoted* is
+    refused too — `echo "### building"` among them — because the predicate reads words
+    after quote removal, where the quoting that would settle it is already gone. The
+    third form is the one this docstring first omitted, and it is the one whose advice
+    does not follow: moving a comment elsewhere does nothing for a word that is not a
+    comment, so the diagnostic names both ways out. Nothing in this repository carries
+    any of the three.
     """
     if command.lstrip().startswith("#"):
         return []
@@ -138,6 +144,7 @@ def shell_words(command: str) -> list[str] | Unread:
         return Unread(
             command,
             "holds a word opening with a hash, which no reader here can tell from a "
-            "comment; put the comment on a line of its own",
+            "comment; move a comment to a line of its own, or give a word that only "
+            "looks like one a form that does not open with a hash",
         )
     return words

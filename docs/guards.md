@@ -376,11 +376,13 @@ repair rather than guarded: the first was a docstring promising a refusal the co
 the code now makes it, the second named a branch that no longer exists. Neither has a row, because a
 revert would have to restore the branch to have anything to redden.
 
-**What it costs, stated rather than discovered.** Two commands this could read before are now
-refused: an escaped hash, which posix `shlex` unescapes into the token a comment would produce, and
-an inline comment, which cannot be told from a hash-opening word. A `run:` line wanting a comment
-puts it on a line of its own, and the diagnostic says so. Nothing in this repository carries either
-form, and the workflow this actually reads still yields its commands with none refused.
+**What it costs, in the forms it actually takes.** Three commands this could read before are now
+refused: an inline comment; an escaped hash, which posix `shlex` unescapes into the token a comment
+would produce; and a hash the author quoted, because the predicate reads words after quote removal,
+where the quoting that would settle it is already gone. The third was omitted when this section was
+written and is the one whose advice did not follow — `echo "### building"` is refused and has no
+comment to move — so the diagnostic now names both ways out. Nothing in this repository carries any
+of the three, and the workflow this actually reads still yields its commands with none refused.
 
 **What it buys, measured.** Against bash over the same constructed set the previous rounds used, the
 shortfall class is empty: no command is read as a shorter well-formed word list. The residual
