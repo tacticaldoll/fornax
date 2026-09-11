@@ -216,23 +216,38 @@ collected as it went.
 Five findings this round accepted have no revert, and each is a row below rather than an
 omission: the prose ones, and the two the round chose to register rather than repair.
 
-## Written 2026-09-10, prospective — nothing measured
+## Measured 2026-09-11, at the commit carrying this section
 
-The round settled in `docs/dispositions/v0.4.1..e144212.md` accepted three findings and repaired
-none of them, so these rows name the guard each repair will owe rather than a revert anyone ran.
-They are written now because `AGENTS.md` puts the ledger in the turn that writes the record and not
-the turn that lands the repair: a ledger completed in the repair turn cannot hold the round's
-findings list, because that list is what the record produces. A later round measures these and
-moves them under a Measured heading; until then the last column says so rather than carrying a
-number nobody counted.
+The rows the round settled in `docs/dispositions/v0.4.1..e144212.md` wrote prospectively, now
+measured. Each revert was applied to the tree, the whole suite run, the tree restored, and the
+suite confirmed green again afterwards. The tree is named as the commit carrying this section
+rather than by hash, for the reason the earlier sections give: the measurements were taken in the
+turn that made them, so the hash did not exist while they were being written.
 
-The third accepted finding of that round, UNJUDGED-LOCAL-ANNOTATION-WRONG, is not here. Nothing can
-go red for it, which is a row of its own kind and sits in the section below.
+Two corrections to what those rows said, disclosed here rather than left to be discovered. The
+prospective row called the escaped-hash control an existing case in `test_read_whole.CommentRule`.
+No such case existed; it is written in this round, in `test_read_whole.ShellWordTests`, alongside a
+second control for adjacent quoting. Correcting where a guard lives is correcting the row's label
+rather than one of its readings, which `AGENTS.md` admits — the readings below were taken after the
+correction and report what actually ran. The row also offered a choice of repairs, and 1a is the
+one taken, so the revert names it alone.
 
-| Finding | Revert this, once its repair lands | Guard | Red on revert |
+The two counts are not the same kind of two. The shell revert reddens one named test that carries a
+subtest per quote character; the record revert reddens two named tests.
+
+| Finding | Revert this | Guard | Red on revert |
 |---|---|---|---|
-| QUOTED-HASH-CUT-BEFORE-THE-LEXER | whichever of repairs 1a, 1b or 1d is taken, at `read_whole.shell_words` — for 1a, the lexer-side comment cut, restoring the pre-lexer split on `read_whole.COMMENT` | a case in `test_read_whole.ShellWordTests` asserting that a hash inside single or double quotes survives into the word that carries it, plus the existing escaped-hash case in `test_read_whole.CommentRule`, which a token-value cut would redden and a position-mapped cut would not | not measured — no repair has landed |
-| RECORD-RULES-IGNORE-THE-DECLARED-SHAPE | for 2a, the declared-seat test in `record_shape.OneSectionEach` and in `record_shape.ReadableTable`; for 2b, the per-seat iteration in `record_shape.record_defects`, restoring each rule's own loop over `record_shape.SEATS` | a case in `test_record_shape.RecordCardinality` driving a contract revision that declares fewer seats than `record_shape.SEATS` holds, and asserting that a duplicated or unreadable section under an undeclared seat yields no diagnostic | not measured |
+| QUOTED-HASH-CUT-BEFORE-THE-LEXER | the quote-preserving scan in `read_whole.shell_words`, restoring the pre-lexer split on `read_whole.COMMENT` that `a1e8c11` left | `test_read_whole.ShellWordTests.test_a_hash_inside_quotes_is_not_a_comment` | 2 |
+| RECORD-RULES-IGNORE-THE-DECLARED-SHAPE | the declared-seat gate in `record_shape.record_defects`, so every rule is handed every seat again | `test_record_shape.UndeclaredSeatIsNotJudged.test_a_duplicated_undeclared_section_is_not_reported`, `test_record_shape.UndeclaredSeatIsNotJudged.test_an_unreadable_table_under_an_undeclared_section_is_not_reported` | 2 |
+
+The design of the shell repair is held by two further controls, which are not guards for a finding
+and so are not rows here. Each is reddened by a wrong repair rather than by reverting the right
+one, and each was measured the same way:
+`test_read_whole.ShellWordTests.test_an_escaped_hash_is_a_word_and_not_a_comment` reddens when the
+cut is made on the lexer's output, because posix `shlex` unescapes and an escaped hash arrives as
+the token a comment would; and
+`test_read_whole.ShellWordTests.test_adjacent_quotes_are_one_word` reddens when the words are
+rebuilt by rejoining the scan's tokens instead of slicing the text.
 
 ## Repairs with no guard, and why
 
@@ -291,7 +306,7 @@ go red for it, which is a row of its own kind and sits in the section below.
 | LABEL-EDIT-RULE-UNWRITTEN | none — the unit is a clause that was absent from `AGENTS.md`, and no check decides which record edits are permitted. The reading is to grep `AGENTS.md` for the label-versus-answer distinction; it returned nothing before this round and the reasoning sat inside the record it authorised editing |
 | REVERT-CLAIM-NAMES-A-SHAPE | none by test, and the absence is half the finding — the unit is commit prose, which is history and not editable. What replaces a guard is this row: delete the two subject branches of `record_shape.rules_for`, so every seat falls through to the findings rules, and the suite reports 31 red. Stated as the deletion rather than as "the branch that lets the subject pick", because writing this row is where that difference stopped being theoretical — the first draft of it said 3, which is what a different mutation of the same function produces. The claim it corrects named "the branch that lets the subject pick at all", which two readers mutate differently — four sibling measurements in the same commit named a unit and each reproduced exactly, and this one did not |
 | GUARDS-LEDGER-INCOMPLETE | none — the unit is this file's opening claim, which is bounded now rather than unbounded. The reading is to collect every accepted `Dispositions` id from the rounds this file covers and check each against the row keys here; earlier rounds are stated as out of scope rather than left as unmarked holes |
-| UNJUDGED-LOCAL-ANNOTATION-WRONG | none, and the absence is the point of repair 3b. The unit is a local annotation in `record_shape.audit`, and no gate step reads an annotation — `requirements-maintenance.txt` pins no type checker, and `ruff` is selected to `E`, `F` and `W`, none of which compares an annotation against what is assigned. The re-runnable reading is to compare that local against the field it fills on `record_shape.Audit`. Prospective: the repair has not landed, and the row is here rather than in the prospective table above because nothing would go red for it even after it does |
+| UNJUDGED-LOCAL-ANNOTATION-WRONG | none, and the absence is the point of repair 3b. The unit is a local annotation in `record_shape.audit`, and no gate step reads an annotation — `requirements-maintenance.txt` pins no type checker, and `ruff` is selected to `E`, `F` and `W`, none of which compares an annotation against what is assigned. The re-runnable reading is to compare that local against the field it fills on `record_shape.Audit`. The repair has landed and nothing went red for it, which is what this row said would happen. The same class was swept by comparing every local list annotation in the tree against what is appended to it; two other sites flag on the shape of the call and neither is one |
 
 ## What was declined
 
