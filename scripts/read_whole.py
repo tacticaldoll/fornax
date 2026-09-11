@@ -27,12 +27,16 @@ from dataclasses import dataclass
 # Where a requirements line's comment begins, which is the one grammar this still reads
 # by hand. `runtime_contract.pins` is the only caller left: pip ends a requirement at a
 # `#` that begins a word, and such a line carries no shell quoting for the matcher to
-# misread. The operator form stays because a requirement may carry a marker after `;`.
+# misread. The operator form is gone with the shell: pip ends such a comment at a hash
+# beginning a line or following whitespace, nothing here exercised the operator case,
+# and its owner is not installed, so an unexercised rule whose correctness cannot be
+# settled buys nothing. A line it therefore leaves whole reaches `packaging`, which
+# refuses it loudly rather than comparing a truncation clean.
 #
 # `shell_words` shared this and no longer does. A shell command can quote a hash, and a
 # matcher that cannot read a quote cut `echo "value # kept"` into an unterminated command
 # and refused it. What decides a comment there is now the lexer that owns the quoting.
-COMMENT = re.compile(r"(?:(?<=\s)|(?<=[;&|()<>])|^)#")
+COMMENT = re.compile(r"(?:(?<=\s)|^)#")
 
 
 @dataclass(frozen=True)

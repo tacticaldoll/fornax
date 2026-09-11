@@ -181,5 +181,38 @@ class CommentRule(unittest.TestCase):
         self.assertEqual(read_whole.shell_words("# pip install evil==9"), [])
 
 
+class RequirementsComment(unittest.TestCase):
+    """`read_whole.COMMENT` reads a requirements line, and nothing else reaches it.
+
+    It was shared with `shell_words`, whose tests were its only coverage. When that call
+    went the coverage went with it, and because no symbol was renamed nothing reported
+    it: a `docs/guards.md` row kept instructing a later round to revert a rule that
+    reverting no longer reddened. This class reaches the pattern for its own sake, so
+    severing a caller cannot silence it again.
+    """
+
+    def test_a_hash_at_the_start_or_after_whitespace_begins_a_comment(self) -> None:
+        self.assertEqual(
+            read_whole.COMMENT.split("ruff==1.0 # pin", maxsplit=1)[0], "ruff==1.0 "
+        )
+        self.assertEqual(read_whole.COMMENT.split("# all of it", maxsplit=1)[0], "")
+
+    def test_a_hash_inside_a_word_is_not_a_comment(self) -> None:
+        # The near-miss control, sharing the accepted character: pip's URL fragment and a
+        # pin carrying a hash both have to survive whole.
+        for line in ("pkg#egg=z", "ruff==1.0#x"):
+            with self.subTest(line=line):
+                self.assertEqual(read_whole.COMMENT.split(line, maxsplit=1)[0], line)
+
+    def test_a_hash_after_a_marker_separator_is_not_a_comment(self) -> None:
+        # The alternate spelling of the same meaning: a hash beginning a word where the
+        # shell would have said so, written with an operator rather than a space. Retired
+        # with the shell, so the line is left whole and reaches `packaging`, which refuses
+        # it rather than comparing a truncation clean.
+        self.assertEqual(
+            read_whole.COMMENT.split("ruff==1.0;#x", maxsplit=1)[0], "ruff==1.0;#x"
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -301,6 +301,34 @@ The other two findings settled in the same round and repaired alongside this one
 `LEDGER-NAMES-A-SELECTION-THE-CONFIG-DOES-NOT-HOLD` and `STATEMENT-OVERRUN-BY-ITS-EVIDENCE` — can
 have no guard and keep their rows in the section below.
 
+## Measured 2026-09-11, at the commit carrying this section, the severed-guard repair
+
+`read_whole.COMMENT` had no coverage of its own. `test_read_whole.CommentRule` reached it only
+through `shell_words`, and when that call went the coverage went with it while both symbols stayed
+in place, so the citation check saw nothing and the row below kept instructing a later round to run
+a revert that reddened nothing.
+
+The repair gives the pattern its own class and retires the operator form the shell needed. Nothing
+here exercised that form; pip owns the requirements-file comment and is not installed, so its
+correctness cannot be settled, and an unexercised rule that cannot be checked was removed rather
+than guarded. `development-knowns.yaml` records the absent owner.
+
+| Finding | Revert this | Guard | Red on revert |
+|---|---|---|---|
+| GUARD-DIED-WITH-ITS-ONLY-CALLER | the operator form's removal from `read_whole.COMMENT`, putting the lookbehind back | `test_read_whole.RequirementsComment.test_a_hash_after_a_marker_separator_is_not_a_comment` | 1 |
+
+**Re-pointing the row this finding is about.** `SHELL-COMMENT-RULE-NARROWER-THAN-CLAIMED` recorded 3
+red for reverting the operator lookbehind. Re-run across the three trees it has seen: 3 at the tree
+it was measured on, 0 once `shell_words` stopped calling the pattern, and 1 now. The instruction has
+also inverted — the operator form is retired, so the revert is to put it back rather than to take it
+away — and the test it reddens is the new alternate-spelling control rather than the old class. Its
+earlier readings stand as written, each true of the tree it names; this row is where the current
+one lives.
+
+Re-run under the same discipline as the sections above. Both rows for
+`QUOTED-HASH-CUT-BEFORE-THE-LEXER` still redden 1, and `DIRECT-RUN-SKIPS-A-CLASS` still reddens 1,
+so this repair moved no count but its own.
+
 ## Written 2026-09-11, prospective — nothing measured
 
 The round settled in `docs/dispositions/e144212..05025bc.md` accepted six findings. One has since
@@ -316,7 +344,6 @@ check that it still produces the number it records.
 
 | Finding | Revert this, once its repair lands | Guard | Red on revert |
 |---|---|---|---|
-| GUARD-DIED-WITH-ITS-ONLY-CALLER | for 2a, the case that reaches `read_whole.COMMENT` through `runtime_contract.pins`; for 2b, nothing, because retiring the lookbehind removes the subject rather than guarding it | for 2a, the restored `SHELL-COMMENT-RULE-NARROWER-THAN-CLAIMED` row above, which must redden again once a test reaches `read_whole.COMMENT` for its own sake | not measured |
 
 ## Repairs with no guard, and why
 
