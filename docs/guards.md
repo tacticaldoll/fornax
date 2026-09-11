@@ -216,6 +216,24 @@ collected as it went.
 Five findings this round accepted have no revert, and each is a row below rather than an
 omission: the prose ones, and the two the round chose to register rather than repair.
 
+## Written 2026-09-10, prospective — nothing measured
+
+The round settled in `docs/dispositions/v0.4.1..e144212.md` accepted three findings and repaired
+none of them, so these rows name the guard each repair will owe rather than a revert anyone ran.
+They are written now because `AGENTS.md` puts the ledger in the turn that writes the record and not
+the turn that lands the repair: a ledger completed in the repair turn cannot hold the round's
+findings list, because that list is what the record produces. A later round measures these and
+moves them under a Measured heading; until then the last column says so rather than carrying a
+number nobody counted.
+
+The third accepted finding of that round, UNJUDGED-LOCAL-ANNOTATION-WRONG, is not here. Nothing can
+go red for it, which is a row of its own kind and sits in the section below.
+
+| Finding | Revert this, once its repair lands | Guard | Red on revert |
+|---|---|---|---|
+| QUOTED-HASH-CUT-BEFORE-THE-LEXER | whichever of repairs 1a, 1b or 1d is taken, at `read_whole.shell_words` — for 1a, the lexer-side comment cut, restoring the pre-lexer split on `read_whole.COMMENT` | a case in `test_read_whole.ShellWordTests` asserting that a hash inside single or double quotes survives into the word that carries it, plus the existing escaped-hash case in `test_read_whole.CommentRule`, which a token-value cut would redden and a position-mapped cut would not | not measured — no repair has landed |
+| RECORD-RULES-IGNORE-THE-DECLARED-SHAPE | for 2a, the declared-seat test in `record_shape.OneSectionEach` and in `record_shape.ReadableTable`; for 2b, the per-seat iteration in `record_shape.record_defects`, restoring each rule's own loop over `record_shape.SEATS` | a case in `test_record_shape.RecordCardinality` driving a contract revision that declares fewer seats than `record_shape.SEATS` holds, and asserting that a duplicated or unreadable section under an undeclared seat yields no diagnostic | not measured |
+
 ## Repairs with no guard, and why
 
 | Finding | Why nothing goes red |
@@ -273,6 +291,7 @@ omission: the prose ones, and the two the round chose to register rather than re
 | LABEL-EDIT-RULE-UNWRITTEN | none — the unit is a clause that was absent from `AGENTS.md`, and no check decides which record edits are permitted. The reading is to grep `AGENTS.md` for the label-versus-answer distinction; it returned nothing before this round and the reasoning sat inside the record it authorised editing |
 | REVERT-CLAIM-NAMES-A-SHAPE | none by test, and the absence is half the finding — the unit is commit prose, which is history and not editable. What replaces a guard is this row: delete the two subject branches of `record_shape.rules_for`, so every seat falls through to the findings rules, and the suite reports 31 red. Stated as the deletion rather than as "the branch that lets the subject pick", because writing this row is where that difference stopped being theoretical — the first draft of it said 3, which is what a different mutation of the same function produces. The claim it corrects named "the branch that lets the subject pick at all", which two readers mutate differently — four sibling measurements in the same commit named a unit and each reproduced exactly, and this one did not |
 | GUARDS-LEDGER-INCOMPLETE | none — the unit is this file's opening claim, which is bounded now rather than unbounded. The reading is to collect every accepted `Dispositions` id from the rounds this file covers and check each against the row keys here; earlier rounds are stated as out of scope rather than left as unmarked holes |
+| UNJUDGED-LOCAL-ANNOTATION-WRONG | none, and the absence is the point of repair 3b. The unit is a local annotation in `record_shape.audit`, and no gate step reads an annotation — `requirements-maintenance.txt` pins no type checker, and `ruff` is selected to `E`, `F` and `W`, none of which compares an annotation against what is assigned. The re-runnable reading is to compare that local against the field it fills on `record_shape.Audit`. Prospective: the repair has not landed, and the row is here rather than in the prospective table above because nothing would go red for it even after it does |
 
 ## What was declined
 
