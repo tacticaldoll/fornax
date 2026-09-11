@@ -745,3 +745,66 @@ class ContractWithoutAVerdictColumn(unittest.TestCase):
             self.assertEqual(len(problems), 1, problems)
             self.assertIn("declares no Result column", problems[0].message)
             self.assertEqual(problems[0].path.name, "SKILL.md")
+
+
+class UndeclaredSeatIsNotJudged(unittest.TestCase):
+    """A rule binds a section only where the contract declares rows for it.
+
+    `RequiredSections` asked that question; the other two took the declared shape and
+    ranged over every seat anyway. A record settled under a revision that declares
+    nothing for a seat was still convicted of duplicating that section, or of carrying
+    an unreadable table under it. The scope decision sits in `record_defects` now, where
+    no rule can decline to make it.
+    """
+
+    WITHOUT_SELF_CHECK = TEMPLATE[: TEMPLATE.index("### Self-check")] + "```\n"
+
+    def _tree(self, extra: str) -> TemporaryDirectory:
+        holder = TemporaryDirectory()
+        root = Path(holder.name)
+        (root / "skills" / "triage-findings").mkdir(parents=True)
+        (root / "skills" / "triage-findings" / "SKILL.md").write_text(
+            self.WITHOUT_SELF_CHECK, encoding="utf-8"
+        )
+        (root / "docs" / "dispositions").mkdir(parents=True)
+        (root / "docs" / "dispositions" / "a..b.md").write_text(
+            RECORD.format(extra="", rows=ONE_ROW) + extra, encoding="utf-8"
+        )
+        return holder
+
+    def test_the_contract_declares_nothing_for_the_seat(self) -> None:
+        # The premise the two cases below rest on, asserted rather than assumed.
+        declared = record_shape.shape_of(self.WITHOUT_SELF_CHECK)
+        self.assertIsNone(declared.reason)
+        self.assertNotIn(record_shape.SELF_CHECK, declared.keys)
+
+    def test_a_duplicated_undeclared_section_is_not_reported(self) -> None:
+        duplicate = (
+            "\n## Self-check\n\n"
+            "| Check | This record's answer |\n"
+            "|---|---|\n"
+            "| a second one | pass |\n"
+        )
+        with self._tree(duplicate) as t:
+            problems = record_shape.check(Path(t))
+
+            self.assertEqual(
+                [p.message for p in problems if record_shape.SELF_CHECK in p.message], []
+            )
+
+    def test_an_unreadable_table_under_an_undeclared_section_is_not_reported(self) -> None:
+        with self._tree("") as t:
+            path = Path(t) / "docs" / "dispositions" / "a..b.md"
+            path.write_text(
+                path.read_text(encoding="utf-8").replace(
+                    "| Check | This record's answer |\n|---|---|",
+                    "| Check | This record's answer |\nnot a delimiter row",
+                ),
+                encoding="utf-8",
+            )
+
+            problems = record_shape.check(Path(t))
+
+            self.assertEqual(
+                [p.message for p in problems if record_shape.SELF_CHECK in p.message], []
+            )

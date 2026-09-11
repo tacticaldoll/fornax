@@ -502,16 +502,25 @@ class RecordRule(ABC):
     moves in with the other two, because an abstraction holding two of its three kinds is
     the inconsistency the decline was trying to avoid.
 
-Takes a `Shape`, as `Rule` does. Both said so all along while every caller handed
-    them a `Declared` that satisfied the annotation by proxying two accessors; the proxy
-    ran out the moment a rule needed a third, and the run ended in an `AttributeError`
-    rather than a diagnostic. `Declared.shape` is the whole point of that type — it is
-    where the unread case has already been answered — so the callers hand it over now.
+    Asked of one seat, and only of a seat the contract declares rows for. It used to
+    take the whole record and the declared shape, and decide for itself which seats to
+    range over — which `RequiredSections` did and the other two did not, so a record
+    settled under a revision declaring nothing for a seat was still convicted of
+    duplicating that section or of carrying an unreadable table under it. A parameter
+    two of three implementations ignore is not a scope decision; it is an invitation to
+    skip one. So the decision moved to `record_defects`, and the parameter went with it:
+    a rule that is never handed an undeclared seat cannot judge one.
+
+    The predecessor of that parameter is worth keeping in view. It was typed `Shape`
+    while every caller handed a `Declared` satisfying the annotation by proxying two
+    accessors, and the proxy ran out the moment a rule needed a third — an
+    `AttributeError` where a diagnostic belonged. Passing the inner shape fixed the
+    type and left the scoping unmade, which is the half this repair finishes.
     """
 
     @abstractmethod
-    def defects(self, text: str, shape: "Shape") -> Iterator[str]:
-        """Every way this record departs from the clause this rule carries."""
+    def defects(self, seat: "Seat", text: str) -> Iterator[str]:
+        """Every way this record departs from the clause this rule carries, at *seat*."""
 
 
 class RequiredSections(RecordRule):
@@ -524,16 +533,13 @@ class RequiredSections(RecordRule):
     exemption is needed for the one that carries none of these sections.
     """
 
-    def defects(self, text: str, shape: "Shape") -> Iterator[str]:
-        for seat in SEATS:
-            if seat.heading not in shape.keys:
-                continue
-            if heading_section(text, seat.heading) is None:
-                yield (
-                    f"{seat.heading} is absent, and {CONTRACT.as_posix()} declares rows "
-                    f"for it. Deleting the section skipped every rule for a seat whose "
-                    f"subject is {seat.subject.value}"
-                )
+    def defects(self, seat: "Seat", text: str) -> Iterator[str]:
+        if heading_section(text, seat.heading) is None:
+            yield (
+                f"{seat.heading} is absent, and {CONTRACT.as_posix()} declares rows "
+                f"for it. Deleting the section skipped every rule for a seat whose "
+                f"subject is {seat.subject.value}"
+            )
 
 
 class OneSectionEach(RecordRule):
@@ -544,14 +550,13 @@ class OneSectionEach(RecordRule):
     count comes from the parser that owns the grammar rather than from a scan here.
     """
 
-    def defects(self, text: str, shape: "Shape") -> Iterator[str]:
-        headings = heading_texts(text)
-        for seat in SEATS:
-            if headings.count(seat.heading) > 1:
-                yield (
-                    f"{seat.heading} appears {headings.count(seat.heading)} times; only "
-                    f"the first is read, so every later one is judged by nothing"
-                )
+    def defects(self, seat: "Seat", text: str) -> Iterator[str]:
+        seen = heading_texts(text).count(seat.heading)
+        if seen > 1:
+            yield (
+                f"{seat.heading} appears {seen} times; only "
+                f"the first is read, so every later one is judged by nothing"
+            )
 
 
 class ReadableTable(RecordRule):
@@ -562,11 +567,10 @@ class ReadableTable(RecordRule):
     unopened corpus passed before it was made a failure.
     """
 
-    def defects(self, text: str, shape: "Shape") -> Iterator[str]:
-        for seat in SEATS:
-            section = heading_section(text, seat.heading)
-            if section is not None and table(section) is None:
-                yield f"{seat.heading} carries no table this can read"
+    def defects(self, seat: "Seat", text: str) -> Iterator[str]:
+        section = heading_section(text, seat.heading)
+        if section is not None and table(section) is None:
+            yield f"{seat.heading} carries no table this can read"
 
 
 RECORD_RULES: tuple[RecordRule, ...] = (
@@ -603,12 +607,16 @@ def record_defects(path: Path, shape: Declared) -> list[Diagnostic]:
         return []  # text hygiene owns unreadable files and reports them there
 
     found: list[Diagnostic] = []
-    for record_rule in RECORD_RULES:
-        found.extend(
-            Diagnostic(path, message)
-            for message in record_rule.defects(text, shape.shape)
-        )
     for seat in SEATS:
+        if seat.heading not in shape.keys:
+            # The contract declares no rows for this seat, so it owes this record
+            # nothing — not a section, not one section, and not a readable table. One
+            # decision, made where every rule below has to pass through it.
+            continue
+        for record_rule in RECORD_RULES:
+            found.extend(
+                Diagnostic(path, message) for message in record_rule.defects(seat, text)
+            )
         section = heading_section(text, seat.heading)
         if section is None:
             continue  # RequiredSections reported it, where the contract declares rows
