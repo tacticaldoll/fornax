@@ -685,7 +685,7 @@ def audit(root: Path) -> Audit:
 
     problems: list[Diagnostic] = []
     judged: list[Path] = []
-    unjudged: list[str] = []
+    unjudged: list[tuple[str, str]] = []
     shapes: dict[str, Declared] = {contract_revision.WORKING_TREE: working}
     for path in found:
         settled = contract_revision.settled(root, path, CONTRACT, history)
