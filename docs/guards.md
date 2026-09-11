@@ -249,6 +249,25 @@ the token a comment would; and
 `test_read_whole.ShellWordTests.test_adjacent_quotes_are_one_word` reddens when the words are
 rebuilt by rejoining the scan's tokens instead of slicing the text.
 
+## Written 2026-09-11, prospective — nothing measured
+
+The round settled in `docs/dispositions/e144212..05025bc.md` accepted six findings and repaired
+none, so these rows name the guard each repair will owe rather than a revert anyone ran. Three of
+the six can have no guard and sit in the section below; they are prose in a registry entry and in
+this file, and no test reaches prose.
+
+One of these is a row about rows. GUARD-DIED-WITH-ITS-ONLY-CALLER is the finding that a guard here
+stopped reddening because the repair severed the call its test reached the subject through, with
+both symbols still present so the citation check saw nothing. Until repair 2a or 2b lands there is
+nothing to revert, and the re-runnable reading in the meantime is to run each row in this file and
+check that it still produces the number it records.
+
+| Finding | Revert this, once its repair lands | Guard | Red on revert |
+|---|---|---|---|
+| QUOTED-HASH-CUT-BEFORE-THE-LEXER | for 1a, the begins-a-word test in `read_whole.shell_words`, leaving the bare `startswith` that reads a hash after a closing quote as a comment | a case in `test_read_whole.ShellWordTests` asserting that a hash adjacent to a closing quote stays in its word, and that a word following such a token is not dropped | not measured — no repair has landed |
+| GUARD-DIED-WITH-ITS-ONLY-CALLER | for 2a, the case that reaches `read_whole.COMMENT` through `runtime_contract.pins`; for 2b, nothing, because retiring the lookbehind removes the subject rather than guarding it | for 2a, the restored `SHELL-COMMENT-RULE-NARROWER-THAN-CLAIMED` row above, which must redden again once a test reaches `read_whole.COMMENT` for its own sake | not measured |
+| DIRECT-RUN-SKIPS-A-CLASS | for 6a, the moved entry-point block in any one of the three test modules, put back above the last class | a case asserting that each test module collects the same number of tests run directly as under discovery | not measured — the shape is in `scripts/tests/test_read_whole.py`, `scripts/tests/test_record_shape.py` and `scripts/tests/test_check_citations.py`, the last two of which were not reported and were found by enumerating the shape |
+
 ## Repairs with no guard, and why
 
 | Finding | Why nothing goes red |
@@ -307,6 +326,9 @@ rebuilt by rejoining the scan's tokens instead of slicing the text.
 | REVERT-CLAIM-NAMES-A-SHAPE | none by test, and the absence is half the finding — the unit is commit prose, which is history and not editable. What replaces a guard is this row: delete the two subject branches of `record_shape.rules_for`, so every seat falls through to the findings rules, and the suite reports 31 red. Stated as the deletion rather than as "the branch that lets the subject pick", because writing this row is where that difference stopped being theoretical — the first draft of it said 3, which is what a different mutation of the same function produces. The claim it corrects named "the branch that lets the subject pick at all", which two readers mutate differently — four sibling measurements in the same commit named a unit and each reproduced exactly, and this one did not |
 | GUARDS-LEDGER-INCOMPLETE | none — the unit is this file's opening claim, which is bounded now rather than unbounded. The reading is to collect every accepted `Dispositions` id from the rounds this file covers and check each against the row keys here; earlier rounds are stated as out of scope rather than left as unmarked holes |
 | UNJUDGED-LOCAL-ANNOTATION-WRONG | none, and the absence is the point of repair 3b. The unit is a local annotation in `record_shape.audit`, and no gate step reads an annotation — `requirements-maintenance.txt` pins no type checker, and `ruff` is selected to `E`, `F` and `W`, none of which compares an annotation against what is assigned. The re-runnable reading is to compare that local against the field it fills on `record_shape.Audit`. The repair has landed and nothing went red for it, which is what this row said would happen. The same class was swept by comparing every local list annotation in the tree against what is appended to it; two other sites flag on the shape of the call and neither is one |
+| MATCHER-ENUMERATION-BLIND-TO-NON-REGEX | none — the unit is the `verification` field of `development-knowns.yaml` `shell-command-structure-read-by-hand`, and no check reads a registry entry's prose for whether the command it offers finds what it claims. The re-runnable reading is to run that field's own command and compare what it returns against the grammar decisions the tree actually makes; it misses the one in `read_whole.shell_words`, which is expressed as a string method rather than a compiled pattern. Repair 3b would make this a guard and was declined once already, inside the same entry |
+| LEDGER-NAMES-A-SELECTION-THE-CONFIG-DOES-NOT-HOLD | none — the unit is a row in this file, and nothing compares a row's prose against the configuration it describes. The re-runnable reading is to read `select` in `ruff.toml` and compare it against what the row says is selected; the row is short by the two rules about the suppression mechanism, which `ruff.toml`'s own comment states correctly |
+| STATEMENT-OVERRUN-BY-ITS-EVIDENCE | none — the unit is the `statement` field of the same registry entry, and no check tests a statement against the evidence listed under it. The re-runnable reading is to read each evidence item and ask whether it names a hand-written bounding the statement omits; `distribution_manifest.install_refs` is one |
 
 ## What was declined
 
