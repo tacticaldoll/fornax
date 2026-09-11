@@ -248,10 +248,14 @@ class WorkflowPinTests(unittest.TestCase):
             '        run: pip install "tool==9.9.9"\n',
             "        run: pip install other==2.0.0 tool==9.9.9\n",
             "        run: pip3 install tool==9.9.9\n",
-            "        run: |\n          pip install \\\\\n            tool==9.9.9\n",
+            # One backslash, which is the continuation. Two were written here and bash
+            # reads those as an escaped backslash ending the command, so the pin was
+            # never installed and the assertion below held only because the joiner that
+            # used to stand here continued on any trailing backslash at all.
+            "        run: |\n          pip install \\\n            tool==9.9.9\n",
             "        run: >\n          pip install\n          tool==9.9.9\n",
-            "        run: |\n          pip install \\\\\n"
-            "            --upgrade \\\\\n            tool==9.9.9\n",
+            "        run: |\n          pip install \\\n"
+            "            --upgrade \\\n            tool==9.9.9\n",
         )
         for workflow in spellings:
             with self.subTest(workflow=workflow.strip()), TemporaryDirectory() as tmp:
@@ -261,6 +265,31 @@ class WorkflowPinTests(unittest.TestCase):
                 errors = self.check(root)
 
                 self.assertTrue(any("tool==9.9.9" in error for error in errors), errors)
+
+    def test_a_comment_ending_in_a_backslash_does_not_hide_the_install_below_it(self) -> None:
+        # PIN-HIDDEN-BEHIND-A-JOINED-COMMENT. The continuation join here applied the
+        # shell's backslash rule to a line bash reads as a comment, and bash ends a
+        # comment at the newline whatever the last character is. The install below was
+        # folded into the comment, so no pin was reported and nothing was unreadable
+        # either — the gate passed while the workflow installed an undeclared version.
+        workflow = (
+            "        run: |\n"
+            "          # install the pinned style tool \\\n"
+            "          python -m pip install tool==9.9.9\n"
+        )
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.workspace(root, workflow)
+
+            errors = self.check(root)
+
+            # Pinned to the comparison, not to the string. An unreadable command reports
+            # the text it could not read, which holds the pin too, so "contains the pin"
+            # is satisfied by a refusal as well as by a reading — measured: it stayed
+            # green when the comment rule was reverted.
+            self.assertTrue(
+                any("installs tool==9.9.9" in error for error in errors), errors
+            )
 
     def test_text_that_is_not_an_install_is_not_a_pin(self) -> None:
         # The control the prefix-free rewrite lacked. Dropping the command anchor read

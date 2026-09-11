@@ -369,7 +369,7 @@ Everything between leaves the command unread.
 | Finding | Revert this | Guard | Red on revert |
 |---|---|---|---|
 | QUOTED-HASH-CUT-BEFORE-THE-LEXER | the hash-word refusal in `read_whole.shell_words` | `test_read_whole.CommentRule.test_a_hash_that_could_open_a_word_leaves_the_command_unread`, `test_read_whole.ShellWordTests.test_a_comment_is_declined_rather_than_located`, `test_read_whole.ShellWordTests.test_an_escaped_hash_is_declined_rather_than_guessed` | 7 |
-| QUOTED-HASH-CUT-BEFORE-THE-LEXER | the whole-line-comment answer in `read_whole.shell_words` | `test_read_whole.CommentRule.test_a_command_opening_with_a_hash_is_a_comment_whole`, `test_read_whole.ShellWordTests.test_a_comment_is_declined_rather_than_located` | 2 |
+| QUOTED-HASH-CUT-BEFORE-THE-LEXER | the whole-line-comment answer in `read_whole.shell_words` | `test_read_whole.CommentRule.test_a_command_opening_with_a_hash_is_refused_and_never_arrives`, `test_read_whole.ShellWordTests.test_a_comment_is_declined_rather_than_located` | 2 |
 
 SHELL-WORDS-CLAIMS-A-REFUSAL-IT-DOES-NOT-MAKE and OPERATOR-BRANCH-UNCONTROLLED are closed by this
 repair rather than guarded: the first was a docstring promising a refusal the code did not make and

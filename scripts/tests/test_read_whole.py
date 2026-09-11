@@ -4,8 +4,15 @@ import re
 import unittest
 
 import read_whole
+import shell_script
 
 PIN = re.compile(r"([A-Za-z0-9][A-Za-z0-9._-]*)==([0-9][0-9A-Za-z.!+*_-]*)")
+
+
+def words(text: str) -> list[str] | read_whole.Unread:
+    """Read one command's words. `shell_words` takes a `shell_script.Command` now, whose
+    type holds no newline, so the tests build one rather than handing over a string."""
+    return read_whole.shell_words(shell_script.Command(text))
 
 
 class WholeTests(unittest.TestCase):
@@ -75,25 +82,24 @@ class ShellWordTests(unittest.TestCase):
             ),
         ):
             with self.subTest(command=command):
-                self.assertEqual(read_whole.shell_words(command), expected)
+                self.assertEqual(words(command), expected)
 
     def test_a_comment_is_declined_rather_than_located(self) -> None:
-        # Where the shell's comment begins has no owner installable here, so the question
-        # is declined. A hash inside a word is untouched and a whole-line comment needs no
-        # grammar to see; an inline one leaves the command unread.
+        # Where a comment begins inside a command has no owner installable here, so the
+        # question is declined. A hash inside a word is untouched; an inline one leaves
+        # the command unread. A comment on a line of its own never reaches this — that
+        # is `shell_script`'s rule and `test_shell_script` holds it.
         self.assertEqual(
-            read_whole.shell_words("pip install tool==1.0#x"),
-            ["pip", "install", "tool==1.0#x"],
+            words("pip install tool==1.0#x"), ["pip", "install", "tool==1.0#x"]
         )
-        self.assertEqual(read_whole.shell_words("# pip install t==1.0"), [])
 
-        read = read_whole.shell_words("pip install t==1.0  # note")
+        read = words("pip install t==1.0  # note")
 
         self.assertIsInstance(read, read_whole.Unread)
         self.assertEqual(read.text, "pip install t==1.0  # note")
 
     def test_text_the_lexer_cannot_finish_is_unread_not_partial(self) -> None:
-        read = read_whole.shell_words('echo "unbalanced')
+        read = words('echo "unbalanced')
 
         self.assertIsInstance(read, read_whole.Unread)
         self.assertEqual(read.text, 'echo "unbalanced')
@@ -104,14 +110,14 @@ class ShellWordTests(unittest.TestCase):
         # `value # kept` for both.
         for command in ('echo "value # kept"', "echo 'value # kept'"):
             with self.subTest(command=command):
-                self.assertEqual(read_whole.shell_words(command), ["echo", "value # kept"])
+                self.assertEqual(words(command), ["echo", "value # kept"])
 
     def test_an_escaped_hash_is_declined_rather_than_guessed(self) -> None:
         # posix `shlex` unescapes, so `\#` reaches the word list as the token a comment
         # would and nothing at that level tells them apart. bash prints `# literal`, so
         # this is a command the module could once read and now refuses — the cost of
         # declining, stated rather than discovered.
-        read = read_whole.shell_words("echo \\# literal")
+        read = words("echo \\# literal")
 
         self.assertIsInstance(read, read_whole.Unread)
 
@@ -119,30 +125,30 @@ class ShellWordTests(unittest.TestCase):
         # The control that refuses a cut made by rejoining a scan's tokens: a scan that
         # keeps quotes reads `"x"\'y\'` as two, and rejoining them invents a boundary the
         # shell does not have. bash prints `xy`.
-        self.assertEqual(read_whole.shell_words("echo \"x\"'y'"), ["echo", "xy"])
+        self.assertEqual(words("echo \"x\"'y'"), ["echo", "xy"])
 
     def test_a_hash_after_a_closing_quote_stays_in_its_word(self) -> None:
         # The scan ends a token at a closing quote, so a hash touching one opens a new
         # token while opening no shell word. Asking only whether a token began was this
         # module's own rule wearing the lexer's name, and it dropped the word and every
         # word after it. bash prints `a#b`, and `a#b keepme` for the second.
-        self.assertEqual(read_whole.shell_words('echo "a"#b'), ["echo", "a#b"])
-        self.assertEqual(read_whole.shell_words("echo 'a'#b"), ["echo", "a#b"])
+        self.assertEqual(words('echo "a"#b'), ["echo", "a#b"])
+        self.assertEqual(words("echo 'a'#b"), ["echo", "a#b"])
         self.assertEqual(
-            read_whole.shell_words('echo "a"#b keepme'), ["echo", "a#b", "keepme"]
+            words('echo "a"#b keepme'), ["echo", "a#b", "keepme"]
         )
 
     def test_a_hash_after_an_escaped_separator_keeps_its_word(self) -> None:
         # The escape joins the space into the word, so no word opens with a hash and the
         # command reads. bash prints `a #b`. Declining the question gets this right where
         # three rounds of locating it did not.
-        self.assertEqual(read_whole.shell_words("echo a\\ #b"), ["echo", "a #b"])
+        self.assertEqual(words("echo a\\ #b"), ["echo", "a #b"])
 
     def test_text_after_a_hash_is_lexed_and_can_leave_the_command_unread(self) -> None:
         # The whole command is lexed now, so an unfinishable quote after a hash is reached
         # rather than cut away. bash prints `a`; this refuses. The other half of the same
         # trade as the escaped hash above.
-        read = read_whole.shell_words('echo a # "unbalanced')
+        read = words('echo a # "unbalanced')
 
         self.assertIsInstance(read, read_whole.Unread)
 
@@ -169,7 +175,7 @@ class CommentRule(unittest.TestCase):
             "pip install a==1 # x",
         ):
             with self.subTest(command=command):
-                read = read_whole.shell_words(command)
+                read = words(command)
 
                 self.assertIsInstance(read, read_whole.Unread)
                 self.assertEqual(read.text, command)
@@ -178,19 +184,22 @@ class CommentRule(unittest.TestCase):
         # The near-miss control: the same character, not opening a word. bash prints both
         # of these whole, and a pin or a URL fragment must survive.
         self.assertEqual(
-            read_whole.shell_words("pip install a==1#notacomment"),
+            words("pip install a==1#notacomment"),
             ["pip", "install", "a==1#notacomment"],
         )
         self.assertEqual(
-            read_whole.shell_words("pip install git+https://h/p#egg=z"),
+            words("pip install git+https://h/p#egg=z"),
             ["pip", "install", "git+https://h/p#egg=z"],
         )
 
-    def test_a_command_opening_with_a_hash_is_a_comment_whole(self) -> None:
-        # The accepted-side spelling: a hash at the first non-blank character needs no
-        # grammar, nothing before it being able to quote it.
-        self.assertEqual(read_whole.shell_words("# pip install evil==9"), [])
-        self.assertEqual(read_whole.shell_words("   # indented and whole"), [])
+    def test_a_command_opening_with_a_hash_is_refused_and_never_arrives(self) -> None:
+        # Belt and braces. `shell_script` drops a whole-line comment, so this text is not
+        # a command this function is handed; if one ever were, refusing is the safe
+        # answer rather than reading it as no words at all, which is how an install once
+        # hid behind a comment.
+        read = words("# pip install evil==9")
+
+        self.assertIsInstance(read, read_whole.Unread)
 
 
 class RequirementsComment(unittest.TestCase):

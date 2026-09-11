@@ -37,6 +37,7 @@ import yaml
 from packaging.requirements import InvalidRequirement, Requirement
 
 from diagnostic_text import printable
+import shell_script
 from read_whole import COMMENT, Unread, shell_words
 
 
@@ -217,9 +218,11 @@ def run_commands(text: str) -> tuple[list[str], list[str]]:
     smaller plausible command rather than a complaint, and the last read a workflow that
     installs nothing as one that installs the right thing.
 
-    What is left here is not YAML. A `run` value is a shell script, so its lines are its
-    commands and a trailing backslash continues one onto the next — that is the shell's
-    grammar, and it stays.
+    What is left here is not YAML either. A `run` value is a shell script, and where one
+    command ends inside it is `shell_script`'s question now, not this function's. It was
+    this function's, as a continuation join, while `read_whole.shell_words` answered for
+    whatever text the join produced with a rule true only of one line — and the two
+    disagreed, so a comment line ending in a backslash swallowed the install below it.
 
     What is left is still refused rather than guessed. A document YAML cannot parse has
     no commands to read, and saying which line broke beats reporting no pins. And a
@@ -239,7 +242,11 @@ def run_commands(text: str) -> tuple[list[str], list[str]]:
         elif EXPRESSION.search(value):
             unresolved.append(f"run: {value}")
         else:
-            commands.extend(_continued(value.splitlines()))
+            read = shell_script.commands(value)
+            if isinstance(read, Unread):
+                unresolved.append(f"run: {read}")
+            else:
+                commands.extend(read)
     return commands, unresolved
 
 
@@ -276,22 +283,6 @@ def _run_values(document: object) -> list[object]:
             if isinstance(step, dict) and "run" in step:
                 found.append(step["run"])
     return found
-
-
-def _continued(lines: list[str]) -> list[str]:
-    """Join shell continuations, so a backslash-wrapped invocation is one command."""
-    commands: list[str] = []
-    pending = ""
-    for line in lines:
-        stripped = line.strip()
-        if stripped.endswith("\\"):
-            pending += stripped[:-1] + " "
-            continue
-        commands.append((pending + stripped).strip())
-        pending = ""
-    if pending:
-        commands.append(pending.strip())
-    return [command for command in commands if command]
 
 
 def check(

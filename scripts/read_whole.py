@@ -23,6 +23,10 @@ from __future__ import annotations
 import re
 import shlex
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import shell_script
 
 # Where a requirements line's comment begins, which is the one grammar this still reads
 # by hand. `runtime_contract.pins` is the only caller left: pip ends a requirement at a
@@ -87,7 +91,7 @@ def whole(text: str, pattern: re.Pattern[str], what: str) -> Read:
     return Whole(match)
 
 
-def shell_words(command: str) -> list[str] | Unread:
+def shell_words(command: "shell_script.Command") -> list[str] | Unread:
     """Split a shell command into its words, or report the whole text unread.
 
     Quoting is what bounds a word, and every hand-written attempt at that boundary here
@@ -115,12 +119,15 @@ def shell_words(command: str) -> list[str] | Unread:
     to be told a pin bash would not install, and the two directions are not symmetric: a
     refusal is loud and a short read is silent. So this declines.
 
-    A command whose first non-blank character is `#` is a comment whole, which needs no
-    grammar to see — nothing can quote a character with nothing before it — and its word
-    list is empty. Otherwise the words come from `shlex` over the entire text, and a word
-    opening with `#` leaves the command unread, because telling that word from a comment
-    is the question with no owner. `tool==1.0#x` is unaffected: the hash is inside the
-    word, not opening it.
+    A whole-line comment is `shell_script`'s to drop, not this function's to detect. This
+    took a string and answered for it with a rule about a line, which was true of a line
+    and false of a text someone had joined across a newline; it takes a `shell_script`
+    command now, whose type holds no newline, so the case is gone rather than guarded.
+
+    What is left is the question with no owner: a word opening with `#` leaves the
+    command unread, because telling that word from a comment needs the quoting that
+    posix `shlex` has already removed. `tool==1.0#x` is unaffected — the hash is inside
+    the word, not opening it.
 
     What this costs, in the forms it actually takes. An inline comment is refused, and
     the comment moves to a line of its own. An escaped hash is refused, posix `shlex`
@@ -132,19 +139,17 @@ def shell_words(command: str) -> list[str] | Unread:
     comment, so the diagnostic names both ways out. Nothing in this repository carries
     any of the three.
     """
-    if command.lstrip().startswith("#"):
-        return []
-
-    lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
+    text = command.text
+    lexer = shlex.shlex(text, posix=True, punctuation_chars=True)
     lexer.whitespace_split = True
     lexer.commenters = ""
     try:
         words = list(lexer)
     except ValueError as error:
-        return Unread(command, f"is not a shell command: {error}")
+        return Unread(text, f"is not a shell command: {error}")
     if any(word.startswith("#") for word in words):
         return Unread(
-            command,
+            text,
             "holds a word opening with a hash, which no reader here can tell from a "
             "comment; move a comment to a line of its own, or give a word that only "
             "looks like one a form that does not open with a hash",
