@@ -26,7 +26,7 @@ knowns:
     verification: scripts/evidence_currency.py --check ties this result to the exact Gate 5 text it measured and fails when that text moves.
     updated: 2026-08-25
   - id: shell-command-structure-read-by-hand
-    statement: Where this repository validates a grammar it cannot install a parser for, it reads that grammar by hand — the shell's command structure, and the comment rule of a requirements line.
+    statement: The shell's command structure and a requirements line's comment rule are read without the parser that owns them.
     kind: debt
     treatment: accept
     rationale: The parser is refused on licensing, not on value. bashlex parses bash to a syntax tree and answers every question runtime_contract asks of a command, but it is GPLv3+ and this repository is MIT, and its last release was January 2023. So shlex tokenizes and the command structure above it — where one command ends, whether pip sits in command position — stays hand-written.
@@ -40,6 +40,7 @@ knowns:
       - TOML is owned by tomllib, which arrives in Python 3.11 while .python-version declares 3.10. The readings that stay hand-written for it all stop at a quoted string's closing quote rather than at a guess.
       - A URL's fragment is split by hand in markdown_links.local_target because urlsplit answers a different question, returning the path without the scheme that the Windows-drive and external-scheme tests below it read.
     declined-changes:
+      - "The statement was briefly generalised, to where this repository validates a grammar it cannot install a parser for. That turned the list after its dash into the rule's extension, and the extension has to be complete to be true, which this entry's own evidence already overruns — distribution_manifest.install_refs bounds a ref by rules taken from git and pip, and markdown_links.local_target splits a fragment by hand. Neither stops at a construct's own closing delimiter, so neither is covered by the exemption below. Scoped back to its own subject instead, so the list is this entry's inventory and cannot be overrun by a reading the entry documents elsewhere."
       - Add bashlex, which would take a GPLv3+ dependency into an MIT repository for a development tool, and one whose last release predates this entry by three and a half years.
       - "Derive this evidence list from the tree by enumerating every re.compile site and requiring each to be delimiter-bounded, owner-backed or registered here. Declined under the weighing rule in AGENTS.md: delimiter-bounded is a property of what a pattern reads rather than of its text, so no check decides it, and every site would carry a hand-written classification whose set is the inventory it was meant to replace. Adopted instead is the enumeration in the verification below, run rather than trusted."
       - "Register the readings that stop at their construct's own closing delimiter. A quoted TOML string ending at its quote, a frontmatter block ending at its closing fence, a line-anchored field ending at its line: each is bounded by the document rather than by a guess about what may follow, and listing them here would bury the readings that are not."
