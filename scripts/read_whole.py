@@ -103,11 +103,13 @@ def shell_words(command: str) -> list[str] | Unread:
 
     That is the repair three rounds did not make. Nothing installable here owns the
     question: `shlex` does not answer it, which is why commenting is off, and `bashlex`
-    is refused on licensing. So every answer had to be hand-written, which is what
-    `AGENTS.md` forbids, and each round produced a better proxy for a rule it was not
-    allowed to write — a regex before the lexer, then a token-begins test, then an
-    operator test over a scan whose tokens are not the shell's words. Each closed the
-    reported instance and reopened the class a character away.
+    is refused on licensing. `AGENTS.md` permits a hand-written matcher in exactly that
+    position, provided the grammar and its absent owner are registered, which
+    `development-knowns.yaml` does for this one — so declining is chosen on evidence and
+    not compelled by a rule. The evidence is that three hand-written readings were
+    written and each was wrong one character further out: a regex before the lexer, then
+    a token-begins test, then an operator test over a scan whose tokens are not the
+    shell's words. Each closed the reported instance and reopened the class beside it.
 
     The caller never needed the answer. `runtime_contract.workflow_pins` needs only never
     to be told a pin bash would not install, and the two directions are not symmetric: a
