@@ -51,6 +51,30 @@ def third_party(module: str, seen: set[str] | None = None) -> set[str]:
     return found
 
 
+TESTS = Path(__file__).resolve().parent
+
+
+def entry_point_out_of_place(source: str) -> bool:
+    """Whether an entry-point block sits above anything else the module defines.
+
+    `unittest.main()` collects the classes that exist when it runs, so a block above a
+    class leaves that class uncollected on a direct run while discovery still finds it.
+    The gate discovers, so it never saw this; a contributor running one file did, and so
+    would a later round running the test a `docs/guards.md` row names. Measured before
+    the repair: one module collected thirty-three tests directly against fifty-two
+    discovered, and among the classes it skipped was the one written that round to guard
+    a finding.
+
+    Scoped to test modules because theirs is the silent case. A script whose entry point
+    calls a function defined below it raises on the spot.
+    """
+    body = ast.parse(source).body
+    for index, node in enumerate(body):
+        if isinstance(node, ast.If) and ast.unparse(node.test) == "__name__ == '__main__'":
+            return index != len(body) - 1
+    return False
+
+
 class ModuleClaimTests(unittest.TestCase):
     def test_every_standard_library_only_claim_is_true(self) -> None:
         claiming = sorted(
@@ -77,3 +101,35 @@ class ModuleClaimTests(unittest.TestCase):
         # in the one test whose name claims to see through a sibling.
         self.assertIn("markdown_links", imports("seam_contract"))
         self.assertNotIn("markdown_it", imports("seam_contract"))
+
+
+class EntryPointPlacement(unittest.TestCase):
+    """A test module's entry point runs after everything it defines, or it collects less."""
+
+    def test_every_test_module_places_its_entry_point_last(self) -> None:
+        misplaced = [
+            path.name
+            for path in sorted(TESTS.glob("test_*.py"))
+            if entry_point_out_of_place(path.read_text(encoding="utf-8"))
+        ]
+
+        self.assertEqual(misplaced, [])
+
+    def test_the_check_sees_an_entry_point_above_a_class(self) -> None:
+        above = (
+            "import unittest\n\n"
+            'if __name__ == "__main__":\n    unittest.main()\n\n\n'
+            "class Late(unittest.TestCase):\n    pass\n"
+        )
+        below = (
+            "import unittest\n\n"
+            "class Late(unittest.TestCase):\n    pass\n\n\n"
+            'if __name__ == "__main__":\n    unittest.main()\n'
+        )
+
+        self.assertTrue(entry_point_out_of_place(above))
+        self.assertFalse(entry_point_out_of_place(below))
+
+    def test_a_module_with_no_entry_point_is_not_reported(self) -> None:
+        # The third answer: absence is not misplacement, and most of this tree has none.
+        self.assertFalse(entry_point_out_of_place("import unittest\n"))

@@ -417,10 +417,6 @@ class EntryPoint(unittest.TestCase):
         self.assertEqual(check_citations.check(check_citations.ROOT), [])
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class SubjectCorpus(unittest.TestCase):
     """A named subject that is not there is reported, not filtered away.
 
@@ -469,3 +465,7 @@ class SubjectCorpus(unittest.TestCase):
             self._tree(root, check_citations.SUBJECTS)
 
             self.assertEqual(check_citations.check(root), [])
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -140,10 +140,6 @@ class ShellWordTests(unittest.TestCase):
         self.assertEqual(read_whole.shell_words('echo a # "unbalanced'), ["echo", "a"])
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class CommentRule(unittest.TestCase):
     """A `#` begins a word after an operator too, which is where this fell short.
 
@@ -183,3 +179,7 @@ class CommentRule(unittest.TestCase):
     def test_a_comment_after_whitespace_or_at_the_start_still_goes(self) -> None:
         self.assertEqual(read_whole.shell_words("pip install a==1 # x"), ["pip", "install", "a==1"])
         self.assertEqual(read_whole.shell_words("# pip install evil==9"), [])
+
+
+if __name__ == "__main__":
+    unittest.main()

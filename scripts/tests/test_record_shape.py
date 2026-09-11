@@ -467,10 +467,6 @@ class DispositionKeys(unittest.TestCase):
             self.assertEqual(record_shape.check(Path(t)), [])
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 VALID = RECORD.format(extra="", rows="| F1 | 1 | new | accept | — |")
 # A record missing one label the contract declares for a seat judging its own work.
 INCOMPLETE = VALID.replace(
@@ -808,3 +804,7 @@ class UndeclaredSeatIsNotJudged(unittest.TestCase):
             self.assertEqual(
                 [p.message for p in problems if record_shape.SELF_CHECK in p.message], []
             )
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -277,6 +277,30 @@ the thing a later round needed and would not otherwise have been told.
 The re-run also confirmed that `SHELL-COMMENT-RULE-NARROWER-THAN-CLAIMED` still reddens nothing —
 `GUARD-DIED-WITH-ITS-ONLY-CALLER` is open and unrepaired, and this repair does not touch it.
 
+## Measured 2026-09-11, at the commit carrying this section, the test-collection repair
+
+| Finding | Revert this | Guard | Red on revert |
+|---|---|---|---|
+| DIRECT-RUN-SKIPS-A-CLASS | the moved entry-point block in `scripts/tests/test_read_whole.py`, put back above the last class | `test_module_claims.EntryPointPlacement.test_every_test_module_places_its_entry_point_last` | 1 |
+
+The revert reproduces the defect as well as reddening the guard: with the block back above the
+last class, a direct run of that module collects fifteen tests where discovery collects eighteen.
+Three modules had the shape and all three are moved; the other seventeen already placed the block
+last, so the repair follows a convention the tree already held rather than introducing one.
+
+The guard is scoped to test modules because theirs is the silent case — a script whose entry point
+calls something defined below it raises where anyone can see. It carries the third answer as well:
+a module with no entry point at all is not misplaced, which is most of this tree.
+
+Re-run under the same discipline as the section above, across the rows whose named unit or guard
+this repair's Reach touched. Both rows for `QUOTED-HASH-CUT-BEFORE-THE-LEXER` still redden 1 each,
+so moving the block changed no count. Recording a re-run that found nothing, because a discipline
+only reported when it fires reads as though it always fires.
+
+The other two findings settled in the same round and repaired alongside this one —
+`LEDGER-NAMES-A-SELECTION-THE-CONFIG-DOES-NOT-HOLD` and `STATEMENT-OVERRUN-BY-ITS-EVIDENCE` — can
+have no guard and keep their rows in the section below.
+
 ## Written 2026-09-11, prospective — nothing measured
 
 The round settled in `docs/dispositions/e144212..05025bc.md` accepted six findings. One has since
@@ -293,7 +317,6 @@ check that it still produces the number it records.
 | Finding | Revert this, once its repair lands | Guard | Red on revert |
 |---|---|---|---|
 | GUARD-DIED-WITH-ITS-ONLY-CALLER | for 2a, the case that reaches `read_whole.COMMENT` through `runtime_contract.pins`; for 2b, nothing, because retiring the lookbehind removes the subject rather than guarding it | for 2a, the restored `SHELL-COMMENT-RULE-NARROWER-THAN-CLAIMED` row above, which must redden again once a test reaches `read_whole.COMMENT` for its own sake | not measured |
-| DIRECT-RUN-SKIPS-A-CLASS | for 6a, the moved entry-point block in any one of the three test modules, put back above the last class | a case asserting that each test module collects the same number of tests run directly as under discovery | not measured — the shape is in `scripts/tests/test_read_whole.py`, `scripts/tests/test_record_shape.py` and `scripts/tests/test_check_citations.py`, the last two of which were not reported and were found by enumerating the shape |
 
 ## Repairs with no guard, and why
 
@@ -354,7 +377,7 @@ check that it still produces the number it records.
 | GUARDS-LEDGER-INCOMPLETE | none — the unit is this file's opening claim, which is bounded now rather than unbounded. The reading is to collect every accepted `Dispositions` id from the rounds this file covers and check each against the row keys here; earlier rounds are stated as out of scope rather than left as unmarked holes |
 | UNJUDGED-LOCAL-ANNOTATION-WRONG | none, and the absence is the point of repair 3b. The unit is a local annotation in `record_shape.audit`, and no gate step reads an annotation — `requirements-maintenance.txt` pins no type checker, and `ruff` is selected to `E`, `F` and `W` plus rules about the suppression mechanism itself, none of which compares an annotation against what is assigned. The re-runnable reading is to compare that local against the field it fills on `record_shape.Audit`. The repair has landed and nothing went red for it, which is what this row said would happen. The same class was swept by comparing every local list annotation in the tree against what is appended to it; two other sites flag on the shape of the call and neither is one |
 | MATCHER-ENUMERATION-BLIND-TO-NON-REGEX | none — the unit is the `verification` field of `development-knowns.yaml` `shell-command-structure-read-by-hand`, and no check reads a registry entry's prose for whether the command it offers finds what it claims. The re-runnable reading is to run that field's own command and compare what it returns against the grammar decisions the tree actually makes; it misses the one in `read_whole.shell_words`, which is expressed as a string method rather than a compiled pattern. Repair 3b would make this a guard and was declined once already, inside the same entry |
-| LEDGER-NAMES-A-SELECTION-THE-CONFIG-DOES-NOT-HOLD | none — the unit is a row in this file, and nothing compares a row's prose against the configuration it describes. The re-runnable reading is to read `select` in `ruff.toml` and compare it against what the row says is selected. It was short by the rules about the suppression mechanism; the repair takes `ruff.toml`'s own wording rather than a corrected count, so the row cannot go stale against a selection it no longer spells out |
+| LEDGER-NAMES-A-SELECTION-THE-CONFIG-DOES-NOT-HOLD | none — the unit is a row in this file, and nothing compares a row's prose against the configuration it describes. The re-runnable reading is to read `select` in `ruff.toml` and compare it against what the row says is selected. It was short by the rules about the suppression mechanism; the repair, landed, takes `ruff.toml`'s own wording rather than a corrected count, so the row cannot go stale against a selection it no longer spells out |
 | STATEMENT-OVERRUN-BY-ITS-EVIDENCE | none — the unit is the `statement` field of the same registry entry, and no check tests a statement against the evidence listed under it. The re-runnable reading is to read each evidence item and ask whether it names a hand-written bounding the statement omits; `distribution_manifest.install_refs` is one |
 
 ## What was declined
