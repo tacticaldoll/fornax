@@ -243,7 +243,7 @@ subtest per quote character; the record revert reddens two named tests.
 The design of the shell repair is held by two further controls, which are not guards for a finding
 and so are not rows here. Each is reddened by a wrong repair rather than by reverting the right
 one, and each was measured the same way:
-`test_read_whole.ShellWordTests.test_an_escaped_hash_is_a_word_and_not_a_comment` reddens when the
+`test_read_whole.ShellWordTests.test_an_escaped_hash_is_declined_rather_than_guessed` reddens when the
 cut is made on the lexer's output, because posix `shlex` unescapes and an escaped hash arrives as
 the token a comment would; and
 `test_read_whole.ShellWordTests.test_adjacent_quotes_are_one_word` reddens when the words are
@@ -265,7 +265,15 @@ caused it rather than a round later.
 | Finding | Revert this | Guard | Red on revert |
 |---|---|---|---|
 | QUOTED-HASH-CUT-BEFORE-THE-LEXER | the begins-a-word test in `read_whole.shell_words`, leaving the bare check that a token starts with a hash | `test_read_whole.ShellWordTests.test_a_hash_after_a_closing_quote_stays_in_its_word` | 1 |
-| QUOTED-HASH-CUT-BEFORE-THE-LEXER | the escaped-separator refusal in `read_whole.shell_words`, so a token ending in a backslash no longer stops the reading | `test_read_whole.ShellWordTests.test_a_hash_after_an_escaped_separator_is_unread` | 1 |
+| QUOTED-HASH-CUT-BEFORE-THE-LEXER | the escaped-separator refusal in `read_whole.shell_words`, so a token ending in a backslash no longer stops the reading | `test_read_whole.ShellWordTests.test_a_hash_after_an_escaped_separator_keeps_its_word` | 1 |
+
+**Superseded by the round below.** The two reverts these rows name no longer exist: the
+begins-a-word test and the escaped-separator refusal were both deleted when the question they
+answered was declined instead. The readings stand as written, each true of the tree named in the
+heading, and the guards they name have been re-pointed to the cases that now carry the same
+subjects — a label correction, the readings themselves untouched. One of those subjects inverted
+with the repair: an escaped separator before a hash is now read rather than refused, so the case
+asserting the refusal became a case asserting the word survives.
 
 **What the re-run found.** The row for this same finding under the earlier heading records 2 red for
 reverting the quote-preserving scan. Against this tree that revert reddens 3, because the
@@ -344,6 +352,35 @@ check that it still produces the number it records.
 
 | Finding | Revert this, once its repair lands | Guard | Red on revert |
 |---|---|---|---|
+
+## Measured 2026-09-11, at the commit carrying this section, declining the question
+
+The repair the three rounds before did not make. `read_whole.shell_words` no longer locates where
+the shell's comment begins; it declines the question, which has no owner installable here. Two
+answers survive because neither needs a grammar: a hash at the first non-blank character is a
+comment whole, nothing before it being able to quote it, and a hash inside a word is not a comment.
+Everything between leaves the command unread.
+
+| Finding | Revert this | Guard | Red on revert |
+|---|---|---|---|
+| QUOTED-HASH-CUT-BEFORE-THE-LEXER | the hash-word refusal in `read_whole.shell_words` | `test_read_whole.CommentRule.test_a_hash_that_could_open_a_word_leaves_the_command_unread`, `test_read_whole.ShellWordTests.test_a_comment_is_declined_rather_than_located`, `test_read_whole.ShellWordTests.test_an_escaped_hash_is_declined_rather_than_guessed` | 7 |
+| QUOTED-HASH-CUT-BEFORE-THE-LEXER | the whole-line-comment answer in `read_whole.shell_words` | `test_read_whole.CommentRule.test_a_command_opening_with_a_hash_is_a_comment_whole`, `test_read_whole.ShellWordTests.test_a_comment_is_declined_rather_than_located` | 2 |
+
+SHELL-WORDS-CLAIMS-A-REFUSAL-IT-DOES-NOT-MAKE and OPERATOR-BRANCH-UNCONTROLLED are closed by this
+repair rather than guarded: the first was a docstring promising a refusal the code did not make and
+the code now makes it, the second named a branch that no longer exists. Neither has a row, because a
+revert would have to restore the branch to have anything to redden.
+
+**What it costs, stated rather than discovered.** Two commands this could read before are now
+refused: an escaped hash, which posix `shlex` unescapes into the token a comment would produce, and
+an inline comment, which cannot be told from a hash-opening word. A `run:` line wanting a comment
+puts it on a line of its own, and the diagnostic says so. Nothing in this repository carries either
+form, and the workflow this actually reads still yields its commands with none refused.
+
+**What it buys, measured.** Against bash over the same constructed set the previous rounds used, the
+shortfall class is empty: no command is read as a shorter well-formed word list. The residual
+divergences are substitution constructs where this returns *more* words than bash, which cannot
+hide a pin and fail loudly at `packaging` instead.
 
 ## Written 2026-09-11, prospective — the 2c1b448 round, nothing measured
 

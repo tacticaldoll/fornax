@@ -88,7 +88,7 @@ def whole(text: str, pattern: re.Pattern[str], what: str) -> Read:
 
 
 def shell_words(command: str) -> list[str] | Unread:
-    """Split a shell command into its words, with quoting decided by a real lexer.
+    """Split a shell command into its words, or report the whole text unread.
 
     Quoting is what bounds a word, and every hand-written attempt at that boundary here
     has been a list of characters that may not follow — short by `+`, then by `;`, `|`
@@ -96,78 +96,48 @@ def shell_words(command: str) -> list[str] | Unread:
     operator ends a word, a quote holds one together, and text it cannot finish reading
     raises rather than returning the part it managed.
 
-    Its comment rule is not the shell's, though. `shlex` ends a word at any `#`, so
-    `tool==1.0#x` lexes to `tool==1.0` — a silent truncation, the very kind this module
-    exists to stop, arriving from the library instead of from a hand-written matcher.
-    `bash -c 'echo tool==1.0#x'` prints `tool==1.0#x`. So commenting is turned off and the
-    shell's own rule applied instead: a `#` that begins a word.
+    Its comment rule is not the shell's. `shlex` ends a word at any `#`, so `tool==1.0#x`
+    lexes to `tool==1.0` — a silent truncation arriving from the library. So commenting
+    is turned off, and the question of where the shell's comment begins is **declined
+    rather than answered**.
 
-    Where that rule was applied is what this had wrong. A regex ran over the raw command
-    before the lexer saw it, so a quoted hash was cut and `echo "value # kept"` came back
-    unread for a closing quote the text actually had. Widening the regex is the repair the
-    round before made, and it is why the hole reopened one character to the left: the
-    guess had to go rather than grow.
+    That is the repair three rounds did not make. Nothing installable here owns the
+    question: `shlex` does not answer it, which is why commenting is off, and `bashlex`
+    is refused on licensing. So every answer had to be hand-written, which is what
+    `AGENTS.md` forbids, and each round produced a better proxy for a rule it was not
+    allowed to write — a regex before the lexer, then a token-begins test, then an
+    operator test over a scan whose tokens are not the shell's words. Each closed the
+    reported instance and reopened the class a character away.
 
-    So the comment is found by a scan that keeps quotes, and the words are read from the
-    text itself. Both readings are the lexer's and neither is this module's.
+    The caller never needed the answer. `runtime_contract.workflow_pins` needs only never
+    to be told a pin bash would not install, and the two directions are not symmetric: a
+    refusal is loud and a short read is silent. So this declines.
 
-    The scan places each word by searching the text for it, not by asking where the lexer
-    is. A word it hands back appears in the command verbatim and in order, and what lies
-    between two words is the whitespace it consumed, so a `find` from a running cursor is
-    exact. `instream.tell()` is not: it runs one character of lookahead ahead of the
-    token except at end of input, and subtracting that character would be this module's
-    own mistake in a smaller place.
+    A command whose first non-blank character is `#` is a comment whole, which needs no
+    grammar to see — nothing can quote a character with nothing before it — and its word
+    list is empty. Otherwise the words come from `shlex` over the entire text, and a word
+    opening with `#` leaves the command unread, because telling that word from a comment
+    is the question with no owner. `tool==1.0#x` is unaffected: the hash is inside the
+    word, not opening it.
 
-    A token beginning with `#` is not yet a comment. The scan ends a token at a closing
-    quote, so a hash touching one opens a token where the shell opens no word, and asking
-    only whether a token began read `echo "a"#b` as `echo a` — dropping the word and
-    every word after it. That was this module's own rule wearing the lexer's name, and it
-    was the same defect as the regex it replaced, one character to the right. What makes
-    a word begin is asked of the text instead: the command starts there, or unconsumed
-    text separates it from the token before, or that token was an operator, which the
-    lexer's own `punctuation_chars` decides rather than a list written here.
-
-    Where that question cannot be answered the command is refused. The scan does not
-    resolve escapes, so a token ending in a backslash leaves a separator this cannot
-    tell from an escaped space — `echo a\\ #b` is one word to bash — and reading it
-    short would be the quiet failure again. An `Unread` is the loud one.
-
-    The words then come from posix `shlex` over the raw text up to the comment, never
-    from rejoining what the scan returned. A scan that keeps quotes reads `"x"'y'` as two
-    tokens where the shell has one word, so rejoining invents a boundary that slicing
-    cannot.
+    What this costs is stated rather than discovered: a `run:` line carrying an inline
+    comment is refused, so the comment moves to a line of its own. Nothing in this
+    repository carries one.
     """
-    scan = shlex.shlex(command, posix=False, punctuation_chars=True)
-    scan.whitespace_split = True
-    scan.commenters = ""
-    cut, cursor, previous = len(command), 0, None
-    try:
-        for token in scan:
-            start = command.find(token, cursor)
-            if start < 0:
-                return Unread(command, "holds a word the scan did not take from its text")
-            gap = command[cursor:start]
-            cursor = start + len(token)
-            if token.startswith("#"):
-                if previous is not None and previous.endswith("\\"):
-                    return Unread(
-                        command,
-                        "ends a word with an escape this cannot resolve before a hash",
-                    )
-                operator = previous is not None and all(
-                    character in scan.punctuation_chars for character in previous
-                )
-                if start == 0 or gap or operator:
-                    cut = start
-                    break
-            previous = token
-    except ValueError as error:
-        return Unread(command, f"is not a shell command: {error}")
+    if command.lstrip().startswith("#"):
+        return []
 
-    lexer = shlex.shlex(command[:cut], posix=True, punctuation_chars=True)
+    lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
     lexer.whitespace_split = True
     lexer.commenters = ""
     try:
-        return list(lexer)
+        words = list(lexer)
     except ValueError as error:
         return Unread(command, f"is not a shell command: {error}")
+    if any(word.startswith("#") for word in words):
+        return Unread(
+            command,
+            "holds a word opening with a hash, which no reader here can tell from a "
+            "comment; put the comment on a line of its own",
+        )
+    return words
