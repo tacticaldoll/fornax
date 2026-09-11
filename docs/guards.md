@@ -415,22 +415,19 @@ load-bearing, because calling it that left the accepted side of the rule with no
 The pattern admits any whitespace and only a space was ever exercised, so narrowing the class to a
 space passed the whole suite. It reddens now.
 
-## Written 2026-09-11, prospective — the 2c1b448 round, nothing measured
+## Written 2026-09-11, prospective — the 48ce457 round, nothing measured
 
-The round settled in `docs/dispositions/8a45707..2c1b448.md` accepted fourteen findings and
-repaired none. Five can carry a guard once their repair lands and are below; the other nine are
-prose — docstrings, a registry field, rows in this file — and no test reaches prose, so they sit in
-the no-guard table with the reading that settles each.
-
-The first row is the one that matters. Its finding has now returned twice after a repair whose
-recorded Reach changed in full, and the record states its cause as the function's remit rather than
-as a third proxy inside it. Which repair lands decides what this row can name: declining the
-question leaves a refusal to guard, while a better proxy leaves another boundary case.
+The round settled in `docs/dispositions/ebf16c7..48ce457.md` accepted fourteen findings and
+repaired none. Four can carry a guard once their repair lands; the rest are prose, a commit message
+that cannot be edited, or a rename whose only signal is the citation gate.
 
 | Finding | Revert this, once its repair lands | Guard | Red on revert |
 |---|---|---|---|
-| QUOTED-HASH-CUT-BEFORE-THE-LEXER | for 1a, the refusal of a command holding a hash-opening word in `read_whole.shell_words`; for 1c, the widened escape test | a case asserting that a hash after an escaped separator and after a substitution is not read as a comment — for 1a by refusal, for 1c by the word surviving | not measured — no repair has landed |
-| OPERATOR-BRANCH-UNCONTROLLED | for 1c, the negative control itself | a case asserting that an operator-shaped scan token which does not end a bash word leaves the hash uncut; voided if 1a lands, the branch going with it | not measured |
+| PIN-HIDDEN-BEHIND-A-JOINED-COMMENT | for 1a, the comment test in `runtime_contract.run_commands` that stops a join at the newline | a case handing the joined comment-and-install block to `runtime_contract.workflow_pins` and asserting the pin is reported or the text refused, never both absent | not measured — no repair has landed |
+| WHOLE-LINE-ANSWER-APPLIED-TO-A-TEXT | for 1b, the newline refusal in `read_whole.shell_words` | a case asserting that a leading comment followed by a command on the next line is not answered as an empty word list | not measured |
+| WHOLE-LINE-PREDICATE-UNCONTROLLED | the same, this being the control the predicate never had on the axis where it fails | the same case | not measured |
+| REFUSAL-CASES-ASSERT-ONLY-A-TYPE | the pinned text and reason added to the two cases | the cases themselves — one currently stays green when the rule it names is deleted, which is what pinning the reason fixes | not measured |
+| HELPER-NAMED-AS-A-TEST-CASE | the rename in `scripts/tests/test_module_claims.py` | none by test; `scripts/check_citations.py` refuses the old name wherever a record or a row still cites it, which is the only signal a rename has here | not measured |
 
 ## Repairs with no guard, and why
 
@@ -500,6 +497,14 @@ question leaves a refusal to guard, while a better proxy leaves another boundary
 | REVERT-INSTRUCTION-AMBIGUOUS | none — the unit is a row in this file, and nothing checks that a row admits one reading. The re-runnable reading is to perform each reading its wording allows and compare the answers; two readings give two numbers, neither of them the one recorded |
 | ENTRY-POINT-CLASS-OVERCLAIMS | none, and the repair has landed — the unit is a class docstring. The re-runnable reading is to construct the shape the check reports and ask whether anything is uncollected: a block followed by a module-level constant is reported and loses nothing |
 | COMMENTRULE-CITES-A-REMOVED-WORDING | none — the citation gate refuses a symbol that no longer resolves and does not read a quoted wording. The re-runnable reading is to search `development-knowns.yaml` for the phrase the docstring attributes to it; this range removed it |
+| GOVERNANCE-MISSTATED-AS-A-PROHIBITION | none — nothing tests durable prose against `AGENTS.md`. The re-runnable reading is to take each sentence claiming this repository forbids something and find the clause; the clause here permits a hand-written matcher whose grammar and absent owner are registered, which is what the entry carrying the misstatement does |
+| REGISTERED-GRAMMAR-SILENTLY-DELETED | none — no check notices an evidence item leaving a registry entry. The re-runnable reading is to list the hand-read grammars the tree holds and check each against the entries; `distribution_manifest.install_refs` bounds a git-ref and pip-URL grammar and no entry now registers it |
+| ORPHANED-REFERENCES-INTO-THE-ENTRY | none — a reference into a registry entry names prose, not a symbol, so the citation gate cannot see it. The re-runnable reading is to follow every "this entry's own evidence" reference to the item it means; two reach nothing |
+| COST-ENUMERATION-SHORT-BY-A-FORM | none — the unit is a docstring sentence. The re-runnable reading is to take each form the prose says is refused, and each it does not mention, and run them; a word whose hash is quoted is refused and unmentioned |
+| DIAGNOSTIC-ADVICE-MISFITS | none — nothing tests whether advice fits the case that triggered it. The re-runnable reading is to trigger each refusal and ask whether the advice applies; moving a comment to its own line does nothing for `echo "### building"` |
+| MEASUREMENT-POINTER-WRONG | none — the citation gate resolves a symbol, not a claim that a file holds a reading. The re-runnable reading is to open the file a pointer names and search for the measurement; it is in a Disposition Record instead |
+| COMMENT-STATES-TWO-RULES | none — nothing compares two sentences about one pattern. The re-runnable reading is to take each stated rule and test the pattern against it; this range's own control refutes the older one |
+| TREE-MEASUREMENT-IN-A-MESSAGE | none, and none possible — the unit is commit prose, which is history and not editable. What closes it is the next message not carrying a measurement of the tree. The re-runnable reading is to read the range's messages for a number that describes the tree rather than the commit |
 
 ## What was declined
 
