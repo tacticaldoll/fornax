@@ -404,6 +404,17 @@ tree, counts what a comment says "most" of, or tests a class docstring against w
 decides. Their rows are in the no-guard table, and the measurement the figures reported now lives
 under its own dated heading here, where it is quotable with the tree it names.
 
+## Measured 2026-09-11, at the commit carrying this section, the mislabelled control
+
+| Finding | Revert this | Guard | Red on revert |
+|---|---|---|---|
+| CONTROL-MISLABELLED | the whitespace class in `read_whole.COMMENT`, narrowed to a literal space | `test_read_whole.RequirementsComment.test_a_hash_after_a_tab_begins_a_comment` | 1 |
+
+The finding was a label — a second near-miss called an alternate spelling — and the label was
+load-bearing, because calling it that left the accepted side of the rule with no control at all.
+The pattern admits any whitespace and only a space was ever exercised, so narrowing the class to a
+space passed the whole suite. It reddens now.
+
 ## Written 2026-09-11, prospective — the 2c1b448 round, nothing measured
 
 The round settled in `docs/dispositions/8a45707..2c1b448.md` accepted fourteen findings and
@@ -420,7 +431,6 @@ question leaves a refusal to guard, while a better proxy leaves another boundary
 |---|---|---|---|
 | QUOTED-HASH-CUT-BEFORE-THE-LEXER | for 1a, the refusal of a command holding a hash-opening word in `read_whole.shell_words`; for 1c, the widened escape test | a case asserting that a hash after an escaped separator and after a substitution is not read as a comment — for 1a by refusal, for 1c by the word surviving | not measured — no repair has landed |
 | OPERATOR-BRANCH-UNCONTROLLED | for 1c, the negative control itself | a case asserting that an operator-shaped scan token which does not end a bash word leaves the hash uncut; voided if 1a lands, the branch going with it | not measured |
-| CONTROL-MISLABELLED | the accepted-side alternate spelling added to `test_read_whole.RequirementsComment` | a case asserting that a hash after a tab begins a comment, which `\s` admits and nothing exercises | not measured |
 
 ## Repairs with no guard, and why
 

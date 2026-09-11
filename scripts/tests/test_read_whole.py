@@ -217,12 +217,21 @@ class RequirementsComment(unittest.TestCase):
                 self.assertEqual(read_whole.COMMENT.split(line, maxsplit=1)[0], line)
 
     def test_a_hash_after_a_marker_separator_is_not_a_comment(self) -> None:
-        # The alternate spelling of the same meaning: a hash beginning a word where the
-        # shell would have said so, written with an operator rather than a space. Retired
-        # with the shell, so the line is left whole and reaches `packaging`, which refuses
-        # it rather than comparing a truncation clean.
+        # A second near-miss, not an alternate spelling — this asserts the line is *not*
+        # cut, exactly as the case above does. It was labelled the other way, which left
+        # the accepted side of the rule with no control at all; the case below is that
+        # control. Retired with the shell, so the line reaches `packaging`, which refuses
+        # it rather than letting a truncation compare clean.
         self.assertEqual(
             read_whole.COMMENT.split("ruff==1.0;#x", maxsplit=1)[0], "ruff==1.0;#x"
+        )
+
+    def test_a_hash_after_a_tab_begins_a_comment(self) -> None:
+        # The alternate spelling on the accepted side: the rule is whitespace, not a
+        # space, and `\s` admits a tab. Nothing exercised it, so the accepted half of
+        # the pattern rested on one character.
+        self.assertEqual(
+            read_whole.COMMENT.split("ruff==1.0\t# pin", maxsplit=1)[0], "ruff==1.0\t"
         )
 
 
