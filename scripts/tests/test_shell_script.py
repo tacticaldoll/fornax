@@ -42,6 +42,13 @@ class CommentDoesNotContinue(unittest.TestCase):
 
         self.assertEqual([c.text for c in found], ["pip install ruff==9.9.9"])
 
+    def test_an_indented_comment_is_a_comment(self) -> None:
+        # The accepted-side control. The rule reads the stripped line, so narrowing it to
+        # the line as written leaves this the only case that reddens.
+        found = shell_script.commands("pip install a==1\n    # indented note\npip install b==2")
+
+        self.assertEqual([c.text for c in found], ["pip install a==1", "pip install b==2"])
+
     def test_a_comment_between_commands_is_dropped_and_both_survive(self) -> None:
         found = shell_script.commands("pip install a==1\n# note\npip install b==2")
 
@@ -66,11 +73,37 @@ class Continuation(unittest.TestCase):
         self.assertEqual([c.text for c in found], ["echo a\\\\", "pip install ruff==9.9.9"])
 
 
+class WhitespaceAfterTheBackslash(unittest.TestCase):
+    """Bash decides on the character before the newline, so a stripped copy is the wrong
+    text to count on. The joiner this replaced stripped first and the repair carried that
+    across, so one invisible space folded the next command into the previous one."""
+
+    def test_a_space_after_the_backslash_ends_the_command(self) -> None:
+        found = shell_script.commands("echo building \\ \npip install tool==9.9.9")
+
+        self.assertEqual(len(found), 2, [c.text for c in found])
+        self.assertEqual(found[1].text, "pip install tool==9.9.9")
+
+    def test_a_tab_after_the_backslash_ends_the_command(self) -> None:
+        found = shell_script.commands("echo building \\\t\npip install tool==9.9.9")
+
+        self.assertEqual(len(found), 2, [c.text for c in found])
+        self.assertEqual(found[1].text, "pip install tool==9.9.9")
+
+
 class Declined(unittest.TestCase):
     """What needs the parser this repository may not install is refused, not guessed."""
 
     def test_a_multi_line_script_holding_a_quote_is_declined(self) -> None:
         read = shell_script.commands('echo "a\nb"')
+
+        self.assertIsInstance(read, read_whole.Unread)
+        self.assertIn("quote", read.reason)
+
+    def test_a_single_quote_declines_as_a_double_one_does(self) -> None:
+        # The accepted-side control for the other quote. Narrowing the pair to the double
+        # quote alone left the whole suite green.
+        read = shell_script.commands("echo 'a\nb'")
 
         self.assertIsInstance(read, read_whole.Unread)
         self.assertIn("quote", read.reason)
@@ -82,14 +115,14 @@ class Declined(unittest.TestCase):
         self.assertIn("heredoc", read.reason)
 
 
-class CommandHoldsNoNewline(unittest.TestCase):
+class LineHoldsNoNewline(unittest.TestCase):
     """The invariant a reader of a `Command` is allowed to rely on."""
 
-    def test_a_command_carrying_a_newline_cannot_be_built(self) -> None:
+    def test_a_line_carrying_a_newline_cannot_be_built(self) -> None:
         with self.assertRaises(ValueError):
-            shell_script.Command("echo a\necho b")
+            shell_script.Line("echo a\necho b")
 
-    def test_every_command_this_returns_holds_none(self) -> None:
+    def test_every_line_this_returns_holds_none(self) -> None:
         found = shell_script.commands("pip install a==1\npip install b==2 \\\nc==3")
 
         self.assertTrue(all("\n" not in c.text for c in found), found)

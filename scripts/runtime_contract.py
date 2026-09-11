@@ -207,7 +207,7 @@ def _installs(words: list[str]) -> bool:
     return False
 
 
-def run_commands(text: str) -> tuple[list[str], list[str]]:
+def run_commands(text: str) -> tuple[list[shell_script.Line], list[str]]:
     """Every command the workflow runs, and everything about it this cannot resolve.
 
     YAML is parsed by the library that owns it. The hand-written reader that stood here
@@ -234,7 +234,7 @@ def run_commands(text: str) -> tuple[list[str], list[str]]:
     except yaml.YAMLError as error:
         return [], [str(error).replace("\n", " ")]
 
-    commands: list[str] = []
+    commands: list[shell_script.Line] = []
     unresolved: list[str] = []
     for value in _run_values(document):
         if not isinstance(value, str):

@@ -28,6 +28,15 @@ guess:
   and a line ending in an **odd** run of backslashes continues onto the next. Parity is
   countable here because a quote would have declined the script already.
 
+The run is counted on the line **as written**, never on a stripped copy. Bash decides on
+the character immediately before the newline, so a backslash followed by a space escapes
+that space and does not continue the line — and stripping first erases exactly the
+character it decides on. The function this replaced stripped before counting, and the
+repair carried the strip across while fixing the parity beside it, so one invisible
+trailing space folded the next command into the previous one and the install there was
+reported by nothing. That is the fourth turn of this class in this grammar and the first
+where the mechanism, rather than an instance of it, is what moved.
+
 Measured against bash over a corpus covering each of those constructs and backslash runs
 of one through four: nothing is read as fewer commands than bash runs. The corpus and its
 oracle are described in `docs/guards.md` under this module's dated section.
@@ -44,8 +53,14 @@ QUOTES = ("'", '"')
 
 
 @dataclass(frozen=True)
-class Command:
-    """One command's text, holding no newline.
+class Line:
+    """One line of a script, holding no newline — which is all it claims.
+
+    It was called `Command` and documented as one command's text, and the constructor
+    checked only the newline. `c a; c z` is one of these and two commands to bash, so the
+    name promised what nothing enforced — the shape of defect this module exists to
+    remove, in this module. Named for what it guarantees instead. Splitting a line at its
+    control operators is `runtime_contract`'s, which already does it.
 
     The invariant is enforced here rather than promised by the caller, for the reason
     `read_whole.Whole` gives about its own: a convention is what the rounds before it
@@ -57,17 +72,22 @@ class Command:
 
     def __post_init__(self) -> None:
         if "\n" in self.text:
-            raise ValueError(f"{self.text!r} holds a newline, so it is not one command")
+            raise ValueError(f"{self.text!r} holds a newline, so it is not one line")
 
 
-def commands(script: str) -> list[Command] | Unread:
-    """Every command *script* runs, or the script unread when that cannot be settled."""
+def commands(script: str) -> list[Line] | Unread:
+    """Every line of *script* that runs a command, or the script unread.
+
+    A line, not a command: one of these may hold several, separated by the control
+    operators `runtime_contract` splits at. What this settles is where a line ends, which
+    is the question that had no owner.
+    """
     lines = script.splitlines()
     if len(lines) <= 1:
         text = script.strip()
         if not text or text.startswith("#"):
             return []
-        return [Command(text)]
+        return [Line(text)]
 
     if HEREDOC in script:
         return Unread(script, "holds a heredoc operator, whose body is data and not commands")
@@ -77,20 +97,20 @@ def commands(script: str) -> list[Command] | Unread:
             "spans lines and holds a quote, which may hold a command together across one",
         )
 
-    found: list[Command] = []
+    found: list[Line] = []
     pending = ""
     for line in lines:
         stripped = line.strip()
         if not pending and stripped.startswith("#"):
             continue
-        trailing = len(stripped) - len(stripped.rstrip("\\"))
+        trailing = len(line) - len(line.rstrip("\\"))
         if trailing % 2:
-            pending += stripped[:-1].rstrip() + " "
+            pending += line[:-1].strip() + " "
             continue
         joined = (pending + stripped).strip()
         pending = ""
         if joined:
-            found.append(Command(joined))
+            found.append(Line(joined))
     if pending.strip():
-        found.append(Command(pending.strip()))
+        found.append(Line(pending.strip()))
     return found

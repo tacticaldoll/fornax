@@ -91,7 +91,7 @@ def whole(text: str, pattern: re.Pattern[str], what: str) -> Read:
     return Whole(match)
 
 
-def shell_words(command: "shell_script.Command") -> list[str] | Unread:
+def shell_words(command: "shell_script.Line") -> list[str] | Unread:
     """Split a shell command into its words, or report the whole text unread.
 
     Quoting is what bounds a word, and every hand-written attempt at that boundary here

@@ -432,8 +432,8 @@ The reader's two declines and the type's invariant are not findings' guards, bei
 rather than a repair, and are measured here so a later round can run them: reverting the quote
 decline reddens `test_shell_script.Declined.test_a_multi_line_script_holding_a_quote_is_declined`
 (1), the heredoc decline reddens
-`test_shell_script.Declined.test_a_heredoc_is_declined` (1), and the newline invariant reddens
-`test_shell_script.CommandHoldsNoNewline.test_a_command_carrying_a_newline_cannot_be_built` (1).
+`test_shell_script.Declined.test_a_heredoc_is_declined` (1), and the `Line` newline invariant reddens
+`test_shell_script.LineHoldsNoNewline.test_a_line_carrying_a_newline_cannot_be_built` (1).
 Disabling the hash-word refusal in `read_whole.shell_words` reddens 8.
 
 **WHOLE-LINE-ANSWER-APPLIED-TO-A-TEXT and WHOLE-LINE-PREDICATE-UNCONTROLLED have no rows, and the
@@ -447,6 +447,40 @@ pin appeared in some reported error, which a refusal satisfies too — an unread
 the text it could not read, and that text holds the pin. It stayed green under the revert that
 should have reddened it. It is pinned to the comparison now, and reverting the comment rule reddens
 it. The weak assertion was found by running the revert, not by reading the case.
+
+## Measured 2026-09-11, at the commit carrying this section, the character bash decides on
+
+The repair before this one counted the trailing backslash run on a **stripped** copy of the line.
+Bash decides on the character immediately before the newline, so a backslash followed by a space
+escapes that space and does not continue the line — and the strip erases exactly the character it
+decides on. One invisible trailing space folded the next command into the previous one, and the
+install there was reported by nothing: `workflow_pins` answered with no pin and nothing unreadable
+while bash ran the install. Measured end to end through PyYAML, which preserves the space inside a
+block scalar, so it was reachable from a workflow file and not only from the module.
+
+The strip came across verbatim from the joiner this replaced. The round before repaired the parity
+beside it and carried the mechanism intact, which is what "sweep the mechanism, not the instance"
+asks for and did not get.
+
+| Finding | Revert this | Guard | Red on revert |
+|---|---|---|---|
+| PIN-HIDDEN-BEHIND-A-JOINED-COMMENT | the count on the line as written in `shell_script.commands`, restoring the count on the stripped copy | `test_shell_script.WhitespaceAfterTheBackslash.test_a_space_after_the_backslash_ends_the_command`, `test_shell_script.WhitespaceAfterTheBackslash.test_a_tab_after_the_backslash_ends_the_command` | 2 |
+
+Two accepted-side controls were missing and are added, each found by narrowing the rule and watching
+nothing redden: the comment rule reads the stripped line, so an indented comment inside a multi-line
+script is what narrowing it to the line as written would break; and the quote decline held only the
+double quote under test, so a single-quoted script spanning lines is the other half.
+
+**Two earlier rows no longer describe this tree.** The comment rule recorded 3 and reddens 4 now,
+and the quote decline recorded 1 and reddens 2 — each because a control added here is caught by the
+same revert. Both readings stand as written, true of the trees their headings name. What is recorded
+is that they no longer describe this one.
+
+`Command` is `Line` now. It enforced only the absence of a newline while being named and documented
+as one command's text, and `c a; c z` is one of these and two commands to bash — a name promising
+what nothing enforced, in the module written to remove that shape. Splitting at control operators is
+`runtime_contract`'s and it already does it. `run_commands`' return annotation said `list[str]` after
+the rewire changed what it returns; nothing in the gate type-checks, so it went unchallenged.
 
 ## Written 2026-09-11, prospective — the 48ce457 round, nothing measured
 

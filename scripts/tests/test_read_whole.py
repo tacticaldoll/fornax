@@ -12,7 +12,7 @@ PIN = re.compile(r"([A-Za-z0-9][A-Za-z0-9._-]*)==([0-9][0-9A-Za-z.!+*_-]*)")
 def words(text: str) -> list[str] | read_whole.Unread:
     """Read one command's words. `shell_words` takes a `shell_script.Command` now, whose
     type holds no newline, so the tests build one rather than handing over a string."""
-    return read_whole.shell_words(shell_script.Command(text))
+    return read_whole.shell_words(shell_script.Line(text))
 
 
 class WholeTests(unittest.TestCase):
