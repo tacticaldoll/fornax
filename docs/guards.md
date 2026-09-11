@@ -417,6 +417,37 @@ load-bearing, because calling it that left the accepted side of the rule with no
 The pattern admits any whitespace and only a space was ever exercised, so narrowing the class to a
 space passed the whole suite. It reddens now.
 
+## Measured 2026-09-11, at the commit carrying this section, the command boundary
+
+`shell_script.commands` owns where one command ends. The question had two homes and no owner, and
+the two disagreed: `runtime_contract` joined a comment line ending in a backslash onto the line
+below, and `read_whole.shell_words` answered for that text with a rule true only of one line, so
+the install below the comment was reported by nothing.
+
+| Finding | Revert this | Guard | Red on revert |
+|---|---|---|---|
+| PIN-HIDDEN-BEHIND-A-JOINED-COMMENT | the backslash parity in `shell_script.commands`, so any trailing backslash continues | `test_shell_script.Continuation.test_an_even_run_ends_the_command` | 1 |
+
+The reader's two declines and the type's invariant are not findings' guards, being the design
+rather than a repair, and are measured here so a later round can run them: reverting the quote
+decline reddens `test_shell_script.Declined.test_a_multi_line_script_holding_a_quote_is_declined`
+(1), the heredoc decline reddens
+`test_shell_script.Declined.test_a_heredoc_is_declined` (1), and the newline invariant reddens
+`test_shell_script.CommandHoldsNoNewline.test_a_command_carrying_a_newline_cannot_be_built` (1).
+Disabling the hash-word refusal in `read_whole.shell_words` reddens 8.
+
+**WHOLE-LINE-ANSWER-APPLIED-TO-A-TEXT and WHOLE-LINE-PREDICATE-UNCONTROLLED have no rows, and the
+absence is the result.** Both named `read_whole.shell_words`' whole-line comment branch. A `Command`
+holds no newline, so the branch was deleted rather than guarded: there is no text for a line rule to
+be wrong about and no axis left to control. A guard would have to restore the branch to have
+anything to redden. That was the stated test of whether the boundary was drawn in the right place.
+
+**One guard was measured and found not to guard.** The end-to-end case first asserted only that the
+pin appeared in some reported error, which a refusal satisfies too — an unreadable command reports
+the text it could not read, and that text holds the pin. It stayed green under the revert that
+should have reddened it. It is pinned to the comparison now, and reverting the comment rule reddens
+it. The weak assertion was found by running the revert, not by reading the case.
+
 ## Written 2026-09-11, prospective — the 48ce457 round, nothing measured
 
 The round settled in `docs/dispositions/ebf16c7..48ce457.md` accepted fourteen findings and
@@ -426,8 +457,6 @@ that cannot be edited, or a rename whose only signal is the citation gate.
 | Finding | Revert this, once its repair lands | Guard | Red on revert |
 |---|---|---|---|
 | PIN-HIDDEN-BEHIND-A-JOINED-COMMENT | for 1a, the comment test in `runtime_contract.run_commands` that stops a join at the newline | a case handing the joined comment-and-install block to `runtime_contract.workflow_pins` and asserting the pin is reported or the text refused, never both absent | not measured — no repair has landed |
-| WHOLE-LINE-ANSWER-APPLIED-TO-A-TEXT | for 1b, the newline refusal in `read_whole.shell_words` | a case asserting that a leading comment followed by a command on the next line is not answered as an empty word list | not measured |
-| WHOLE-LINE-PREDICATE-UNCONTROLLED | the same, this being the control the predicate never had on the axis where it fails | the same case | not measured |
 | REFUSAL-CASES-ASSERT-ONLY-A-TYPE | the pinned text and reason added to the two cases | the cases themselves — one currently stays green when the rule it names is deleted, which is what pinning the reason fixes | not measured |
 | HELPER-NAMED-AS-A-TEST-CASE | the rename in `scripts/tests/test_module_claims.py` | none by test; `scripts/check_citations.py` refuses the old name wherever a record or a row still cites it, which is the only signal a rename has here | not measured |
 
