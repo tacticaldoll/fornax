@@ -113,6 +113,27 @@ class ShellWordTests(unittest.TestCase):
         # shell does not have. bash prints `xy`.
         self.assertEqual(read_whole.shell_words("echo \"x\"'y'"), ["echo", "xy"])
 
+    def test_a_hash_after_a_closing_quote_stays_in_its_word(self) -> None:
+        # The scan ends a token at a closing quote, so a hash touching one opens a new
+        # token while opening no shell word. Asking only whether a token began was this
+        # module's own rule wearing the lexer's name, and it dropped the word and every
+        # word after it. bash prints `a#b`, and `a#b keepme` for the second.
+        self.assertEqual(read_whole.shell_words('echo "a"#b'), ["echo", "a#b"])
+        self.assertEqual(read_whole.shell_words("echo 'a'#b"), ["echo", "a#b"])
+        self.assertEqual(
+            read_whole.shell_words('echo "a"#b keepme'), ["echo", "a#b", "keepme"]
+        )
+
+    def test_a_hash_after_an_escaped_separator_is_unread(self) -> None:
+        # The scan does not resolve escapes, so it cannot tell a separator from an
+        # escaped space, and `echo a\\ #b` is one word to bash. Refusing is the answer
+        # that does not read the command short; it is the loud direction this module
+        # exists to take.
+        read = read_whole.shell_words("echo a\\ #b")
+
+        self.assertIsInstance(read, read_whole.Unread)
+        self.assertEqual(read.text, "echo a\\ #b")
+
     def test_a_comment_hides_text_the_lexer_could_not_have_finished(self) -> None:
         # The comment begins before the quote, so nothing after it is lexed at all and the
         # command is read rather than refused. bash prints `a`.

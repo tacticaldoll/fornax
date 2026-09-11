@@ -249,10 +249,38 @@ the token a comment would; and
 `test_read_whole.ShellWordTests.test_adjacent_quotes_are_one_word` reddens when the words are
 rebuilt by rejoining the scan's tokens instead of slicing the text.
 
+## Measured 2026-09-11, at the commit carrying this section, the recurrence repair
+
+`QUOTED-HASH-CUT-BEFORE-THE-LEXER` returned after its first repair landed in full, so this is the
+same finding measured a second time against a second repair. Both halves were reverted separately
+and each reddens only its own case, which is what makes them two repairs rather than one.
+
+This section also exists because of how its rows were checked. Before writing them, every row
+elsewhere in this file whose named unit or named guard lay inside this repair's Reach was re-run
+against the tree — the discipline `docs/dispositions/e144212..05025bc.md` proposes as repair 2c,
+performed by hand here rather than asserted, so that proposing it as a rule rests on having paid
+its cost once. It found drift immediately, disclosed below, and it found it in the same turn that
+caused it rather than a round later.
+
+| Finding | Revert this | Guard | Red on revert |
+|---|---|---|---|
+| QUOTED-HASH-CUT-BEFORE-THE-LEXER | the begins-a-word test in `read_whole.shell_words`, leaving the bare check that a token starts with a hash | `test_read_whole.ShellWordTests.test_a_hash_after_a_closing_quote_stays_in_its_word` | 1 |
+| QUOTED-HASH-CUT-BEFORE-THE-LEXER | the escaped-separator refusal in `read_whole.shell_words`, so a token ending in a backslash no longer stops the reading | `test_read_whole.ShellWordTests.test_a_hash_after_an_escaped_separator_is_unread` | 1 |
+
+**What the re-run found.** The row for this same finding under the earlier heading records 2 red for
+reverting the quote-preserving scan. Against this tree that revert reddens 3, because the
+escaped-separator case added here is reddened by it too. The earlier reading is left as written: it
+reports what was true at the tree it names, and editing it would falsify a measurement rather than
+correct a label. What is recorded is that the number no longer describes the current tree, which is
+the thing a later round needed and would not otherwise have been told.
+
+The re-run also confirmed that `SHELL-COMMENT-RULE-NARROWER-THAN-CLAIMED` still reddens nothing —
+`GUARD-DIED-WITH-ITS-ONLY-CALLER` is open and unrepaired, and this repair does not touch it.
+
 ## Written 2026-09-11, prospective — nothing measured
 
-The round settled in `docs/dispositions/e144212..05025bc.md` accepted six findings and repaired
-none, so these rows name the guard each repair will owe rather than a revert anyone ran. Three of
+The round settled in `docs/dispositions/e144212..05025bc.md` accepted six findings. One has since
+been repaired and has moved to the measured section below; of the rest, so these rows name the guard each repair will owe rather than a revert anyone ran. Three of
 the six can have no guard and sit in the section below; they are prose in a registry entry and in
 this file, and no test reaches prose.
 
@@ -264,7 +292,6 @@ check that it still produces the number it records.
 
 | Finding | Revert this, once its repair lands | Guard | Red on revert |
 |---|---|---|---|
-| QUOTED-HASH-CUT-BEFORE-THE-LEXER | for 1a, the begins-a-word test in `read_whole.shell_words`, leaving the bare `startswith` that reads a hash after a closing quote as a comment | a case in `test_read_whole.ShellWordTests` asserting that a hash adjacent to a closing quote stays in its word, and that a word following such a token is not dropped | not measured — no repair has landed |
 | GUARD-DIED-WITH-ITS-ONLY-CALLER | for 2a, the case that reaches `read_whole.COMMENT` through `runtime_contract.pins`; for 2b, nothing, because retiring the lookbehind removes the subject rather than guarding it | for 2a, the restored `SHELL-COMMENT-RULE-NARROWER-THAN-CLAIMED` row above, which must redden again once a test reaches `read_whole.COMMENT` for its own sake | not measured |
 | DIRECT-RUN-SKIPS-A-CLASS | for 6a, the moved entry-point block in any one of the three test modules, put back above the last class | a case asserting that each test module collects the same number of tests run directly as under discovery | not measured — the shape is in `scripts/tests/test_read_whole.py`, `scripts/tests/test_record_shape.py` and `scripts/tests/test_check_citations.py`, the last two of which were not reported and were found by enumerating the shape |
 

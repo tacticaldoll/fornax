@@ -114,6 +114,20 @@ def shell_words(command: str) -> list[str] | Unread:
     token except at end of input, and subtracting that character would be this module's
     own mistake in a smaller place.
 
+    A token beginning with `#` is not yet a comment. The scan ends a token at a closing
+    quote, so a hash touching one opens a token where the shell opens no word, and asking
+    only whether a token began read `echo "a"#b` as `echo a` — dropping the word and
+    every word after it. That was this module's own rule wearing the lexer's name, and it
+    was the same defect as the regex it replaced, one character to the right. What makes
+    a word begin is asked of the text instead: the command starts there, or unconsumed
+    text separates it from the token before, or that token was an operator, which the
+    lexer's own `punctuation_chars` decides rather than a list written here.
+
+    Where that question cannot be answered the command is refused. The scan does not
+    resolve escapes, so a token ending in a backslash leaves a separator this cannot
+    tell from an escaped space — `echo a\\ #b` is one word to bash — and reading it
+    short would be the quiet failure again. An `Unread` is the loud one.
+
     The words then come from posix `shlex` over the raw text up to the comment, never
     from rejoining what the scan returned. A scan that keeps quotes reads `"x"'y'` as two
     tokens where the shell has one word, so rejoining invents a boundary that slicing
@@ -122,16 +136,27 @@ def shell_words(command: str) -> list[str] | Unread:
     scan = shlex.shlex(command, posix=False, punctuation_chars=True)
     scan.whitespace_split = True
     scan.commenters = ""
-    cut, cursor = len(command), 0
+    cut, cursor, previous = len(command), 0, None
     try:
         for token in scan:
             start = command.find(token, cursor)
             if start < 0:
                 return Unread(command, "holds a word the scan did not take from its text")
+            gap = command[cursor:start]
             cursor = start + len(token)
             if token.startswith("#"):
-                cut = start
-                break
+                if previous is not None and previous.endswith("\\"):
+                    return Unread(
+                        command,
+                        "ends a word with an escape this cannot resolve before a hash",
+                    )
+                operator = previous is not None and all(
+                    character in scan.punctuation_chars for character in previous
+                )
+                if start == 0 or gap or operator:
+                    cut = start
+                    break
+            previous = token
     except ValueError as error:
         return Unread(command, f"is not a shell command: {error}")
 
