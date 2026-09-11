@@ -24,13 +24,14 @@ import re
 import shlex
 from dataclasses import dataclass
 
-# A `#` begins a word at the start of the line, after whitespace, or after an operator —
-# the last of which this missed. `bash -c 'echo a;# echo b'` prints only `a`, while
-# splitting on whitespace alone left `;`, `#` and every following word in the stream. It
-# was contained rather than harmless: `runtime_contract._installs` judges by command
-# position and sees `#` there, so a commented-out install was never read as one. The
-# containment is not the rule, and `development-knowns.yaml` stated the rule this now
-# implements rather than the one it had.
+# Where a requirements line's comment begins, which is the one grammar this still reads
+# by hand. `runtime_contract.pins` is the only caller left: pip ends a requirement at a
+# `#` that begins a word, and such a line carries no shell quoting for the matcher to
+# misread. The operator form stays because a requirement may carry a marker after `;`.
+#
+# `shell_words` shared this and no longer does. A shell command can quote a hash, and a
+# matcher that cannot read a quote cut `echo "value # kept"` into an unterminated command
+# and refused it. What decides a comment there is now the lexer that owns the quoting.
 COMMENT = re.compile(r"(?:(?<=\s)|(?<=[;&|()<>])|^)#")
 
 
@@ -85,22 +86,56 @@ def whole(text: str, pattern: re.Pattern[str], what: str) -> Read:
 def shell_words(command: str) -> list[str] | Unread:
     """Split a shell command into its words, with quoting decided by a real lexer.
 
-    Quoting is what bounds a word, and every hand-written attempt at that boundary
-    here has been a list of characters that may not follow — short by `+`, then by
-    `;`, `|` and `>`, then by `_` and `/`. `shlex` owns this grammar and does not
-    guess: an operator ends a word, a quote holds one together, and text it cannot
-    finish reading raises rather than returning the part it managed.
+    Quoting is what bounds a word, and every hand-written attempt at that boundary here
+    has been a list of characters that may not follow — short by `+`, then by `;`, `|`
+    and `>`, then by `_` and `/`. `shlex` owns this grammar and does not guess: an
+    operator ends a word, a quote holds one together, and text it cannot finish reading
+    raises rather than returning the part it managed.
 
     Its comment rule is not the shell's, though. `shlex` ends a word at any `#`, so
-    `tool==1.0#x` lexes to `tool==1.0` — a silent truncation, the very kind this
-    module exists to stop, arriving from the library instead of from a hand-written
-    matcher. `bash -c 'echo tool==1.0#x'` prints `tool==1.0#x`. So commenting is
-    turned off here and cut beforehand by the rule the shell actually uses: a `#`
-    that begins a word.
+    `tool==1.0#x` lexes to `tool==1.0` — a silent truncation, the very kind this module
+    exists to stop, arriving from the library instead of from a hand-written matcher.
+    `bash -c 'echo tool==1.0#x'` prints `tool==1.0#x`. So commenting is turned off and the
+    shell's own rule applied instead: a `#` that begins a word.
+
+    Where that rule was applied is what this had wrong. A regex ran over the raw command
+    before the lexer saw it, so a quoted hash was cut and `echo "value # kept"` came back
+    unread for a closing quote the text actually had. Widening the regex is the repair the
+    round before made, and it is why the hole reopened one character to the left: the
+    guess had to go rather than grow.
+
+    So the comment is found by a scan that keeps quotes, and the words are read from the
+    text itself. Both readings are the lexer's and neither is this module's.
+
+    The scan places each word by searching the text for it, not by asking where the lexer
+    is. A word it hands back appears in the command verbatim and in order, and what lies
+    between two words is the whitespace it consumed, so a `find` from a running cursor is
+    exact. `instream.tell()` is not: it runs one character of lookahead ahead of the
+    token except at end of input, and subtracting that character would be this module's
+    own mistake in a smaller place.
+
+    The words then come from posix `shlex` over the raw text up to the comment, never
+    from rejoining what the scan returned. A scan that keeps quotes reads `"x"'y'` as two
+    tokens where the shell has one word, so rejoining invents a boundary that slicing
+    cannot.
     """
-    lexer = shlex.shlex(
-        COMMENT.split(command, maxsplit=1)[0], posix=True, punctuation_chars=True
-    )
+    scan = shlex.shlex(command, posix=False, punctuation_chars=True)
+    scan.whitespace_split = True
+    scan.commenters = ""
+    cut, cursor = len(command), 0
+    try:
+        for token in scan:
+            start = command.find(token, cursor)
+            if start < 0:
+                return Unread(command, "holds a word the scan did not take from its text")
+            cursor = start + len(token)
+            if token.startswith("#"):
+                cut = start
+                break
+    except ValueError as error:
+        return Unread(command, f"is not a shell command: {error}")
+
+    lexer = shlex.shlex(command[:cut], posix=True, punctuation_chars=True)
     lexer.whitespace_split = True
     lexer.commenters = ""
     try:

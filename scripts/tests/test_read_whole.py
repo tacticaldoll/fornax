@@ -93,6 +93,31 @@ class ShellWordTests(unittest.TestCase):
         self.assertIsInstance(read, read_whole.Unread)
         self.assertEqual(read.text, 'echo "unbalanced')
 
+    def test_a_hash_inside_quotes_is_not_a_comment(self) -> None:
+        # The cut used to run before the lexer, on a matcher that cannot read a quote, so
+        # each of these lost its closing quote and came back unread. bash prints
+        # `value # kept` for both.
+        for command in ('echo "value # kept"', "echo 'value # kept'"):
+            with self.subTest(command=command):
+                self.assertEqual(read_whole.shell_words(command), ["echo", "value # kept"])
+
+    def test_an_escaped_hash_is_a_word_and_not_a_comment(self) -> None:
+        # The control that refuses a cut made on the lexer's output: posix `shlex`
+        # unescapes, so `\#` and a comment's own hash both arrive as the token `#`. Only a
+        # cut keyed to where the word began in the text can tell them apart.
+        self.assertEqual(read_whole.shell_words("echo \\# literal"), ["echo", "#", "literal"])
+
+    def test_adjacent_quotes_are_one_word(self) -> None:
+        # The control that refuses a cut made by rejoining a scan's tokens: a scan that
+        # keeps quotes reads `"x"\'y\'` as two, and rejoining them invents a boundary the
+        # shell does not have. bash prints `xy`.
+        self.assertEqual(read_whole.shell_words("echo \"x\"'y'"), ["echo", "xy"])
+
+    def test_a_comment_hides_text_the_lexer_could_not_have_finished(self) -> None:
+        # The comment begins before the quote, so nothing after it is lexed at all and the
+        # command is read rather than refused. bash prints `a`.
+        self.assertEqual(read_whole.shell_words('echo a # "unbalanced'), ["echo", "a"])
+
 
 if __name__ == "__main__":
     unittest.main()
