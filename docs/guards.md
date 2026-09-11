@@ -337,22 +337,6 @@ Re-run under the same discipline as the sections above. Both rows for
 `QUOTED-HASH-CUT-BEFORE-THE-LEXER` still redden 1, and `DIRECT-RUN-SKIPS-A-CLASS` still reddens 1,
 so this repair moved no count but its own.
 
-## Written 2026-09-11, prospective — nothing measured
-
-The round settled in `docs/dispositions/e144212..05025bc.md` accepted six findings. One has since
-been repaired and has moved to the measured section below; of the rest, so these rows name the guard each repair will owe rather than a revert anyone ran. Three of
-the six can have no guard and sit in the section below; they are prose in a registry entry and in
-this file, and no test reaches prose.
-
-One of these is a row about rows. GUARD-DIED-WITH-ITS-ONLY-CALLER is the finding that a guard here
-stopped reddening because the repair severed the call its test reached the subject through, with
-both symbols still present so the citation check saw nothing. Until repair 2a or 2b lands there is
-nothing to revert, and the re-runnable reading in the meantime is to run each row in this file and
-check that it still produces the number it records.
-
-| Finding | Revert this, once its repair lands | Guard | Red on revert |
-|---|---|---|---|
-
 ## Measured 2026-09-11, at the commit carrying this section, declining the question
 
 The repair the three rounds before did not make. `read_whole.shell_words` no longer locates where
