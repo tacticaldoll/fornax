@@ -1759,8 +1759,7 @@ class SchemaSeamTests(unittest.TestCase):
 
     One direction is not enough. Asserting only that the variant passes would also be
     satisfied by a validator that stopped checking the field at all, so each case
-    asserts the refusal under `FORNAX_FORMAT` in the same breath.
-    """
+    asserts the refusal under `FORNAX_FORMAT` in the same breath."""
 
     def test_a_refused_manifest_field_is_refused_by_the_schema(self) -> None:
         manifest = MANIFEST + "version: 0.1.0\n"
@@ -1812,33 +1811,6 @@ class SchemaSeamTests(unittest.TestCase):
         self.assertIn("family must be", output)
         self.assertTrue(known)
 
-    def test_a_directory_no_resource_key_names_is_refused(self) -> None:
-        with TemporaryDirectory() as tmp:
-            skill_dir = fixtures.write_skill(Path(tmp), NAME)
-            (skill_dir / "agents").mkdir()
-            (skill_dir / "agents" / "openai.yaml").write_text("x: y\n", encoding="utf-8")
-
-            passed, output = check(skill_dir)
-
-        self.assertFalse(passed)
-        self.assertIn("agents/ is not declared under resources", output)
-
-    def test_the_folder_check_reads_shape_and_not_intent(self) -> None:
-        """The hole, pinned by a case rather than only by prose.
-
-        A host adapter written as a file beside SKILL.md is exactly what the decision
-        refuses and exactly what this check admits. Asserting the pass is what keeps the
-        bound honest: a later reader who takes the check for the decision finds the case
-        that says otherwise, and a later repair that closes the hole turns it red.
-        """
-        with TemporaryDirectory() as tmp:
-            skill_dir = fixtures.write_skill(Path(tmp), NAME)
-            (skill_dir / "openai.yaml").write_text("x: y\n", encoding="utf-8")
-
-            passed, output = check(skill_dir)
-
-        self.assertTrue(passed, output)
-
     def test_a_run_carries_one_filling_into_both_halves(self) -> None:
         """The collection-level seam, asserted where the two halves meet.
 
@@ -1869,6 +1841,49 @@ class SchemaSeamTests(unittest.TestCase):
         self.assertEqual(refused, 1)
         self.assertIn("name must use lowercase hyphen-case", output.getvalue())
 
+
+class FolderShapeTests(unittest.TestCase):
+    """What a skill folder may contain, and the part of that this cannot hold.
+
+    Not seam cases: the rule is the same under every filling. They sat with the seam
+    cases because they arrived in the same range, and the class contract there claims
+    each case changes only the schema, which was false of both."""
+
+    def test_a_directory_no_resource_key_names_is_refused(self) -> None:
+        with TemporaryDirectory() as tmp:
+            skill_dir = fixtures.write_skill(Path(tmp), NAME)
+            (skill_dir / "agents").mkdir()
+            (skill_dir / "agents" / "openai.yaml").write_text("x: y\n", encoding="utf-8")
+
+            passed, output = check(skill_dir)
+
+        self.assertFalse(passed)
+        self.assertIn("agents/ is not declared under resources", output)
+
+    def test_the_folder_check_reads_shape_and_not_intent(self) -> None:
+        """The hole, pinned by a case rather than only by prose.
+
+        A host adapter written as a file beside SKILL.md is exactly what the decision
+        refuses and exactly what this check admits. Asserting the pass is what keeps the
+        bound honest: a later reader who takes the check for the decision finds the case
+        that says otherwise, and a later repair that closes the hole turns it red.
+        """
+        with TemporaryDirectory() as tmp:
+            skill_dir = fixtures.write_skill(Path(tmp), NAME)
+            (skill_dir / "openai.yaml").write_text("x: y\n", encoding="utf-8")
+
+            passed, output = check(skill_dir)
+
+        self.assertTrue(passed, output)
+
+
+class SchemaImmutabilityTests(unittest.TestCase):
+    """That a schema's mapping cannot be written, whichever way the schema was built.
+
+    Two cases and not one: the declared filling and a variant built by `replace` reach
+    the guarantee differently, and a wrap applied at the declaration satisfied the
+    first alone while the type promised for both."""
+
     def test_the_family_mapping_cannot_be_written_under_either_name(self) -> None:
         """Both halves, because the binding and the field are one object.
 
@@ -1895,6 +1910,14 @@ class SchemaSeamTests(unittest.TestCase):
             variant.families["meta"] = "Meta"
 
         self.assertEqual(dict(variant.families), {"archaeology": "Archaeology"})
+
+
+class FillingAskedNotDefaulted(unittest.TestCase):
+    """That a check refuses rather than supplying a filling of its own.
+
+    Weak by construction and recorded as such: every call from the entry point passes
+    one positionally, so restoring a default reddens nothing. What this holds is the
+    one re-runnable consequence."""
 
     def test_an_inner_check_will_not_supply_a_filling_of_its_own(self) -> None:
         """The weak half of the seam, and the ledger says so.
