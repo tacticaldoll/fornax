@@ -574,6 +574,24 @@ a reading recorded in the wrong place, or a suite-side default, and are prospect
 | INIT-COUNTED-AS-A-COLLISION | for 13a, the marker excluded where the collision is judged | `test_module_claims.ModuleClaimTests` at its collision case, with a subpackage carrying a marker — it reddens today for a structure that is not a defect, which is the finding | not measured |
 | TEST-HELPER-KEEPS-THE-DEFAULT | for 14a, the helper's defaults removed | none by test, and the absence is the finding: reverting a repair that removes a default reddens nothing, which is why the check's own repair could not be guarded either | not measured |
 
+## Measured 2026-09-14, at the commit carrying this section — the citation cost of moving a symbol
+
+A commit message chose between two repairs on a count of this repository and wrote the count into
+the message. The number was eighty-two; no reading reproduces it, and the message is the wrong place
+for a reading either way. Measured here instead, with the corpus stated, because a count without one
+is not a reading.
+
+Over the corpus the citation gate judges — `check_citations.SUBJECTS` plus every record under
+`check_citations.RECORDS` — `read_whole.shell_words` and `read_whole.COMMENT` are named 61 times
+across 7 files, 6 of them settled Disposition Records. Adding `docs/reviews`, which the gate does not
+judge, gives 69. Neither is eighty-two, and the message's number is superseded rather than corrected
+in place: a message describes the change it made and is not re-read as a claim about the tree, which
+is exactly why a measurement does not belong in one.
+
+The decision the number carried still holds on either reading. Moving those two symbols out of
+`read_whole` would have invalidated every one of those citations, across records this repository
+does not edit; moving the `Line` type in invalidated none, because nothing named it.
+
 ## Repairs with no guard, and why
 
 | Finding | Why nothing goes red |
