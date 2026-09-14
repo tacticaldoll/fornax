@@ -23,11 +23,6 @@ from __future__ import annotations
 import re
 import shlex
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    import shell_script
-
 # Where a requirements line's comment begins, which is the one grammar this still reads
 # by hand. `runtime_contract.pins` is the only caller left: pip ends a requirement at a
 # `#` that begins a word, and such a line carries no shell quoting for the matcher to
@@ -41,6 +36,29 @@ if TYPE_CHECKING:
 # matcher that cannot read a quote cut `echo "value # kept"` into an unterminated command
 # and refused it. What decides a comment there is now the lexer that owns the quoting.
 COMMENT = re.compile(r"(?:(?<=\s)|^)#")
+
+
+@dataclass(frozen=True)
+class Line:
+    """One line of a script, holding no newline — which is all it claims.
+
+    It was called `Command` and documented as one command's text, and the constructor
+    checked only the newline. `c a; c z` is one of these and two commands to bash, so the
+    name promised what nothing enforced — the shape of defect this module exists to
+    remove, in this module. Named for what it guarantees instead. Splitting a line at its
+    control operators is `runtime_contract`'s, which already does it.
+
+    The invariant is enforced here rather than promised by the caller, for the reason
+    `read_whole.Whole` gives about its own: a convention is what the rounds before it
+    already had. A reader that takes a `Command` may say "one line" and be right, instead
+    of assuming it and being wrong about a text someone joined across a newline.
+    """
+
+    text: str
+
+    def __post_init__(self) -> None:
+        if "\n" in self.text:
+            raise ValueError(f"{self.text!r} holds a newline, so it is not one line")
 
 
 @dataclass(frozen=True)
@@ -91,7 +109,7 @@ def whole(text: str, pattern: re.Pattern[str], what: str) -> Read:
     return Whole(match)
 
 
-def shell_words(command: "shell_script.Line") -> list[str] | Unread:
+def shell_words(command: Line) -> list[str] | Unread:
     """Split a shell command into its words, or report the whole text unread.
 
     Quoting is what bounds a word, and every hand-written attempt at that boundary here
@@ -121,8 +139,8 @@ def shell_words(command: "shell_script.Line") -> list[str] | Unread:
 
     A whole-line comment is `shell_script`'s to drop, not this function's to detect. This
     took a string and answered for it with a rule about a line, which was true of a line
-    and false of a text someone had joined across a newline; it takes a `shell_script`
-    command now, whose type holds no newline, so the case is gone rather than guarded.
+    and false of a text someone had joined across a newline; it takes a `Line` now, whose
+    type holds no newline, so the case is gone rather than guarded.
 
     What is left is the question with no owner: a word opening with `#` leaves the
     command unread, because telling that word from a comment needs the quoting that

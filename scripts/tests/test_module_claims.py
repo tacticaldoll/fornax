@@ -34,6 +34,10 @@ MODULES = {
     if path.stem != "__init__"
 }
 LOCAL = set(MODULES)
+#: The modules on the package side of the boundary the carve-out is for.
+PACKAGE_MODULES = {
+    path.stem for path in (SCRIPTS / PACKAGE).glob("*.py") if path.stem != "__init__"
+}
 STDLIB = set(sys.stdlib_module_names)
 
 
@@ -149,6 +153,28 @@ class ModuleClaimTests(unittest.TestCase):
         for module in claiming:
             with self.subTest(module=module):
                 self.assertEqual(third_party(module), set())
+
+    def test_no_package_module_imports_outside_the_package(self) -> None:
+        """The boundary the carve-out is for, as an assertion rather than a sentence.
+
+        It was a sentence twice — in the commit that drew the boundary and in the one
+        that widened it — and both were false. A public function in the package took a
+        parameter typed by a module outside it, imported under `TYPE_CHECKING`, while
+        that module imported back: a cycle across the boundary, with the repository on
+        both sides of it. What verified the claim was a grep anchored at the start of a
+        line, and the import is indented, so the check could not have found the thing it
+        was run to find.
+
+        `ast.walk` descends into the `TYPE_CHECKING` guard, which is what makes this
+        hold the case that got through. Typing-only is not a weaker kind of edge here:
+        the package is being extracted, and a signature naming a type that will not
+        travel with it is an API defect at the moment of the split, not a comment.
+        """
+        outside = LOCAL - PACKAGE_MODULES
+
+        for module in sorted(PACKAGE_MODULES):
+            with self.subTest(module=module):
+                self.assertEqual(imports(module) & outside, set())
 
     def test_the_check_sees_a_package_reached_through_a_sibling(self) -> None:
         # The failure that motivated this was transitive, so a direct-import check

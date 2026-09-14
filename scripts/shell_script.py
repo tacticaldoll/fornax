@@ -44,35 +44,10 @@ oracle are described in `docs/guards.md` under this module's dated section.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
-from agent_skill_format.read_whole import Unread
+from agent_skill_format.read_whole import Line, Unread
 
 HEREDOC = "<<"
 QUOTES = ("'", '"')
-
-
-@dataclass(frozen=True)
-class Line:
-    """One line of a script, holding no newline — which is all it claims.
-
-    It was called `Command` and documented as one command's text, and the constructor
-    checked only the newline. `c a; c z` is one of these and two commands to bash, so the
-    name promised what nothing enforced — the shape of defect this module exists to
-    remove, in this module. Named for what it guarantees instead. Splitting a line at its
-    control operators is `runtime_contract`'s, which already does it.
-
-    The invariant is enforced here rather than promised by the caller, for the reason
-    `read_whole.Whole` gives about its own: a convention is what the rounds before it
-    already had. A reader that takes a `Command` may say "one line" and be right, instead
-    of assuming it and being wrong about a text someone joined across a newline.
-    """
-
-    text: str
-
-    def __post_init__(self) -> None:
-        if "\n" in self.text:
-            raise ValueError(f"{self.text!r} holds a newline, so it is not one line")
 
 
 def commands(script: str) -> list[Line] | Unread:
