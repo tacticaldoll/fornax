@@ -11,6 +11,7 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 import fixtures
+import path_boundary
 import skill_model
 import distribution_manifest
 import validate_skills
@@ -1798,6 +1799,20 @@ class SchemaSeamTests(unittest.TestCase):
         self.assertFalse(unknown)
         self.assertIn("family must be", output)
         self.assertTrue(known)
+
+    def test_an_inner_check_will_not_supply_a_filling_of_its_own(self) -> None:
+        """The weak half of the seam, and the ledger says so.
+
+        A default on an inner check is unreachable while `validate_skill` passes one
+        positionally, so nothing reddens when one is restored — the suite would go on
+        proving the same thing about the same object. What this case holds is the one
+        re-runnable consequence: asked without a filling, the check refuses rather than
+        reaching for `FORNAX_FORMAT`.
+        """
+        with self.assertRaises(TypeError):
+            validate_skills.validate_skill_manifest(
+                NAME, MANIFEST, False, path_boundary.Boundary.at(Path("."))
+            )
 
 
 if __name__ == "__main__":

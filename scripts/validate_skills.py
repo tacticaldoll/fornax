@@ -183,7 +183,7 @@ def validate_handoffs(
     name: str,
     known_skills: set[str],
     markdown_files: dict[Path, str],
-    schema: FormatSchema = FORNAX_FORMAT,
+    schema: FormatSchema,
 ) -> bool:
     failed = False
 
@@ -349,7 +349,7 @@ def validate_skill_manifest(
     manifest: str,
     allow_template_placeholders: bool,
     boundary: Boundary,
-    schema: FormatSchema = FORNAX_FORMAT,
+    schema: FormatSchema,
 ) -> tuple[bool, str | None, str | None]:
     """Validate one skill manifest and return values shared with SKILL.md checks."""
     failed = False
@@ -430,7 +430,7 @@ def validate_skill_document(
     manifest_name: str | None,
     manifest_description: str | None,
     allow_template_placeholders: bool,
-    schema: FormatSchema = FORNAX_FORMAT,
+    schema: FormatSchema,
 ) -> bool:
     """Validate SKILL.md metadata and its required Input contract."""
     failed = False
@@ -491,6 +491,11 @@ def validate_skill(
     schema: FormatSchema = FORNAX_FORMAT,
 ) -> bool:
     """Validate one skill folder, returning whether it failed.
+
+    The filling defaults here and nowhere below. A default on an inner check is
+    unreachable — every call from here passes one — and it is how the next caller
+    takes FORNAX_FORMAT back without saying so, which is the whole reason the values
+    were gathered. One entry point holds the default; the checks under it are asked.
 
     Every per-skill check runs here, including the sidecar's publisher, because this is
     what prints `OK   <name>`. The publisher comparison used to run in its own pass
