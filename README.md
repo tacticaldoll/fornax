@@ -246,7 +246,7 @@ Use the pinned `agent-skill-builder` to render the collection template, then rep
 Fornax policy placeholders:
 
 ```sh
-agent-skill init <skill-name> \
+.venv/bin/agent-skill init <skill-name> \
   --parent skills \
   --description "Use when an agent needs to ..." \
   --template templates/skill
