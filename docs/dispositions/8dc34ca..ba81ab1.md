@@ -51,7 +51,10 @@ is the signal the guard row for this finding predicted. What changed is the cita
 repair it names and the disposition that accepted it are untouched.
 
 Later, the carve-out moved the schema type into the package being extracted, and the three cells
-naming it as `schema.FormatSchema` now name it as `schema.FormatSchema`. Same treatment and
+that named it under its old module now name it under `schema`, where it went. The superseded
+spelling is not written here: this record is a subject of the citation gate, and naming a symbol
+that no module defines is the thing the gate refuses, so the disclosure says which module it left
+rather than reproducing the coordinate it left behind. Same treatment and
 same reason: a Reach cell names where a repair touches, which is a coordinate and not a reading, and
 the gate refused the move until the coordinate was current. Disclosed here rather than left for a
 reader to discover that this record's coordinates were edited after it was settled.
