@@ -357,13 +357,13 @@ def undeclared_directories(name: str, boundary: Boundary, declared_roots: set[st
     folder could carry any directory at all and every check passed, because the
     resource keys were read from the manifest and the folder was never read back.
 
-    What it would have caught, and what it costs. It has caught nothing here: no skill
-    in this repository has ever carried an undeclared directory, and each one's
-    directories match its declared resources exactly. The failure it stops has reached
-    users, in the other collection this format serves, which ships a per-skill host
-    adapter directory in every skill against this same decision. The standing cost is
-    an exemption list of none, no registry entry, and an authoring rule that already
-    exists — a resource directory is declared because that is what `resources` is for.
+    What it costs is nothing standing: an exemption list of none, no registry entry,
+    and an authoring rule that already exists, since a resource directory is declared
+    because that is what `resources` is for. What it would have caught was measured
+    against two trees on the day it was written, and the measurement is in
+    `docs/guards.md` with the date and the versions it was taken at rather than here —
+    a docstring has no date, so a reading of a tree put in one stops being true without
+    saying when it stopped.
 
     It reads shape and not intent, which is the honest bound. A host adapter written as
     a file beside SKILL.md passes, and so does one in a directory declared under a
