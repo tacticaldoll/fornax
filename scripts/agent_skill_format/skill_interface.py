@@ -10,11 +10,19 @@ Record identities use this canonical form::
 
     <publisher-uuid>/<record-type>@<major> <media-type>
 
-Usage:
-    .venv/bin/python scripts/skill_interface.py --skills-path skills --list
-    .venv/bin/python scripts/skill_interface.py --skills-path skills --recommend RECORD
-    .venv/bin/python scripts/skill_interface.py --skills-path skills \
-        --recommend RECORD --prefer SKILL
+Usage, from the repository root, with `scripts/` on the path so the package resolves::
+
+    PYTHONPATH=scripts .venv/bin/python -m agent_skill_format.skill_interface \
+        --skills-path skills --list
+    PYTHONPATH=scripts .venv/bin/python -m agent_skill_format.skill_interface \
+        --skills-path skills --recommend RECORD
+    PYTHONPATH=scripts .venv/bin/python -m agent_skill_format.skill_interface \
+        --skills-path skills --recommend RECORD --prefer SKILL
+
+The module form is not a preference. Running the file by path puts this directory
+first on `sys.path`, and the sibling imports below then fail before argparse is
+reached — so the old command does not merely name a path that moved, it names the
+one way this entry point cannot be run from where it now lives.
 """
 
 from __future__ import annotations
