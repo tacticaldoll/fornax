@@ -39,7 +39,7 @@ from __future__ import annotations
 import argparse
 import re
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from diagnostic_text import printable
 from distribution_manifest import validate_distribution
@@ -344,6 +344,43 @@ def validate_manifest_path(
     return False
 
 
+def undeclared_directories(name: str, boundary: Boundary, declared_roots: set[str]) -> bool:
+    """Refuse a directory in a skill folder that the manifest does not declare.
+
+    PROJECT.md decides that skills are host-neutral and host specifics live once at
+    the packaging layer, never in per-skill adapter files. Nothing held that. A skill
+    folder could carry any directory at all and every check passed, because the
+    resource keys were read from the manifest and the folder was never read back.
+
+    What it would have caught, and what it costs. It has caught nothing here: no skill
+    in this repository has ever carried an undeclared directory, and each one's
+    directories match its declared resources exactly. The failure it stops has reached
+    users, in the other collection this format serves, which ships a per-skill host
+    adapter directory in every skill against this same decision. The standing cost is
+    an exemption list of none, no registry entry, and an authoring rule that already
+    exists — a resource directory is declared because that is what `resources` is for.
+
+    It reads shape and not intent, which is the honest bound. A host adapter written as
+    a file beside SKILL.md passes, and so does one in a directory declared under a
+    resource key. What it refuses is the undeclared directory, which is the form the
+    decision has actually been violated in.
+    """
+    children, listing_error = child_directories(boundary.declared)
+
+    if listing_error is not None:
+        fail(name, f"skill directories could not be listed: {listing_error}")
+        return True
+
+    failed = False
+
+    for child in children:
+        if child.name not in declared_roots:
+            fail(name, f"{child.name}/ is not declared under resources")
+            failed = True
+
+    return failed
+
+
 def validate_skill_manifest(
     name: str,
     manifest: str,
@@ -407,6 +444,8 @@ def validate_skill_manifest(
     ):
         failed = True
 
+    declared_roots: set[str] = set()
+
     for resource_key in schema.resource_keys:
         # Declared without a same-line path is not the same as never declared, and
         # reading the first as the second skipped a malformed key in silence.
@@ -415,10 +454,15 @@ def validate_skill_manifest(
         if resource.shape is Shape.UNREAD:
             fail(name, f"resources.{resource_key} must name a path")
             failed = True
-        elif resource.value and validate_manifest_path(
-            f"resources.{resource_key}", resource.value, name, boundary, expect_directory=True
-        ):
-            failed = True
+        elif resource.value:
+            declared_roots.add(PurePosixPath(resource.value).parts[0])
+            if validate_manifest_path(
+                f"resources.{resource_key}", resource.value, name, boundary, expect_directory=True
+            ):
+                failed = True
+
+    if undeclared_directories(name, boundary, declared_roots):
+        failed = True
 
     return failed, manifest_name, get_top_level_yaml_value(document, "description")
 

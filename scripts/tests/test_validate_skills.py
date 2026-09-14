@@ -24,6 +24,9 @@ REVIEW_RECORD = f"{PUBLISHER}/review-record@1 text/markdown"
 NAME = "example-skill"
 MANIFEST = fixtures.manifest(NAME)
 TRIGGER_BLOCK = f"triggers:\n  - user asks for {NAME}\n"
+# A manifest for the cases that create a resource directory. The folder check refuses
+# a directory no resource key names, so a case writing one declares it.
+MANIFEST_WITH_REFERENCES = MANIFEST + "resources:\n  references: references/\n"
 SKILL_MD = fixtures.skill_md(NAME)
 
 
@@ -279,7 +282,9 @@ class ValidateSkillTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             text = SKILL_MD + '\nSee [the reference](references/guide.md "short (local) guide").\n'
-            skill_dir = fixtures.write_skill(root, NAME, skill_md_text=text)
+            skill_dir = fixtures.write_skill(
+                root, NAME, skill_md_text=text, manifest_text=MANIFEST_WITH_REFERENCES
+            )
             reference = skill_dir / "references" / "guide.md"
             reference.parent.mkdir()
             reference.write_text("# Guide\n", encoding="utf-8")
@@ -291,7 +296,9 @@ class ValidateSkillTests(unittest.TestCase):
     def test_parent_link_that_remains_in_the_skill_passes(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
-            skill_dir = fixtures.write_skill(root, NAME)
+            skill_dir = fixtures.write_skill(
+                root, NAME, manifest_text=MANIFEST_WITH_REFERENCES
+            )
             guide = skill_dir / "references" / "guide.md"
             guide.parent.mkdir()
             guide.write_text("[self](../SKILL.md)\n", encoding="utf-8")
@@ -1803,6 +1810,33 @@ class SchemaSeamTests(unittest.TestCase):
         self.assertFalse(unknown)
         self.assertIn("family must be", output)
         self.assertTrue(known)
+
+    def test_a_directory_no_resource_key_names_is_refused(self) -> None:
+        with TemporaryDirectory() as tmp:
+            skill_dir = fixtures.write_skill(Path(tmp), NAME)
+            (skill_dir / "agents").mkdir()
+            (skill_dir / "agents" / "openai.yaml").write_text("x: y\n", encoding="utf-8")
+
+            passed, output = check(skill_dir)
+
+        self.assertFalse(passed)
+        self.assertIn("agents/ is not declared under resources", output)
+
+    def test_the_folder_check_reads_shape_and_not_intent(self) -> None:
+        """The hole, pinned by a case rather than only by prose.
+
+        A host adapter written as a file beside SKILL.md is exactly what the decision
+        refuses and exactly what this check admits. Asserting the pass is what keeps the
+        bound honest: a later reader who takes the check for the decision finds the case
+        that says otherwise, and a later repair that closes the hole turns it red.
+        """
+        with TemporaryDirectory() as tmp:
+            skill_dir = fixtures.write_skill(Path(tmp), NAME)
+            (skill_dir / "openai.yaml").write_text("x: y\n", encoding="utf-8")
+
+            passed, output = check(skill_dir)
+
+        self.assertTrue(passed, output)
 
     def test_a_run_carries_one_filling_into_both_halves(self) -> None:
         """The collection-level seam, asserted where the two halves meet.
