@@ -556,6 +556,24 @@ measured empty, not assumed. Against the installed snapshot of `tianheng-foundry
 reports one undeclared directory in each of the seven skills that snapshot ships. Both numbers are
 readings of a tree on a date, and neither is re-derivable from the check alone.
 
+## Written 2026-09-14, prospective — the 8c87363 round, two repairs landed before it was written
+
+Sixteen findings accepted. Two were repaired before this section existed, because one of them was
+the mechanism holding the package boundary and the other was the table this section sits beside;
+their rows say measured and name what was measured. The rest are prose about a state that changed,
+a reading recorded in the wrong place, or a suite-side default, and are prospective.
+
+| Finding | Revert this, once its repair lands | Guard | Red on revert |
+|---|---|---|---|
+| BOUNDARY-SET-NOT-THE-OWNERS | the split of the owner's map in `test_module_claims`, back to a glob of the package's top directory | `test_module_claims.ModuleClaimTests.test_no_package_module_imports_outside_the_package`, with a module one level inside the package importing across — the fixture has to be built, because no such module exists in the tree and the assertion cannot fail on what is there | **measured** — with the glob, a nested module importing `skill_model` leaves the suite green; with the split, it turns that case red. Both readings taken here and independently in the input's isolated clone |
+| MEASUREMENT-BROKE-THE-TABLE, MEASUREMENT-UNDER-A-PROSPECTIVE-HEADING | the measurement's move out of the previous section's table | none by test. Nothing here parses this file as CommonMark; the reading is to run `markdown_links` over it and count the rows of each table, which is what the input did | **measured** — inside the table, the three rows after the paragraph are not rows; outside it, they are |
+| LINE-RE-EXPORTED-UNDECLARED | for 2a, the four readers routed to the type's own module | none by test, and this is the finding's shape: the re-export makes both names work, so neither a revert nor the current tree can redden anything. The reading is to grep for the old name and expect none | not measured |
+| TREE-COUNT-IN-A-MESSAGE, SETTLED-READING-OVERWRITTEN, SELFCHECK-EDIT-UNDISCLOSED, EDGE-GUARD-ROW-STALE, POLLUTION-ROW-CONTRADICTS-ITS-SIBLING, ONLY-DEFAULT-CLAIM-WIDENED, SEAM-CONTRACT-POLARITY, LINE-DOCSTRING-MOVED-WHOLE | — | none by test. Every unit is a sentence, a row, or a number in a record, and no gate opens over what a sentence claims. Four of them are this file's own rows, which is worth saying plainly: the ledger recording what must break has no way to hold itself | not measured |
+| WHITESPACE-READING-UNRUNNABLE | for 8a, the corrected bracket expression | none by test. The reading guards itself: run both forms over the tracked Markdown and the wrong one names most of the tree while the right one names nothing | not measured |
+| CLASS-NAME-OFF-PATTERN | for 11a, the rename | none by test; the citation gate refuses the old name wherever a row still cites it, which is the only signal a rename has here | not measured |
+| INIT-COUNTED-AS-A-COLLISION | for 13a, the marker excluded where the collision is judged | `test_module_claims.ModuleClaimTests` at its collision case, with a subpackage carrying a marker — it reddens today for a structure that is not a defect, which is the finding | not measured |
+| TEST-HELPER-KEEPS-THE-DEFAULT | for 14a, the helper's defaults removed | none by test, and the absence is the finding: reverting a repair that removes a default reddens nothing, which is why the check's own repair could not be guarded either | not measured |
+
 ## Repairs with no guard, and why
 
 | Finding | Why nothing goes red |
