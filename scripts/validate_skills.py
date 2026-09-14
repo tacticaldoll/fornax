@@ -18,7 +18,7 @@ it carries a second value, not to express this.
 **Where the values come from.** The family and status vocabularies, the manifest
 fields required, refused and read as blocks, the resource keys, and the grammars
 for a folder name and a handoff all arrive as a
-`skill_model.FormatSchema`, defaulting to `skill_model.FORNAX_FORMAT`. Several were
+`schema.FormatSchema`, defaulting to `skill_model.FORNAX_FORMAT`. Several were
 literals here, each edited where it was read. A check holding its own value cannot
 be asked a different question, and this file is where the next such literal would
 otherwise land.
@@ -42,7 +42,7 @@ import sys
 from pathlib import Path, PurePosixPath
 
 from agent_skill_format.diagnostic_text import printable
-from distribution_manifest import validate_distribution
+from agent_skill_format.distribution_manifest import validate_distribution
 
 from agent_skill_format.host_paths import has_parent_segment_anywhere, is_absolute_anywhere
 from agent_skill_format.markdown_links import iter_markdown_links, local_target
@@ -52,7 +52,8 @@ from agent_skill_format.skill_interface import (
     InterfaceError,
     load as load_interface,
 )
-from skill_model import FORNAX_FORMAT, FormatSchema, listed
+from agent_skill_format.schema import FormatSchema
+from skill_model import FORNAX_FORMAT, listed
 from agent_skill_format.skill_yaml import (
     Shape,
     declares_key,

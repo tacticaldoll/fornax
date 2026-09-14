@@ -13,7 +13,7 @@ import json
 import subprocess
 from pathlib import Path
 
-import distribution_manifest
+from agent_skill_format import distribution_manifest
 
 DESCRIPTION = (
     "Use when an agent needs the thing this fixture stands for; does the thing, "

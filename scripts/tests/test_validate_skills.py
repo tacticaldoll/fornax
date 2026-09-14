@@ -14,7 +14,8 @@ from unittest.mock import patch
 import fixtures
 from agent_skill_format import path_boundary
 import skill_model
-import distribution_manifest
+from agent_skill_format import distribution_manifest
+from agent_skill_format.schema import FormatSchema
 import validate_skills
 
 PUBLISHER = fixtures.PUBLISHER_ID
@@ -34,7 +35,7 @@ def check(
     skill_dir: Path,
     allow_template_placeholders: bool = False,
     publisher_id: str | None = None,
-    schema: skill_model.FormatSchema = skill_model.FORNAX_FORMAT,
+    schema: FormatSchema = skill_model.FORNAX_FORMAT,
 ) -> tuple[bool, str]:
     """Validate a skill, returning whether it *passed* and whatever it printed.
 
@@ -56,7 +57,7 @@ def check_skill(root: Path, **overrides: str) -> tuple[bool, str]:
 
 
 def check_skill_against(
-    root: Path, schema: skill_model.FormatSchema, **overrides: str
+    root: Path, schema: FormatSchema, **overrides: str
 ) -> tuple[bool, str]:
     return check(fixtures.write_skill(root, NAME, **overrides), schema=schema)
 

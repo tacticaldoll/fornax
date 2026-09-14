@@ -23,7 +23,7 @@ from uuid import UUID
 
 from agent_skill_format.diagnostic_text import printable
 from agent_skill_format.read_whole import Unread, whole
-from skill_model import FormatSchema
+from agent_skill_format.schema import FormatSchema
 from agent_skill_format.workspace_files import listed
 
 
