@@ -19,19 +19,22 @@ import sys
 import unittest
 from pathlib import Path
 
+import check_citations
 from agent_skill_format import workspace_files
 
 CLAIM = "Standard library only"
 SCRIPTS = Path(__file__).resolve().parent.parent
 PACKAGE = "agent_skill_format"
 #: Every module a claim can be made about, by the name another module imports it under.
-#: The package is walked with the top directory because a module that moved into it did
-#: not stop making the claim, and a glob of the top alone would have stopped checking it
-#: while the sentence stayed in the file — the exact staleness this suite exists for.
+#: Asked of `check_citations.modules`, which owns this question for the citation gate and
+#: walks the whole tree. A second glob here would have been the third answer to it, and
+#: the owner's docstring records what the shape costs: a dict keyed by stem drops one of
+#: two files sharing a name and says nothing, so a module's claim would go unchecked with
+#: no signal. The collisions the owner returns are asserted empty below rather than
+#: discarded, which is the half a private map cannot have.
+_MODULES = check_citations.modules(SCRIPTS.parent)
 MODULES = {
-    path.stem: path
-    for path in sorted([*SCRIPTS.glob("*.py"), *(SCRIPTS / PACKAGE).glob("*.py")])
-    if path.stem != "__init__"
+    stem: path for stem, path in _MODULES.by_stem.items() if path.stem != "__init__"
 }
 LOCAL = set(MODULES)
 #: The modules on the package side of the boundary the carve-out is for.
@@ -143,16 +146,29 @@ def entry_point_out_of_place(source: str) -> bool:
 
 class ModuleClaimTests(unittest.TestCase):
     def test_every_standard_library_only_claim_is_true(self) -> None:
+        # The suite is not this claim's subject and never was: taking the map from the
+        # owner widened the walk, not the scan. `test_module_claims` would otherwise
+        # report itself, since the string it looks for is the constant it looks with.
         claiming = sorted(
             stem
             for stem, path in MODULES.items()
-            if CLAIM in path.read_text(encoding="utf-8")
+            if path.parent.name != "tests" and CLAIM in path.read_text(encoding="utf-8")
         )
 
         self.assertTrue(claiming)
         for module in claiming:
             with self.subTest(module=module):
                 self.assertEqual(third_party(module), set())
+
+    def test_no_two_modules_share_a_name(self) -> None:
+        """The half a map keyed by stem cannot hold, carried from the owner.
+
+        Two files with one stem leave one of them unreachable through such a map, and
+        every claim it makes unchecked, with nothing to say so. The owner returns the
+        collisions rather than resolving them; this asserts there are none, which is
+        what makes the map above safe to key that way.
+        """
+        self.assertEqual(_MODULES.collisions, {})
 
     def test_no_package_module_imports_outside_the_package(self) -> None:
         """The boundary the carve-out is for, as an assertion rather than a sentence.

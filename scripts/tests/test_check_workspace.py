@@ -5,6 +5,7 @@ from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from unittest.mock import Mock, patch
 
+import check_citations
 import check_workspace
 
 
@@ -41,10 +42,16 @@ class WorkspaceChecks(unittest.TestCase):
         # A generator with tests but no wiring passes every one of them while its
         # committed block goes stale unwatched — which is what a whole test file for
         # gate_steps proved, and did not prove, when the step was left out of STEPS.
+        # Asked of check_citations.modules for the same reason test_module_claims does:
+        # this was a glob of the top directory, and a generator that moved into a
+        # package would have left the gate unwatched with the test still green.
         scripts = sorted(
-            path.name
-            for path in (check_workspace.ROOT / "scripts").glob("*.py")
-            if "generated_block.dispatch" in path.read_text(encoding="utf-8")
+            path.relative_to(check_workspace.ROOT).as_posix()
+            for path in check_citations.modules(check_workspace.ROOT).by_stem.values()
+            # The owner walks the suite too, and a case that names a generator is not
+            # one. A generator is something the gate runs, so it lives outside `tests`.
+            if path.parent.name != "tests"
+            and "generated_block.dispatch" in path.read_text(encoding="utf-8")
         )
         checked = {
             step.argv[0]
@@ -55,7 +62,7 @@ class WorkspaceChecks(unittest.TestCase):
         self.assertTrue(scripts)
         for name in scripts:
             with self.subTest(script=name):
-                self.assertIn(f"scripts/{name}", checked)
+                self.assertIn(name, checked)
 
     @patch("check_workspace.subprocess.run")
     def test_any_failed_step_fails_the_workspace(self, run: Mock) -> None:
