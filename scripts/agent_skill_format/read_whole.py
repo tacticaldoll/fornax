@@ -42,16 +42,17 @@ COMMENT = re.compile(r"(?:(?<=\s)|^)#")
 class Line:
     """One line of a script, holding no newline — which is all it claims.
 
-    It was called `Command` and documented as one command's text, and the constructor
-    checked only the newline. `c a; c z` is one of these and two commands to bash, so the
-    name promised what nothing enforced — the shape of defect this module exists to
-    remove, in this module. Named for what it guarantees instead. Splitting a line at its
-    control operators is `runtime_contract`'s, which already does it.
+    It was called `Command`, documented as one command's text, and enforced only the
+    newline. `c a; c z` is one of these and two commands to bash, so the name promised
+    what nothing checked — a name claiming more than its own constructor holds, which is
+    the shape `Whole` beside it was made against and the one this module is named for.
+    Named for what it guarantees instead. Splitting a line at its control operators
+    belongs to whoever reads shell structure, and is not this type's.
 
     The invariant is enforced here rather than promised by the caller, for the reason
-    `read_whole.Whole` gives about its own: a convention is what the rounds before it
-    already had. A reader that takes a `Command` may say "one line" and be right, instead
-    of assuming it and being wrong about a text someone joined across a newline.
+    `Whole` gives about its own: a convention is what the rounds before it already had.
+    A reader that takes one of these may say "one line" and be right, instead of
+    assuming it and being wrong about a text someone joined across a newline.
     """
 
     text: str
