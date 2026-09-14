@@ -61,14 +61,20 @@ sibling scripts in this directory. Standard library only.
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
+from types import MappingProxyType
 
 
 @dataclass(frozen=True)
 class FormatSchema:
     """What one collection declares its portable skill format to be.
 
-    Frozen because a check that reads a value must not be able to set it. The
+    Frozen because a check that reads a value must not be able to set it — and the
+    family mapping is proxied, because `dataclass(frozen=True)` refuses to rebind the
+    field and says nothing about the object behind it. A plain mapping there was
+    writable in place, and the module binding names the same object, so a write under
+    either name would have been seen by the validator and the map generator both. The
     literals this gathers were each edited where they were read, which is the shape
     of defect `skill_model` already records under `NAME_PATTERN`: one rule, more than
     one spelling, no owner to notice.
@@ -86,7 +92,7 @@ class FormatSchema:
     """
 
     name_pattern: re.Pattern[str]
-    families: dict[str, str]
+    families: Mapping[str, str]
     statuses: tuple[str, ...]
     handoff: re.Pattern[str]
     required_manifest_fields: tuple[str, ...]
@@ -99,12 +105,14 @@ class FormatSchema:
 
 FORNAX_FORMAT = FormatSchema(
     name_pattern=re.compile(r"^[a-z0-9-]+$"),
-    families={
-        "implementation": "Implementation",
-        "knowledge": "Knowledge",
-        "decisions": "Decisions & governance",
-        "meta": "Meta (skills about the toolkit)",
-    },
+    families=MappingProxyType(
+        {
+            "implementation": "Implementation",
+            "knowledge": "Knowledge",
+            "decisions": "Decisions & governance",
+            "meta": "Meta (skills about the toolkit)",
+        }
+    ),
     statuses=("draft", "stable", "deprecated"),
     handoff=re.compile(
         r"\b(?:hand off to|handoff to|point to|route to)\s+`([a-z0-9-]+)`",
@@ -122,7 +130,7 @@ FORNAX_FORMAT = FormatSchema(
 )
 
 NAME_PATTERN = FORNAX_FORMAT.name_pattern
-FAMILIES: dict[str, str] = FORNAX_FORMAT.families
+FAMILIES: Mapping[str, str] = FORNAX_FORMAT.families
 HANDOFF = FORNAX_FORMAT.handoff
 
 

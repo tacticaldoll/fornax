@@ -1800,6 +1800,18 @@ class SchemaSeamTests(unittest.TestCase):
         self.assertIn("family must be", output)
         self.assertTrue(known)
 
+    def test_the_family_mapping_cannot_be_written_under_either_name(self) -> None:
+        """Both halves, because the binding and the field are one object.
+
+        `dataclass(frozen=True)` refuses to rebind the field and says nothing about the
+        object behind it, so a proxy on one name and a plain mapping on the other would
+        satisfy the first assertion alone while leaving the write available.
+        """
+        with self.assertRaises(TypeError):
+            skill_model.FORNAX_FORMAT.families["archaeology"] = "Archaeology"
+
+        self.assertNotIn("archaeology", skill_model.FAMILIES)
+
     def test_an_inner_check_will_not_supply_a_filling_of_its_own(self) -> None:
         """The weak half of the seam, and the ledger says so.
 
