@@ -541,11 +541,13 @@ def validate_skill(
 ) -> bool:
     """Validate one skill folder, returning whether it failed.
 
-    Nothing here defaults. A default on a check is unreachable — every call from the
-    entry point passes one — and it is how the next caller takes FORNAX_FORMAT back
-    without saying so, which is the whole reason the values were gathered. `main`
-    holds the only default in this file, and every check under it is asked, this one
-    included: it used to hold one too, while the module's own prose said it did not.
+    Nothing here defaults the filling. A default on a check is unreachable — every
+    call from the entry point passes one — and it is how the next caller takes
+    FORNAX_FORMAT back without saying so, which is the whole reason the values were
+    gathered. The filling defaults at the entry point and nowhere below; every check
+    is asked, this one included, which it was not while the module's own prose said
+    otherwise. Other parameters here default as they always have, and the sentence is
+    about the filling because that is the thing whose ownership moved.
 
     Every per-skill check runs here, including the sidecar's publisher, because this is
     what prints `OK   <name>`. The publisher comparison used to run in its own pass
