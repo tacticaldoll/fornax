@@ -494,11 +494,22 @@ that cannot be edited, or a rename whose only signal is the citation gate.
 | REFUSAL-CASES-ASSERT-ONLY-A-TYPE | the pinned text and reason added to the two cases | the cases themselves — one currently stays green when the rule it names is deleted, which is what pinning the reason fixes | not measured |
 | HELPER-NAMED-AS-A-TEST-CASE | the rename in `scripts/tests/test_module_claims.py` | none by test; `scripts/check_citations.py` refuses the old name wherever a record or a row still cites it, which is the only signal a rename has here | not measured |
 
-## Written 2026-09-14, prospective — the ba81ab1 round, nothing measured
+## Measured 2026-09-14, at the commit carrying this correction — the ba81ab1 round
 
-The round settled in `docs/dispositions/8dc34ca..ba81ab1.md` accepted eight findings and repaired
-none. Four can carry a guard once their repair lands. The rest are a module docstring's own claims
-about ownership, and nothing reads a docstring — which is the shape that round's Pattern names.
+Written prospective, when the round settled and none of its repairs had landed. The repairs then
+landed inside the same day and four rows were updated with what they measured, while the heading
+still said nothing was measured and named no tree for the numbers to hang on. A dated section is
+quotable only with the tree it names; four measurements sat under a heading that named none.
+
+The heading is corrected rather than the rows, and this paragraph is why: a row's reading is what
+was measured, and the four are right. What was wrong is the sentence governing them. The same
+correction is owed to the lead: four rows were called guardable-once-repaired and one more —
+`DEFINITION-NAMED-ON-THE-BINDING`, whose removal half the citation gate refused — turned out to
+carry a measurement too.
+
+The round settled in `docs/dispositions/8dc34ca..ba81ab1.md` accepted eight findings. Five rows
+below carry a measurement; the rest are a module docstring's own claims about ownership, and
+nothing reads a docstring — which is the shape that round's Pattern names.
 
 | Finding | Revert this, once its repair lands | Guard | Red on revert |
 |---|---|---|---|
