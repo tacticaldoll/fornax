@@ -1757,9 +1757,12 @@ class SchemaSeamTests(unittest.TestCase):
     input is the one this repository ships and the answer is the same either way — and
     fails only here, because only here is the same input asked a different question.
 
-    One direction is not enough. Asserting only that the variant passes would also be
+    One direction is not enough. Asserting only that a filling passes would also be
     satisfied by a validator that stopped checking the field at all, so each case
-    asserts the refusal under `FORNAX_FORMAT` in the same breath."""
+    asserts both verdicts. Which filling carries the refusal is not fixed: three
+    cases are refused under `FORNAX_FORMAT` and admitted under a variant, and the
+    collection-level case is the other way round, because the name it uses is one
+    `FORNAX_FORMAT`'s own pattern admits and a stricter spelling does not."""
 
     def test_a_refused_manifest_field_is_refused_by_the_schema(self) -> None:
         manifest = MANIFEST + "version: 0.1.0\n"
@@ -1928,7 +1931,7 @@ class SchemaImmutabilityTests(unittest.TestCase):
         self.assertEqual(dict(variant.families), {"archaeology": "Archaeology"})
 
 
-class FillingAskedNotDefaulted(unittest.TestCase):
+class FillingAskedNotDefaultedTests(unittest.TestCase):
     """That a check refuses rather than supplying a filling of its own.
 
     Weak by construction and recorded as such: every call from the entry point passes
