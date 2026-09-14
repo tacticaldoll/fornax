@@ -494,6 +494,22 @@ that cannot be edited, or a rename whose only signal is the citation gate.
 | REFUSAL-CASES-ASSERT-ONLY-A-TYPE | the pinned text and reason added to the two cases | the cases themselves — one currently stays green when the rule it names is deleted, which is what pinning the reason fixes | not measured |
 | HELPER-NAMED-AS-A-TEST-CASE | the rename in `scripts/tests/test_module_claims.py` | none by test; `scripts/check_citations.py` refuses the old name wherever a record or a row still cites it, which is the only signal a rename has here | not measured |
 
+## Written 2026-09-14, prospective — the ba81ab1 round, nothing measured
+
+The round settled in `docs/dispositions/8dc34ca..ba81ab1.md` accepted eight findings and repaired
+none. Four can carry a guard once their repair lands. The rest are a module docstring's own claims
+about ownership, and nothing reads a docstring — which is the shape that round's Pattern names.
+
+| Finding | Revert this, once its repair lands | Guard | Red on revert |
+|---|---|---|---|
+| FROZEN-CLAIM-OVER-A-MUTABLE-DICT | for 5a, the mapping proxy wrapping `skill_model.FORNAX_FORMAT`'s family mapping | a case asserting that assigning into that mapping raises, and that `skill_model.FAMILIES` sees no new key afterwards. Both halves are needed: the alias shares the object, so a proxy on one name and not the other would pass the first assertion alone | not measured — no repair has landed |
+| NAME-GRAMMAR-ENUMERATION-SHORT | for 2b, the `producer` group reading `skill_model.FormatSchema`'s name pattern instead of its own spelling | a case naming a producer the two spellings disagree on — a leading hyphen is admitted by one and refused by the other — asserted through `validate_skills.validate_record_inputs`, the consumer whose ownership moved, not through the pattern | not measured. 2a is the alternative repair and carries no guard: it extends a sentence |
+| SCHEMA-STOPS-SHORT-OF-THE-MAP | for 3c, the schema parameter threaded into `skill_graph.load` | a case giving both `validate_skills.validate_skill` and `skill_graph.load` one non-default filling and asserting they agree on a family neither admits by default. Today they disagree, which is the finding | not measured. 3a is the alternative and is prose |
+| DEFAULTS-ON-THE-INNER-CHECKS | for 4a, the removal of the default from the three inner checks | a case calling one of them without a schema and asserting it raises. The signal is weak by construction — the caller passes positionally either way — and it is recorded as the only re-runnable one rather than as a strong one | not measured |
+| DEFINITION-NAMED-ON-THE-BINDING, ALIAS-REASON-OVERREACHES | — | none by test. The units are sentences in `skill_model`'s module docstring, and no gate opens over a docstring's claim about which name owns a value. 1b's half is different: deleting `skill_model.STATUSES` would be caught by `scripts/check_citations.py` wherever a record still cites it, which is the only signal a removal has here | not measured |
+| MAIN-SEAM-HAS-NO-READER | — | none by test. Reverting 3b restores a parameter nothing calls; a parameter with no reader cannot redden a suite, which is the finding restated | not measured |
+| TWO-SPELLINGS-IN-THE-SUITE | — | none by test. The unit is how the suite spells a question it already asks, and reverting a test's own spelling leaves it asserting the same thing against the same object | not measured |
+
 ## Repairs with no guard, and why
 
 | Finding | Why nothing goes red |
