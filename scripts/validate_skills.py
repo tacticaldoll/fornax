@@ -536,15 +536,16 @@ def validate_skill_document(
 def validate_skill(
     skill_dir: Path,
     allow_template_placeholders: bool,
-    publisher_id: str | None = None,
-    schema: FormatSchema = FORNAX_FORMAT,
+    publisher_id: str | None,
+    schema: FormatSchema,
 ) -> bool:
     """Validate one skill folder, returning whether it failed.
 
-    The filling defaults here and nowhere below. A default on an inner check is
-    unreachable — every call from here passes one — and it is how the next caller
-    takes FORNAX_FORMAT back without saying so, which is the whole reason the values
-    were gathered. One entry point holds the default; the checks under it are asked.
+    Nothing here defaults. A default on a check is unreachable — every call from the
+    entry point passes one — and it is how the next caller takes FORNAX_FORMAT back
+    without saying so, which is the whole reason the values were gathered. `main`
+    holds the only default in this file, and every check under it is asked, this one
+    included: it used to hold one too, while the module's own prose said it did not.
 
     Every per-skill check runs here, including the sidecar's publisher, because this is
     what prints `OK   <name>`. The publisher comparison used to run in its own pass
