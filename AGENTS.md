@@ -248,6 +248,9 @@ Prefer compatibility with existing open tooling before creating custom installer
 
 Useful tools and intended roles:
 
+- `agent-skill-builder`: The independently versioned standard validator, template renderer, and
+  declarative profile engine; Fornax's workspace check must remain a thin adapter over its pinned
+  release, with collection-only rules retained in Fornax.
 - `agent-skills-distribution-template`: The neutral empty distribution contract and starting point
   for a new domain-specific skills repository; do not copy Fornax identity or governance into it.
 - `agent-skill-deployer`: The independently versioned multi-host inventory and deployment engine;

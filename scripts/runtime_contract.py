@@ -21,8 +21,9 @@ derived from the token rather than from one command spelling, because anchoring 
 missed `--upgrade`, a quoted spec, and every package after the first on one line. Zero of them is
 the intended state and a clean answer, and the comparison is what keeps a reintroduced one from
 passing quietly. A VCS ref is out of scope: the workflow installs the deployment engine as
-`agent-skill-deployer @ git+…@v0.1.2`, which the requirements file does not declare and this does
-not read, so that pin is guarded by nothing here.
+`agent-skill-deployer @ git+…@v0.1.2`, or the maintenance requirements install the builder from a
+tagged VCS reference. This check does not compare those refs as package versions; repository release
+policy guards their immutable tags.
 """
 
 from __future__ import annotations

@@ -109,6 +109,10 @@ Settled; reopen only with a reason, not by default.
   inventory, provenance-aware mutation, reconciliation, and verification. Fornax retains only a
   thin `fornax` policy adapter and takes its CLI version from the workspace release; the engine has
   its own release cadence.
+- **Agent Skill build mechanics live independently.** `agent-skill-builder` owns the portable
+  standard baseline, scaffolding, profile schema, and CI-facing validation interface. Fornax is its
+  first reference profile and retains collection policy only; the workspace gate calls the builder
+  through a thin adapter before running Fornax-specific checks.
 - **Distribution structure is vendor-neutral.** `distribution.json` is the canonical collection
   name, publisher UUID, and release version; host manifests are projections. New domain collections
   start from `agent-skills-distribution-template`, while the deployer keeps network-free neutral

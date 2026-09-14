@@ -1,0 +1,4 @@
+schema: agent-skill-builder/workspace/v1
+skills: skills
+profile: profiles/fornax.yaml
+

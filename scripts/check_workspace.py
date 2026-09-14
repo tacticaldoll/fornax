@@ -36,6 +36,11 @@ STEPS = (
         ("scripts/runtime_contract.py",),
     ),
     Step(
+        "Agent Skills baseline",
+        "the standard Agent Skills contract plus Fornax's declarative profile",
+        ("scripts/check_agent_skills.py",),
+    ),
+    Step(
         "production skills",
         "production skill structure, including any optional interface sidecar",
         ("scripts/validate_skills.py",),
