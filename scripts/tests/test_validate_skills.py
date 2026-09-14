@@ -1891,10 +1891,26 @@ class SchemaImmutabilityTests(unittest.TestCase):
         object behind it, so a proxy on one name and a plain mapping on the other would
         satisfy the first assertion alone while leaving the write available.
         """
+        self.addCleanup(self._forget, "archaeology")
+
         with self.assertRaises(TypeError):
             skill_model.FORNAX_FORMAT.families["archaeology"] = "Archaeology"
 
         self.assertNotIn("archaeology", skill_model.FAMILIES)
+
+    @staticmethod
+    def _forget(key: str) -> None:
+        """Undo a write this case only lands when the guarantee it holds is gone.
+
+        Its red count is what the guard ledger records, and a count is only the
+        guard's own if the case leaves nothing behind. Without this, removing the
+        wrap let the write succeed and the next case in string order read a family
+        this one had added, so the ledger recorded two reds for one defect and the
+        second would move with a rename.
+        """
+        families = skill_model.FORNAX_FORMAT.families
+        if isinstance(families, dict):
+            families.pop(key, None)
 
     def test_a_schema_built_by_replace_is_no_more_writable_than_the_declared_one(self) -> None:
         """The guarantee belongs to the type, so every instance carries it.
