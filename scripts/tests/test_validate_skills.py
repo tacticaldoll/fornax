@@ -209,7 +209,7 @@ class ValidateSkillTests(unittest.TestCase):
             passed, output = check_skill(Path(tmp), manifest_text=text)
 
         self.assertFalse(passed)
-        self.assertIn(skill_model.listed(skill_model.FAMILIES), output)
+        self.assertIn(skill_model.listed(skill_model.FORNAX_FORMAT.families), output)
 
     def test_unknown_status_fails(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -1665,13 +1665,14 @@ class SkillModelTests(unittest.TestCase):
         self.assertEqual(skill_model.listed(["a", "b", "c"]), "a, b, or c")
 
     def test_families_carry_a_title_each(self) -> None:
-        self.assertTrue(all(title for title in skill_model.FAMILIES.values()))
+        self.assertTrue(all(title for title in skill_model.FORNAX_FORMAT.families.values()))
 
     def test_handoff_pattern_accepts_every_documented_phrasing(self) -> None:
         for phrasing in ("hand off to", "handoff to", "point to", "route to"):
             with self.subTest(phrasing=phrasing):
                 self.assertEqual(
-                    skill_model.HANDOFF.findall(f"{phrasing} `map-codebase`"), ["map-codebase"]
+                    skill_model.FORNAX_FORMAT.handoff.findall(f"{phrasing} `map-codebase`"),
+                    ["map-codebase"],
                 )
 
     def test_the_shared_fixture_satisfies_every_required_field(self) -> None:
