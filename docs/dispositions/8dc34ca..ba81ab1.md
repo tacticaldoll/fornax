@@ -40,10 +40,18 @@ Claims Verified #6 is REFUTED for absence of evidence inside a static scope, not
 | 5 | " | " | 5b weaken the rationale to what freezing covers, leaving the mapping as it is | `restate` | `schema.FormatSchema` docstring, at "Frozen because a check that reads a value" | document is `scripts/skill_model.py`'s own docstring; no code handoff |
 | 6 | The suite asks the owner two ways: migrated reads take the schema field, unmigrated reads take the alias | TWO-SPELLINGS-IN-THE-SUITE | 6a point the remaining alias reads at `FORNAX_FORMAT`'s fields | `converge` | `test_validate_skills.ValidateSkillTests.test_unknown_family_fails`, `test_validate_skills.ValidateSkillTests.test_unknown_status_fails`, `test_validate_skills.SkillModelTests.test_families_carry_a_title_each` | `plan-implementation` |
 
-The Reach column cites a symbol or a quoted phrase rather than `file:line`. The triage template asks
-for `file:line`; a Disposition Record is a record under this repository's citation rule, which asks
-for a coordinate that survives an edit, and the repository's rule is the one the citation gate step
-runs. The exemption AGENTS.md grants a Review Record's evidence column does not extend here.
+The Reach column cites a symbol or a quoted phrase rather than `file:line`. Which template asks for
+which has to be said, because the two disagree: the installed `fornax` plugin at `0.4.1` — the text
+this round actually ran under — asks for `file:line`, while `skills/triage-findings/SKILL.md` in this
+tree asks for a file plus the unit inside it, or a quoted phrase where no unit owns the text. This
+record follows the tree's, which is also what the citation rule requires of a record: a coordinate
+that survives an edit. The exemption AGENTS.md grants a Review Record's evidence column does not
+extend here.
+
+The first wording of this paragraph named neither version and said only that "the triage template"
+asks for `file:line`. A later round read the tree's copy, found the opposite, and reported the
+paragraph as describing a requirement that does not exist. Both readings were of a real text; what
+was missing was the word saying which.
 
 Repair 1b removes the `STATUSES` binding, so this record cannot name it as a live symbol and the
 Reach cell names it as text instead. The citation gate step refused the removal until it did, which
@@ -109,4 +117,4 @@ none — every finding's cause is nameable from the code and from the clauses th
 | Check | This record's answer |
 |---|---|
 | Every prior id sits in exactly one exclusive lifecycle home | pass — all fifteen in Out of scope this round, none elsewhere |
-| Every accepted cause carries at least one repair with an enumerated Reach | pass — causes 1 through 6 each carry at least one, and every Reach cell enumerates `file:line` rather than describing a span |
+| Every accepted cause carries at least one repair with an enumerated Reach | pass — causes 1 through 6 each carry at least one, and every Reach cell names a file plus the unit inside it, or a quoted phrase where no unit owns the text, rather than describing a span |
