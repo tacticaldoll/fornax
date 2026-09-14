@@ -1881,6 +1881,21 @@ class SchemaSeamTests(unittest.TestCase):
 
         self.assertNotIn("archaeology", skill_model.FAMILIES)
 
+    def test_a_schema_built_by_replace_is_no_more_writable_than_the_declared_one(self) -> None:
+        """The guarantee belongs to the type, so every instance carries it.
+
+        The case above reads the one value the declaration wrapped by hand, and passed
+        while the type promised for all of them and delivered for one. `replace` is how
+        this suite builds its variant fillings, so a variant is the instance most likely
+        to be handed to a check that trusts the promise.
+        """
+        variant = replace(skill_model.FORNAX_FORMAT, families={"archaeology": "Archaeology"})
+
+        with self.assertRaises(TypeError):
+            variant.families["meta"] = "Meta"
+
+        self.assertEqual(dict(variant.families), {"archaeology": "Archaeology"})
+
     def test_an_inner_check_will_not_supply_a_filling_of_its_own(self) -> None:
         """The weak half of the seam, and the ledger says so.
 

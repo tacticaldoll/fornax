@@ -67,21 +67,17 @@ from __future__ import annotations
 
 import re
 from collections.abc import Mapping
-from types import MappingProxyType
-
 from agent_skill_format.schema import FormatSchema
 
 
 FORNAX_FORMAT = FormatSchema(
     name_pattern=re.compile(r"^[a-z0-9-]+$"),
-    families=MappingProxyType(
-        {
-            "implementation": "Implementation",
-            "knowledge": "Knowledge",
-            "decisions": "Decisions & governance",
-            "meta": "Meta (skills about the toolkit)",
-        }
-    ),
+    families={
+        "implementation": "Implementation",
+        "knowledge": "Knowledge",
+        "decisions": "Decisions & governance",
+        "meta": "Meta (skills about the toolkit)",
+    },
     statuses=("draft", "stable", "deprecated"),
     handoff=re.compile(
         r"\b(?:hand off to|handoff to|point to|route to)\s+`([a-z0-9-]+)`",

@@ -13,20 +13,20 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
+from types import MappingProxyType
 
 
 @dataclass(frozen=True)
 class FormatSchema:
     """What one collection declares its portable skill format to be.
 
-    Frozen because a check that reads a value must not be able to set it — and the
-    family mapping is proxied, because `dataclass(frozen=True)` refuses to rebind the
-    field and says nothing about the object behind it. A plain mapping there was
-    writable in place, and the module binding names the same object, so a write under
-    either name would have been seen by the validator and the map generator both. The
-    literals this gathers were each edited where they were read, which is the shape
-    of defect `skill_model` already records under `NAME_PATTERN`: one rule, more than
-    one spelling, no owner to notice.
+    Frozen because a check that reads a value must not be able to set it, and the
+    family mapping is wrapped on construction because `dataclass(frozen=True)` refuses
+    to rebind the field and says nothing about the object behind it. Wrapping it here
+    rather than at one declaration is what makes the guarantee the type's: a schema
+    built by `dataclasses.replace` from a plain mapping is as unwritable as the
+    declared one, which the previous arrangement did not manage — it proxied one value
+    and left the type promising it for all of them.
 
     `forbidden_manifest_fields` carries each refused field with the reason it is
     refused, because the reason is most of the value of refusing it — a bare "not
@@ -50,3 +50,6 @@ class FormatSchema:
     description_prefix: str | None
     requires_input_line: bool
     resource_keys: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "families", MappingProxyType(dict(self.families)))
