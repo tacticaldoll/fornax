@@ -18,4 +18,3 @@ def main(root: Path = ROOT) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
