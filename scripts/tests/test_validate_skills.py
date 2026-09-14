@@ -4,6 +4,7 @@ import json
 import shutil
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
+from dataclasses import replace
 from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -28,6 +29,7 @@ def check(
     skill_dir: Path,
     allow_template_placeholders: bool = False,
     publisher_id: str | None = None,
+    schema: skill_model.FormatSchema = skill_model.FORNAX_FORMAT,
 ) -> tuple[bool, str]:
     """Validate a skill, returning whether it *passed* and whatever it printed.
 
@@ -38,7 +40,7 @@ def check(
 
     with redirect_stdout(output):
         failed = validate_skills.validate_skill(
-            skill_dir, allow_template_placeholders, publisher_id
+            skill_dir, allow_template_placeholders, publisher_id, schema
         )
 
     return not failed, output.getvalue()
@@ -46,6 +48,12 @@ def check(
 
 def check_skill(root: Path, **overrides: str) -> tuple[bool, str]:
     return check(fixtures.write_skill(root, NAME, **overrides))
+
+
+def check_skill_against(
+    root: Path, schema: skill_model.FormatSchema, **overrides: str
+) -> tuple[bool, str]:
+    return check(fixtures.write_skill(root, NAME, **overrides), schema=schema)
 
 
 def write_skill_with_sidecar(parent: Path, publisher: str) -> None:
@@ -184,7 +192,7 @@ class ValidateSkillTests(unittest.TestCase):
         self.assertTrue(passed, output)
 
     def test_missing_required_field_fails(self) -> None:
-        for field in validate_skills.REQUIRED_MANIFEST_FIELDS:
+        for field in skill_model.FORNAX_FORMAT.required_manifest_fields:
             with self.subTest(field=field), TemporaryDirectory() as tmp:
                 text = "\n".join(
                     line for line in MANIFEST.splitlines() if not line.startswith(f"{field}:")
@@ -1666,7 +1674,7 @@ class SkillModelTests(unittest.TestCase):
                 )
 
     def test_the_shared_fixture_satisfies_every_required_field(self) -> None:
-        for field in validate_skills.REQUIRED_MANIFEST_FIELDS:
+        for field in skill_model.FORNAX_FORMAT.required_manifest_fields:
             with self.subTest(field=field):
                 self.assertIn(f"{field}:", MANIFEST)
 
@@ -1726,6 +1734,70 @@ class InterfacePublisherTests(unittest.TestCase):
         self.assertTrue(distribution.passed, output.getvalue())
         self.assertEqual(distribution.publisher_id, FOREIGN_PUBLISHER)
         self.assertTrue(passed, sidecar_output)
+
+
+class SchemaSeamTests(unittest.TestCase):
+    """That the validator reads its values from the schema rather than holding them.
+
+    Each case keeps one input fixed and changes only the schema, so the verdict has to
+    flip. A literal left behind in `validate_skills` passes the ordinary suite — the
+    input is the one this repository ships and the answer is the same either way — and
+    fails only here, because only here is the same input asked a different question.
+
+    One direction is not enough. Asserting only that the variant passes would also be
+    satisfied by a validator that stopped checking the field at all, so each case
+    asserts the refusal under `FORNAX_FORMAT` in the same breath.
+    """
+
+    def test_a_refused_manifest_field_is_refused_by_the_schema(self) -> None:
+        manifest = MANIFEST + "version: 0.1.0\n"
+
+        with TemporaryDirectory() as tmp:
+            refused, output = check_skill(Path(tmp), manifest_text=manifest)
+        with TemporaryDirectory() as tmp:
+            allowed, _ = check_skill_against(
+                Path(tmp),
+                replace(skill_model.FORNAX_FORMAT, forbidden_manifest_fields=()),
+                manifest_text=manifest,
+            )
+
+        self.assertFalse(refused)
+        self.assertIn("must not set version", output)
+        self.assertTrue(allowed)
+
+    def test_the_input_contract_line_is_required_by_the_schema(self) -> None:
+        without_input = "\n".join(
+            line for line in SKILL_MD.splitlines() if not line.startswith("**Input**:")
+        ) + "\n"
+
+        with TemporaryDirectory() as tmp:
+            required, output = check_skill(Path(tmp), skill_md_text=without_input)
+        with TemporaryDirectory() as tmp:
+            optional, _ = check_skill_against(
+                Path(tmp),
+                replace(skill_model.FORNAX_FORMAT, requires_input_line=False),
+                skill_md_text=without_input,
+            )
+
+        self.assertFalse(required)
+        self.assertIn("**Input**: contract line", output)
+        self.assertTrue(optional)
+
+    def test_the_family_vocabulary_is_the_schema_s(self) -> None:
+        manifest = fixtures.manifest(NAME, family="archaeology")
+
+        with TemporaryDirectory() as tmp:
+            unknown, output = check_skill(Path(tmp), manifest_text=manifest)
+        with TemporaryDirectory() as tmp:
+            known, _ = check_skill_against(
+                Path(tmp),
+                replace(skill_model.FORNAX_FORMAT, families={"archaeology": "Archaeology"}),
+                manifest_text=manifest,
+            )
+
+        self.assertFalse(unknown)
+        self.assertIn("family must be", output)
+        self.assertTrue(known)
 
 
 if __name__ == "__main__":

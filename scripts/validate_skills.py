@@ -15,6 +15,14 @@ Every call site was correct, which is why closing the split was worth doing befo
 new check picked the wrong half. DistributionValidation stays a named result because
 it carries a second value, not to express this.
 
+**Where the values come from.** The family and status vocabularies, the manifest
+fields required, refused and read as blocks, the resource keys, and the grammars
+for a folder name and a handoff all arrive as a
+`skill_model.FormatSchema`, defaulting to `skill_model.FORNAX_FORMAT`. Several were
+literals here, each edited where it was read. A check holding its own value cannot
+be asked a different question, and this file is where the next such literal would
+otherwise land.
+
 Usage:
     .venv/bin/python scripts/validate_skills.py
     .venv/bin/python scripts/validate_skills.py --skills-path templates \
@@ -35,7 +43,7 @@ from host_paths import has_parent_segment_anywhere, is_absolute_anywhere
 from markdown_links import iter_markdown_links, local_target
 from path_boundary import Boundary, Verdict, resolve_within
 from skill_interface import INTERFACE_FILE, InterfaceError, load as load_interface
-from skill_model import FAMILIES, HANDOFF, NAME_PATTERN, STATUSES, listed
+from skill_model import FORNAX_FORMAT, FormatSchema, listed
 from skill_yaml import (
     Shape,
     declares_key,
@@ -58,14 +66,15 @@ FRONTMATTER_PATTERN = re.compile(r"^---\s*\r?\n(.*?)\r?\n---", re.DOTALL)
 # The **Input**: line is Markdown, not YAML. It borrowed skill_yaml.declares_key, which
 # now reads a parsed mapping and would answer about a SKILL.md body as though the body
 # were a manifest.
+#
+# Here rather than in the schema because the label does not vary between collections —
+# one that does not want the line omits it. `FormatSchema.requires_input_line` carries
+# the part that does vary.
 INPUT_LINE = re.compile(r"^\*\*Input\*\*[^\S\n]*:[^\S\n]*([^\n]*)$", re.MULTILINE)
 RECORD_INPUT_PATTERN = re.compile(
     r"`(?P<producer>[a-z0-9]+(?:-[a-z0-9]+)*)`\s+"
     r"(?P<label>[A-Z][A-Za-z0-9]*(?:\s+[A-Z][A-Za-z0-9]*)*\s+Record)\b"
 )
-REQUIRED_MANIFEST_FIELDS = ("name", "family", "description", "triggers", "entrypoint")
-# Required fields whose value is the block beneath them rather than same-line text.
-BLOCK_MANIFEST_FIELDS = ("triggers",)
 
 
 def fail(skill_name: str, message: str) -> None:
@@ -169,11 +178,12 @@ def validate_handoffs(
     name: str,
     known_skills: set[str],
     markdown_files: dict[Path, str],
+    schema: FormatSchema = FORNAX_FORMAT,
 ) -> bool:
     failed = False
 
     for markdown_file, content in markdown_files.items():
-        for target_skill in HANDOFF.findall(content):
+        for target_skill in schema.handoff.findall(content):
             if target_skill not in known_skills:
                 fail(
                     name,
@@ -334,6 +344,7 @@ def validate_skill_manifest(
     manifest: str,
     allow_template_placeholders: bool,
     boundary: Boundary,
+    schema: FormatSchema = FORNAX_FORMAT,
 ) -> tuple[bool, str | None, str | None]:
     """Validate one skill manifest and return values shared with SKILL.md checks."""
     failed = False
@@ -346,8 +357,8 @@ def validate_skill_manifest(
         fail(name, f"skill.yaml {document.reason}")
         return True, None, None
 
-    for field in REQUIRED_MANIFEST_FIELDS:
-        if field in BLOCK_MANIFEST_FIELDS:
+    for field in schema.required_manifest_fields:
+        if field in schema.block_manifest_fields:
             if not declares_key(document, field):
                 fail(name, f"skill.yaml missing {field}")
                 failed = True
@@ -363,13 +374,10 @@ def validate_skill_manifest(
             fail(name, f"skill.yaml missing {field}")
             failed = True
 
-    if declares_key(document, "version"):
-        fail(
-            name,
-            "skill.yaml must not set version; release versioning is the collection's "
-            "(distribution.json)",
-        )
-        failed = True
+    for field, why in schema.forbidden_manifest_fields:
+        if declares_key(document, field):
+            fail(name, f"skill.yaml must not set {field}; {why}")
+            failed = True
 
     manifest_name = get_top_level_yaml_value(document, "name")
     manifest_status = get_top_level_yaml_value(document, "status")
@@ -379,14 +387,14 @@ def validate_skill_manifest(
         fail(name, f"skill.yaml name '{manifest_name}' must match folder name")
         failed = True
 
-    if manifest_status and manifest_status not in STATUSES:
-        fail(name, f"skill.yaml status must be {listed(STATUSES)}")
+    if manifest_status and manifest_status not in schema.statuses:
+        fail(name, f"skill.yaml status must be {listed(schema.statuses)}")
         failed = True
 
     manifest_family = get_top_level_yaml_value(document, "family")
 
-    if manifest_family and manifest_family not in FAMILIES:
-        fail(name, f"skill.yaml family must be {listed(FAMILIES)}")
+    if manifest_family and manifest_family not in schema.families:
+        fail(name, f"skill.yaml family must be {listed(schema.families)}")
         failed = True
 
     if entrypoint and validate_manifest_path(
@@ -394,7 +402,7 @@ def validate_skill_manifest(
     ):
         failed = True
 
-    for resource_key in ("scripts", "references", "assets"):
+    for resource_key in schema.resource_keys:
         # Declared without a same-line path is not the same as never declared, and
         # reading the first as the second skipped a malformed key in silence.
         resource = get_yaml_mapping_value(document, "resources", resource_key)
@@ -417,6 +425,7 @@ def validate_skill_document(
     manifest_name: str | None,
     manifest_description: str | None,
     allow_template_placeholders: bool,
+    schema: FormatSchema = FORNAX_FORMAT,
 ) -> bool:
     """Validate SKILL.md metadata and its required Input contract."""
     failed = False
@@ -458,11 +467,12 @@ def validate_skill_document(
         fail(name, "skill.yaml and SKILL.md frontmatter description must match")
         failed = True
 
-    if manifest_description and not manifest_description.startswith("Use when "):
-        fail(name, "skill.yaml description must start with 'Use when '")
+    prefix = schema.description_prefix
+    if prefix and manifest_description and not manifest_description.startswith(prefix):
+        fail(name, f"skill.yaml description must start with '{prefix}'")
         failed = True
 
-    if not INPUT_LINE.search(content):
+    if schema.requires_input_line and not INPUT_LINE.search(content):
         fail(name, "SKILL.md must state an **Input**: contract line")
         failed = True
 
@@ -470,7 +480,10 @@ def validate_skill_document(
 
 
 def validate_skill(
-    skill_dir: Path, allow_template_placeholders: bool, publisher_id: str | None = None
+    skill_dir: Path,
+    allow_template_placeholders: bool,
+    publisher_id: str | None = None,
+    schema: FormatSchema = FORNAX_FORMAT,
 ) -> bool:
     """Validate one skill folder, returning whether it failed.
 
@@ -490,7 +503,7 @@ def validate_skill(
     skill_file = skill_dir / "SKILL.md"
     skill_failed = False
 
-    if not NAME_PATTERN.fullmatch(name):
+    if not schema.name_pattern.fullmatch(name):
         fail(name, "folder name must use lowercase letters, digits, and hyphens")
         return True
 
@@ -509,7 +522,7 @@ def validate_skill(
         return True
 
     manifest_failed, manifest_name, manifest_description = validate_skill_manifest(
-        name, manifest, allow_template_placeholders, boundary
+        name, manifest, allow_template_placeholders, boundary, schema
     )
     if manifest_failed:
         skill_failed = True
@@ -531,6 +544,7 @@ def validate_skill(
         manifest_name,
         manifest_description,
         allow_template_placeholders,
+        schema,
     ):
         skill_failed = True
 
@@ -562,7 +576,7 @@ def validate_skill(
         if validate_markdown_links(name, markdown_files, boundary):
             skill_failed = True
 
-        if validate_handoffs(skill_dir, name, known_skills, markdown_files):
+        if validate_handoffs(skill_dir, name, known_skills, markdown_files, schema):
             skill_failed = True
 
     if not skill_failed:
@@ -584,7 +598,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main(argv: list[str] | None = None, root: Path | None = None) -> int:
+def main(
+    argv: list[str] | None = None,
+    root: Path | None = None,
+    schema: FormatSchema = FORNAX_FORMAT,
+) -> int:
     """Validate a skills directory against a repository root.
 
     The root is a parameter because the argv seam alone left everything past the
@@ -612,7 +630,7 @@ def main(argv: list[str] | None = None, root: Path | None = None) -> int:
 
     for skill_dir in skill_dirs:
         if validate_skill(
-            skill_dir, args.allow_template_placeholders, distribution.publisher_id
+            skill_dir, args.allow_template_placeholders, distribution.publisher_id, schema
         ):
             failed = True
 
