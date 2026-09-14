@@ -153,6 +153,11 @@ def modules(root: Path) -> Modules:
         return Modules({}, {})
     found: dict[str, list[Path]] = {}
     for path in sorted(scripts.rglob("*.py")):
+        # A package marker is not a name a citation can use. Every subpackage carries
+        # one, so keeping them made a second subpackage look like two files competing
+        # for a stem, and the collision this reports is meant for that competition.
+        if path.stem == "__init__":
+            continue
         found.setdefault(path.stem, []).append(path)
     return Modules(
         {stem: paths[0] for stem, paths in found.items()},

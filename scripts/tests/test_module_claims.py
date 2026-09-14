@@ -33,9 +33,7 @@ PACKAGE = "agent_skill_format"
 #: no signal. The collisions the owner returns are asserted empty below rather than
 #: discarded, which is the half a private map cannot have.
 _MODULES = check_citations.modules(SCRIPTS.parent)
-MODULES = {
-    stem: path for stem, path in _MODULES.by_stem.items() if path.stem != "__init__"
-}
+MODULES = dict(_MODULES.by_stem)
 LOCAL = set(MODULES)
 #: The modules on the package side of the boundary the carve-out is for, split from the
 #: owner's map by path rather than found by a glob of the package's top directory. The
@@ -173,6 +171,12 @@ class ModuleClaimTests(unittest.TestCase):
         every claim it makes unchecked, with nothing to say so. The owner returns the
         collisions rather than resolving them; this asserts there are none, which is
         what makes the map above safe to key that way.
+
+        Package markers are not a collision, and the owner no longer reports them as
+        one. Every subpackage carries an `__init__`, so a second one is a normal
+        structure rather than two files competing for a name; filtering it here would
+        have left the citation gate reddening on the same structure, so the filter
+        belongs where the map is built.
         """
         self.assertEqual(_MODULES.collisions, {})
 
