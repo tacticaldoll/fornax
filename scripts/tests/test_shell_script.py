@@ -120,7 +120,7 @@ class LineHoldsNoNewline(unittest.TestCase):
 
     def test_a_line_carrying_a_newline_cannot_be_built(self) -> None:
         with self.assertRaises(ValueError):
-            shell_script.Line("echo a\necho b")
+            read_whole.Line("echo a\necho b")
 
     def test_every_line_this_returns_holds_none(self) -> None:
         found = shell_script.commands("pip install a==1\npip install b==2 \\\nc==3")

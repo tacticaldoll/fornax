@@ -38,7 +38,7 @@ from packaging.requirements import InvalidRequirement, Requirement
 
 from agent_skill_format.diagnostic_text import printable
 import shell_script
-from agent_skill_format.read_whole import COMMENT, Unread, shell_words
+from agent_skill_format.read_whole import COMMENT, Line, Unread, shell_words
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -207,7 +207,7 @@ def _installs(words: list[str]) -> bool:
     return False
 
 
-def run_commands(text: str) -> tuple[list[shell_script.Line], list[str]]:
+def run_commands(text: str) -> tuple[list[Line], list[str]]:
     """Every command the workflow runs, and everything about it this cannot resolve.
 
     YAML is parsed by the library that owns it. The hand-written reader that stood here
@@ -234,7 +234,7 @@ def run_commands(text: str) -> tuple[list[shell_script.Line], list[str]]:
     except yaml.YAMLError as error:
         return [], [str(error).replace("\n", " ")]
 
-    commands: list[shell_script.Line] = []
+    commands: list[Line] = []
     unresolved: list[str] = []
     for value in _run_values(document):
         if not isinstance(value, str):
