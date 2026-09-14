@@ -586,7 +586,7 @@ the other way.
 | WHITESPACE-READING-UNRUNNABLE | for 8a, the corrected bracket expression | none by test. The reading guards itself: run both forms over the tracked Markdown and the wrong one names most of the tree while the right one names nothing | not measured |
 | CLASS-NAME-OFF-PATTERN | for 11a, the rename | none by test; the citation gate refuses the old name wherever a row still cites it, which is the only signal a rename has here | not measured |
 | INIT-COUNTED-AS-A-COLLISION | for 13a, the marker excluded where the collision is judged | `test_module_claims.ModuleClaimTests` at its collision case, with a subpackage carrying a marker — it reddens today for a structure that is not a defect, which is the finding | not measured |
-| TEST-HELPER-KEEPS-THE-DEFAULT | for 14a, the helper's defaults removed | none by test, and the absence is the finding: reverting a repair that removes a default reddens nothing, which is why the check's own repair could not be guarded either | not measured |
+| TEST-HELPER-KEEPS-THE-DEFAULT | for 14a, the keyword-only marker on the helper's filling | none by test, and the absence is the finding: a default that moves behind a keyword still applies, so nothing reddens either way — the same reason the check's own repair could not be guarded. The reading is that a call site passing a variant now has to name the parameter, so the two kinds of call no longer look alike | not measured |
 
 ## Measured 2026-09-14, at the commit carrying this section — the citation cost of moving a symbol
 

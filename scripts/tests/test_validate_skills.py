@@ -35,12 +35,22 @@ def check(
     skill_dir: Path,
     allow_template_placeholders: bool = False,
     publisher_id: str | None = None,
+    *,
     schema: FormatSchema = skill_model.FORNAX_FORMAT,
 ) -> tuple[bool, str]:
     """Validate a skill, returning whether it *passed* and whatever it printed.
 
     The checks report whether they failed; this seam inverts once so the assertions
     below read as passed/failed without each restating the convention.
+
+    The filling defaults here and is keyword-only, which is the nearest this side can
+    come to what the checks do. `validate_skill` was made to ask for one because a
+    default there is how the next caller takes `FORNAX_FORMAT` back in silence, and a
+    suite is where the next caller copies from — but almost every case here is about
+    something other than the filling, and threading it through each of them would put
+    the noise in the cases rather than the seam. Keyword-only is the compromise: a
+    case that means the default writes nothing, and a case that means a variant has to
+    name the parameter, so the two never look alike at the call site.
     """
     output = StringIO()
 
