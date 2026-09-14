@@ -62,7 +62,15 @@ Later, the carve-out moved the schema type into the package being extracted, and
 that named it under its old module now name it under `schema`, where it went. The superseded
 spelling is not written here: this record is a subject of the citation gate, and naming a symbol
 that no module defines is the thing the gate refuses, so the disclosure says which module it left
-rather than reproducing the coordinate it left behind. Same treatment and
+rather than reproducing the coordinate it left behind.
+
+Two further edits, disclosed here because they were not disclosed where they were made. The
+Self-check answer about the Reach form was corrected in the same commit as the Reach note above; it
+described a form this record's table does not use, and the correction says what the table does. That
+cell reconciles this record against its contract, which is nearer to a reading than a coordinate is,
+so it is named here rather than left to a commit message. And the three guard rows in
+`docs/guards.md` that cite this round's cases by class had their class names updated when the cases
+were regrouped — coordinates, forced by the citation gate, with the readings beside them untouched. Same treatment and
 same reason: a Reach cell names where a repair touches, which is a coordinate and not a reading, and
 the gate refused the move until the coordinate was current. Disclosed here rather than left for a
 reader to discover that this record's coordinates were edited after it was settled.

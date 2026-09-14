@@ -496,6 +496,11 @@ that cannot be edited, or a rename whose only signal is the citation gate.
 
 ## Measured 2026-09-14, at the commit carrying this correction — the ba81ab1 round
 
+Three rows below had their class names updated when this round regrouped the cases they cite: the
+citation gate refuses a member no class defines, so a coordinate that moves has to move here too.
+The readings beside them were not touched. Disclosed because an edit to a row someone may later
+quote should say so in the file, not only in the commit that made it.
+
 Written prospective, when the round settled and none of its repairs had landed. The repairs then
 landed inside the same day and four rows were updated with what they measured, while the heading
 still said nothing was measured and named no tree for the numbers to hang on. A dated section is
