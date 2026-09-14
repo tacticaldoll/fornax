@@ -10,13 +10,18 @@ Holding them in one value is what lets a collection state a different filling
 without a second validator, and what keeps a check from being the place a new literal
 lands.
 
-`FAMILIES` is the single definition of the allowed `family` values, in the order
-the README skill maps present them, mapped to their display titles — so a family
-cannot be added without also giving it a title. `STATUSES` is the single
-definition of the allowed `status` values, in lifecycle order. They, `NAME_PATTERN`
-and `HANDOFF` stay module names because sibling scripts and the prose that cites them
-read them there; each is bound to the schema's own field rather than restating it, so
-the two cannot drift.
+`FORNAX_FORMAT.families` is the single definition of the allowed `family` values, in
+the order the README skill maps present them, mapped to their display titles — so a
+family cannot be added without also giving it a title. `FORNAX_FORMAT.statuses` is the
+single definition of the allowed `status` values, in lifecycle order. Add to either by
+editing the declaration below, never a module name: the names under it are bindings
+onto those fields, and a binding cannot drift from what it binds, but it can look like
+the place to make a change.
+
+Each binding is kept for a reader that names it, and the readers differ: `skill_graph`
+reads `FAMILIES` and `HANDOFF`, while `distribution_manifest` and AGENTS.md name
+`NAME_PATTERN`. A `STATUSES` binding had no reader outside this repository's own
+suite, so it is not here — a name kept for nobody is worse than its absence.
 
 `NAME_PATTERN` is the shape a skill folder and the collection both take. Note that
 the repository spells this rule in more than one place — `^[a-z0-9-]+$` here,
@@ -26,8 +31,8 @@ doubled hyphen that the others reject. Unifying them changes what validates, so 
 a decision, not a cleanup. Gathering the values into a schema does not make that
 decision: the other spellings stay where they are, outside this owner, deliberately.
 
-`HANDOFF` is the single definition of how a skill writes a handoff, so the
-validator and the map generator agree on what counts as one. Cross-skill record
+`HANDOFF` binds `FORNAX_FORMAT.handoff`, so the validator and the map generator
+agree on what counts as a handoff. Cross-skill record
 interfaces are structural declarations read by ``skill_interface.py``, not prose
 patterns kept here.
 
@@ -102,7 +107,6 @@ FORNAX_FORMAT = FormatSchema(
 
 NAME_PATTERN = FORNAX_FORMAT.name_pattern
 FAMILIES: dict[str, str] = FORNAX_FORMAT.families
-STATUSES: tuple[str, ...] = FORNAX_FORMAT.statuses
 HANDOFF = FORNAX_FORMAT.handoff
 
 

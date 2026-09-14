@@ -216,7 +216,7 @@ class ValidateSkillTests(unittest.TestCase):
             passed, output = check_skill(Path(tmp), manifest_text=text)
 
         self.assertFalse(passed)
-        self.assertIn(skill_model.listed(skill_model.STATUSES), output)
+        self.assertIn(skill_model.listed(skill_model.FORNAX_FORMAT.statuses), output)
 
     def test_missing_input_contract_line_fails(self) -> None:
         with TemporaryDirectory() as tmp:

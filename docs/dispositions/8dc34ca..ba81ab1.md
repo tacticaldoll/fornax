@@ -29,7 +29,7 @@ Claims Verified #6 is REFUTED for absence of evidence inside a static scope, not
 | # | Cause (the thing to change) | Findings | Repair | Kind | Reach (every location it touches) | Route |
 |---|---|---|---|---|---|---|
 | 1 | The module docstring still describes the constants as definitions, which they stopped being when the aliases were bound to the schema's fields | DEFINITION-NAMED-ON-THE-BINDING, ALIAS-REASON-OVERREACHES | 1a restate the ownership paragraphs in binding voice, and give each alias its own reader | `restate` | `scripts/skill_model.py` module docstring, at "is the single definition" (twice), "stay module names because sibling scripts", and the `HANDOFF` paragraph | document is `scripts/skill_model.py`'s own docstring; no code handoff |
-| 1 | " | " | 1b delete the `STATUSES` alias, which no sibling script or prose reads, and point its one test read at the field | `converge` | `skill_model.STATUSES`, `test_validate_skills.ValidateSkillTests.test_unknown_status_fails`, and 1a's reach for the sentence that named it | `plan-implementation` |
+| 1 | " | " | 1b delete the `STATUSES` alias, which no sibling script or prose reads, and point its one test read at the field | `converge` | the `STATUSES` binding, `test_validate_skills.ValidateSkillTests.test_unknown_status_fails`, and 1a's reach for the sentence that named it | `plan-implementation` |
 | 2 | `FormatSchema` took ownership of the skill-name grammar without the enumeration growing to match; two further spellings sit in the same two files | NAME-GRAMMAR-ENUMERATION-SHORT | 2a extend the enumeration sentence to name the `producer` group and the handoff pattern's own group | `restate` | `scripts/skill_model.py` module docstring, at "in development_knowns.py, and the same inline in" | document is `scripts/skill_model.py`'s own docstring; no code handoff |
 | 2 | " | " | 2b route the `producer` group through `skill_model.FormatSchema`'s name pattern | `converge` | `validate_skills.RECORD_INPUT_PATTERN`, and 2a's reach | `plan-implementation`. Changes what validates — the docstring already says unifying the spellings is a decision, not a cleanup |
 | 3 | The seam reaches `validate_skill` and stops, while the docstrings claim a filling the whole collection reads | MAIN-SEAM-HAS-NO-READER, SCHEMA-STOPS-SHORT-OF-THE-MAP | 3a narrow both claims to the seam that exists, and say `skill_graph` and `distribution_manifest` are pinned to `FORNAX_FORMAT` | `restate` | `scripts/skill_model.py` module docstring, at "lets a collection state a different filling"; `scripts/validate_skills.py` module docstring, at "Where the values come from" | documents are the two module docstrings; no code handoff |
@@ -44,6 +44,11 @@ The Reach column cites a symbol or a quoted phrase rather than `file:line`. The 
 for `file:line`; a Disposition Record is a record under this repository's citation rule, which asks
 for a coordinate that survives an edit, and the repository's rule is the one the citation gate step
 runs. The exemption AGENTS.md grants a Review Record's evidence column does not extend here.
+
+Repair 1b removes the `STATUSES` binding, so this record cannot name it as a live symbol and the
+Reach cell names it as text instead. The citation gate step refused the removal until it did, which
+is the signal the guard row for this finding predicted. What changed is the citation's form; the
+repair it names and the disposition that accepted it are untouched.
 
 ### Pattern
 
