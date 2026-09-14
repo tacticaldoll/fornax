@@ -37,9 +37,15 @@ MODULES = {
     stem: path for stem, path in _MODULES.by_stem.items() if path.stem != "__init__"
 }
 LOCAL = set(MODULES)
-#: The modules on the package side of the boundary the carve-out is for.
+#: The modules on the package side of the boundary the carve-out is for, split from the
+#: owner's map by path rather than found by a glob of the package's top directory. The
+#: glob was the first form and it did not hold: a module one level down imported across
+#: the boundary and the suite stayed green, because the set the assertion below subtracts
+#: from never contained it. Splitting the owner's `rglob` makes the two sides complements
+#: of each other, so a module cannot be absent from both.
+PACKAGE_ROOT = SCRIPTS / PACKAGE
 PACKAGE_MODULES = {
-    path.stem for path in (SCRIPTS / PACKAGE).glob("*.py") if path.stem != "__init__"
+    stem for stem, path in MODULES.items() if path.is_relative_to(PACKAGE_ROOT)
 }
 STDLIB = set(sys.stdlib_module_names)
 
@@ -185,6 +191,13 @@ class ModuleClaimTests(unittest.TestCase):
         hold the case that got through. Typing-only is not a weaker kind of edge here:
         the package is being extracted, and a signature naming a type that will not
         travel with it is an API defect at the moment of the split, not a comment.
+
+        The first form of this assertion had the defect it was written against. It
+        found the package side with a glob of one directory while the other side came
+        from the owner's whole-tree walk, so a module one level down belonged to
+        neither set and crossed the boundary with the suite green. Both sides come from
+        the one map now and are complements, which is the property a subtraction needs
+        and a pair of independent searches cannot promise.
         """
         outside = LOCAL - PACKAGE_MODULES
 
