@@ -23,10 +23,10 @@ literals here, each edited where it was read. A check holding its own value cann
 be asked a different question, and this file is where the next such literal would
 otherwise land.
 
-`validate_skill` is where a caller supplies one. `main` does not take a filling: it had
-a parameter for one and no caller, no flag and no test reading it, and a seam nobody
-reads is a claim rather than a capability. The gate and the deployment CLI both invoke
-this file as a process, so the parameter can come back when something can pass it.
+`main` holds the filling for a whole run and hands it to both halves — the
+distribution check and each skill. It carries the only default; every check under it
+is asked, because a default on an inner check is the route by which the next caller
+takes `FORNAX_FORMAT` back without saying so.
 
 Usage:
     .venv/bin/python scripts/validate_skills.py
@@ -608,7 +608,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main(argv: list[str] | None = None, root: Path | None = None) -> int:
+def main(
+    argv: list[str] | None = None,
+    root: Path | None = None,
+    schema: FormatSchema = FORNAX_FORMAT,
+) -> int:
     """Validate a skills directory against a repository root.
 
     The root is a parameter because the argv seam alone left everything past the
@@ -631,12 +635,12 @@ def main(argv: list[str] | None = None, root: Path | None = None) -> int:
         )
         return 1
 
-    distribution = validate_distribution(root if root is not None else Path.cwd())
+    distribution = validate_distribution(root if root is not None else Path.cwd(), schema)
     failed = not distribution.passed
 
     for skill_dir in skill_dirs:
         if validate_skill(
-            skill_dir, args.allow_template_placeholders, distribution.publisher_id
+            skill_dir, args.allow_template_placeholders, distribution.publisher_id, schema
         ):
             failed = True
 

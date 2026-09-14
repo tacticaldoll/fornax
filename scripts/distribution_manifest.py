@@ -23,7 +23,7 @@ from uuid import UUID
 
 from diagnostic_text import printable
 from read_whole import Unread, whole
-from skill_model import NAME_PATTERN
+from skill_model import FormatSchema
 from workspace_files import listed
 
 
@@ -327,8 +327,14 @@ def validate_install_pins(root: Path, repository: str, version: str) -> bool:
     return failed
 
 
-def validate_distribution(root: Path) -> DistributionValidation:
-    """Validate canonical distribution metadata and host projections."""
+def validate_distribution(root: Path, schema: FormatSchema) -> DistributionValidation:
+    """Validate canonical distribution metadata and host projections.
+
+    The collection name answers to the same grammar a skill folder does, so the
+    filling is asked for rather than defaulted: this is an inner check, and a
+    default here is the route by which a caller takes FORNAX_FORMAT back in
+    silence. `validate_skills.main` holds the default for both halves of a run.
+    """
     distribution_file = root / "distribution.json"
     distribution, error = read_json_object(distribution_file)
     if error is not None:
@@ -346,7 +352,7 @@ def validate_distribution(root: Path) -> DistributionValidation:
     if distribution.get("schema") != 1:
         fail("distribution.json - schema must be 1")
         failed = True
-    if not isinstance(name, str) or not NAME_PATTERN.fullmatch(name):
+    if not isinstance(name, str) or not schema.name_pattern.fullmatch(name):
         fail("distribution.json - name must use lowercase hyphen-case")
         failed = True
     if not isinstance(version, str) or not VERSION_PATTERN.fullmatch(version):

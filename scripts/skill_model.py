@@ -26,10 +26,14 @@ editing the declaration below, never a module name: the names under it are bindi
 onto those fields, and a binding cannot drift from what it binds, but it can look like
 the place to make a change.
 
-Each binding is kept for a reader that names it, and the readers differ: `skill_graph`
-reads `FAMILIES` and `HANDOFF`, while `distribution_manifest` and AGENTS.md name
-`NAME_PATTERN`. A `STATUSES` binding had no reader outside this repository's own
-suite, so it is not here — a name kept for nobody is worse than its absence.
+Each binding is kept for a reader that names it, and the readers differ. `skill_graph`
+reads `FAMILIES` and `HANDOFF` as values. `NAME_PATTERN` has no code reader left —
+`distribution_manifest` was the last and now asks for a filling — and is kept because
+AGENTS.md and `evidence_currency` cite it as a symbol, which the citation gate step
+holds: rename it and the gate refuses the rename until both are corrected. That is a
+reader, and naming which kind it is matters, because the two go stale differently. A
+`STATUSES` binding had neither, so it is not here — a name kept for nobody is worse
+than its absence.
 
 `NAME_PATTERN` is the shape a skill folder and the collection both take. Note that
 the repository spells this rule in more than one place — `^[a-z0-9-]+$` here,

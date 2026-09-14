@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
@@ -978,7 +979,7 @@ class ProjectedDescriptionTests(unittest.TestCase):
         output = StringIO()
 
         with redirect_stdout(output):
-            result = validate_skills.validate_distribution(root)
+            result = validate_skills.validate_distribution(root, skill_model.FORNAX_FORMAT)
 
         return result.passed, output.getvalue()
 
@@ -1411,7 +1412,7 @@ class ProjectedDescriptionTests(unittest.TestCase):
             fixtures.write_distribution(root)
             output = StringIO()
             with redirect_stdout(output):
-                result = validate_skills.validate_distribution(root)
+                result = validate_skills.validate_distribution(root, skill_model.FORNAX_FORMAT)
 
         self.assertTrue(result.passed, output.getvalue())
         self.assertEqual(result.publisher_id, PUBLISHER)
@@ -1728,7 +1729,9 @@ class InterfacePublisherTests(unittest.TestCase):
             write_skill_with_sidecar(root / "skills", FOREIGN_PUBLISHER)
             output = StringIO()
             with redirect_stdout(output):
-                distribution = validate_skills.validate_distribution(root)
+                distribution = validate_skills.validate_distribution(
+                    root, skill_model.FORNAX_FORMAT
+                )
             passed, sidecar_output = self.check_publishers(
                 root / "skills", distribution.publisher_id
             )
@@ -1800,6 +1803,36 @@ class SchemaSeamTests(unittest.TestCase):
         self.assertFalse(unknown)
         self.assertIn("family must be", output)
         self.assertTrue(known)
+
+    def test_a_run_carries_one_filling_into_both_halves(self) -> None:
+        """The collection-level seam, asserted where the two halves meet.
+
+        `main` validates a distribution and then every skill, and the collection name
+        answers to the same grammar a skill folder does. The two spellings this
+        repository already carries disagree about a leading hyphen — `^[a-z0-9-]+$`
+        admits it, `^[a-z0-9]+(?:-[a-z0-9]+)*$` does not — so one tree read under each
+        filling is enough to show the filling reaches the distribution check, and not
+        only the per-skill checks the other cases cover.
+        """
+        strict = replace(
+            skill_model.FORNAX_FORMAT,
+            name_pattern=re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$"),
+        )
+
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixtures.write_distribution(root, name="-fixture")
+            fixtures.write_skill(root / "skills", NAME)
+            argv = ["--skills-path", str(root / "skills")]
+
+            output = StringIO()
+            with redirect_stdout(output):
+                admitted = validate_skills.main(argv, root)
+                refused = validate_skills.main(argv, root, strict)
+
+        self.assertEqual(admitted, 0, output.getvalue())
+        self.assertEqual(refused, 1)
+        self.assertIn("name must use lowercase hyphen-case", output.getvalue())
 
     def test_the_family_mapping_cannot_be_written_under_either_name(self) -> None:
         """Both halves, because the binding and the field are one object.
