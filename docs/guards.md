@@ -606,6 +606,19 @@ The decision the number carried still holds on either reading. Moving those two 
 `read_whole` would have invalidated every one of those citations, across records this repository
 does not edit; moving the `Line` type in invalidated none, because nothing named it.
 
+## Written 2026-09-14, prospective — the 7c88454 round, one repair landed before it was written
+
+Twelve findings accepted. One was repaired before this section existed, because it was the boundary
+again; its row says measured and names all three entrances. The rest are sentences, headings, rows
+in this file, and a count in a commit message, and are prospective.
+
+| Finding | Revert this, once its repair lands | Guard | Red on revert |
+|---|---|---|---|
+| BOUNDARY-BLIND-TO-MARKERS | the walk of the files in `test_module_claims`, back to the citation map | `test_module_claims.ModuleClaimTests.test_no_package_module_imports_outside_the_package`, with a cross-boundary import placed in a package marker — the fixture has to be built, since no marker in the tree imports anything | **measured** — before the repair, the import in the package's own marker and in a subpackage's marker both leave the suite green while the same import in an ordinary module turns 1 red; after it, all three turn it red. Taken here and independently in the input's isolated clone |
+| EVERY-MODULE-CLAIM-NOW-FALSE, COLLISION-ROW-NAMES-THE-WRONG-REPAIR, HEADINGS-DENY-THEIR-OWN-ROWS, CITATION-COST-OFF-BY-ITS-OWN-SENTENCE, DISCLOSURE-NAMES-THE-WRONG-ROUND, DISCLOSURE-TOOK-THE-CLOSING-SENTENCES, OLD-TYPE-NAME-IN-TWO-DOCSTRINGS, CLASS-COUNT-IN-A-MESSAGE, CASE-COUNT-IN-A-CONTRACT | — | none by test. Every unit is a sentence, a heading, or a row in this file, and no gate opens over what one claims. Four of them are this file's own rows and headings, which is worth saying again: the ledger that records what must break has no way to hold itself | not measured |
+| KEYWORD-ONLY-NOT-WHAT-WAS-RECORDED | for 8b, the keyword call from the helper into the check | none by test — a keyword call and a positional one reach the same function, so nothing reddens. The reading is that the seam reads the same from both sides, which a reader checks and a suite cannot | not measured |
+| TWO-CAUSES-ONE-COMMIT | — | none, and none is possible. The unit is a commit message, which is history; the row exists so the next round finds it settled rather than re-reporting it | not measured, and not measurable |
+
 ## Repairs with no guard, and why
 
 | Finding | Why nothing goes red |
