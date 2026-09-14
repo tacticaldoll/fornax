@@ -6,9 +6,17 @@ filling of it: the value space for `family` and `status`, the manifest fields a 
 must and must not declare, the resource keys it may bundle, whether the `**Input**:`
 contract line is required, and the grammars for a folder name and a handoff. Several
 of those were literals inside `validate_skills`, each decided where it was read.
-Holding them in one value is what lets a collection state a different filling
-without a second validator, and what keeps a check from being the place a new literal
+Holding them in one value is what keeps a check from being the place a new literal
 lands.
+
+How far that reaches is worth stating exactly, because the obvious wider claim is not
+yet true. `validate_skills.validate_skill` takes a filling and passes it to every check
+under it, so the per-skill verdict can be asked about a format other than this one.
+Nothing else can: `skill_graph` and `distribution_manifest` read the bindings below and
+are therefore pinned to `FORNAX_FORMAT`. A filling that differed from it would be
+honoured by the validator and ignored by the map generator, which is why a second
+collection needs those readers threaded before the schema is the collection's rather
+than the validator's.
 
 `FORNAX_FORMAT.families` is the single definition of the allowed `family` values, in
 the order the README skill maps present them, mapped to their display titles — so a

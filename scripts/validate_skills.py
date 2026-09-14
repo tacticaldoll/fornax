@@ -23,6 +23,11 @@ literals here, each edited where it was read. A check holding its own value cann
 be asked a different question, and this file is where the next such literal would
 otherwise land.
 
+`validate_skill` is where a caller supplies one. `main` does not take a filling: it had
+a parameter for one and no caller, no flag and no test reading it, and a seam nobody
+reads is a claim rather than a capability. The gate and the deployment CLI both invoke
+this file as a process, so the parameter can come back when something can pass it.
+
 Usage:
     .venv/bin/python scripts/validate_skills.py
     .venv/bin/python scripts/validate_skills.py --skills-path templates \
@@ -598,11 +603,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main(
-    argv: list[str] | None = None,
-    root: Path | None = None,
-    schema: FormatSchema = FORNAX_FORMAT,
-) -> int:
+def main(argv: list[str] | None = None, root: Path | None = None) -> int:
     """Validate a skills directory against a repository root.
 
     The root is a parameter because the argv seam alone left everything past the
@@ -630,7 +631,7 @@ def main(
 
     for skill_dir in skill_dirs:
         if validate_skill(
-            skill_dir, args.allow_template_placeholders, distribution.publisher_id, schema
+            skill_dir, args.allow_template_placeholders, distribution.publisher_id
         ):
             failed = True
 
