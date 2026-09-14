@@ -1,0 +1,83 @@
+## Disposition Record
+
+**Source**: `docs/reviews/8dc34ca..64980b6.md`
+**Scope**: `8dc34ca..64980b6`, derived with `git diff --name-only`; eleven changed files and their
+named changed units are enumerated in the Review Record
+**Prior round**: `docs/dispositions/ebf16c7..48ce457.md`
+
+### Record integrity
+
+| Check | Input claim | Reconciled evidence | Result |
+|---|---|---|---|
+| Verdict / Gate Index | FAIL at Gate 3 + CONTRACT-VIOLATED | Gate 3 is the lowest failed gate and two contract rows are VIOLATED | pass |
+| Calibration / Gate Index | Gates 1-8 | all eight gates have a declared status; Gates 4-8 are blocked by Gate 3 | pass |
+| Finding count | 3 | one Gate 3 row and two additional violated contract rows; duplicated structural rows are excluded explicitly | pass |
+| Coverage | partial with four enumerated sets | all eleven changed units are in the partially-gate-reviewed set with Gates 1-3; the other sets are empty | pass |
+| Non-finding sections | Ledger and Structural Causes rows are excluded | both sections declare that status and their rows map to the three findings | pass |
+
+### Prior scope resolution
+
+All prior open finding ids are outside this round. The Review Record enumerates changed units inside
+builder integration, while the prior findings belong to shell parsing, review records, citations,
+development-knowns, and unrelated governance clauses. No prior cause location is among these named
+changed units, including the new `AGENTS.md` builder-tooling bullet and the new
+`runtime_contract` VCS-ref sentence.
+
+### Causes and candidate repairs
+
+| # | Cause (the thing to change) | Findings | Repair | Kind | Reach (every location it touches) | Route |
+|---:|---|---|---|---|---|---|
+| 1 | The command example assumes an environment activation the documented setup does not perform | BUILDER-COMMAND-NOT-ON-PATH | Use the environment-relative executable path already used by validation instructions | restate | `README.md` Add a skill command | document repair |
+| 2 | Tests reproduce policy in temporary fixtures or derive the inventory under test, so removing authoritative policy changes no assertion | PROFILE-CONSTRAINTS-UNGUARDED, GATE-PRESENCE-UNGUARDED | Drive malformed skills through the repository profile and assert the baseline step's exact label and command | guard | `scripts/tests/test_check_agent_skills.py` + `AdapterTests`, `scripts/tests/test_check_workspace.py` + `WorkspaceChecks` | `plan-implementation` |
+
+### Pattern
+
+Both cause 2 findings are self-derived expectations: one test owns a substitute profile and the
+other reads the step collection it is meant to constrain. The pattern-level repair is to assert the
+public repository policy from inputs that contradict each individual rule.
+
+### Coupling
+
+The repairs are independent. The two cause 2 guards should land together because they establish one
+integration boundary: both the external check and its Fornax policy must remain present.
+
+### Dispositions
+
+| Finding | Cause | Carried | Disposition | Reason (REQUIRED for decline and defer) |
+|---|---:|---|---|---|
+| BUILDER-COMMAND-NOT-ON-PATH | 1 | new | accept | — |
+| PROFILE-CONSTRAINTS-UNGUARDED | 2 | new | accept | — |
+| GATE-PRESENCE-UNGUARDED | 2 | new | accept | — |
+
+### Carried forward
+
+`none`; no prior finding unit is inside this round's enumerated scope.
+
+### Closed
+
+`none`.
+
+### Out of scope this round
+
+All thirty-six ids left open by `docs/dispositions/ebf16c7..48ce457.md`; their units are outside the
+enumerated builder-integration scope. This round makes no closure claim about them.
+
+### Undetermined
+
+`none`; the Review Record enumerates all four coverage sets.
+
+### Recurring
+
+`none`.
+
+### Ungrouped
+
+`none`.
+
+### Self-check
+
+| Check | This record's answer |
+|---|---|
+| Every prior id sits in exactly one exclusive lifecycle home | pass — all thirty-six are Out of scope this round |
+| Every accepted cause carries at least one repair with an enumerated Reach | pass |
+

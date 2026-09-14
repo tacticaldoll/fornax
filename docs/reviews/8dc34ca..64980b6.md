@@ -1,0 +1,81 @@
+## Review Record
+
+**Source**: local commit range `8dc34ca..64980b6`
+**Calibration**: Gates 1-8 (shared validation path and user-controlled template/profile inputs)
+**Triage**: Red 0 / Yellow 3 / Green 8
+**Coverage**: partial — gate-reviewed: []; partially-gate-reviewed: [`AGENTS.md` builder-tooling
+policy (Gates 1-3), `PROJECT.md` build-mechanics decision (Gates 1-3), `README.md` authoring and
+validation instructions (Gates 1-3), `agent-skill-builder.yaml` (Gates 1-3),
+`profiles/fornax.yaml` (Gates 1-3), `requirements-maintenance.txt` builder dependency (Gates 1-3),
+`check_agent_skills` (Gates 1-3), `check_workspace.STEPS` (Gates 1-3),
+`runtime_contract` VCS-ref boundary (Gates 1-3), `test_check_agent_skills.AdapterTests` (Gates 1-3),
+`templates/skill/.agent-skill-template.yaml` (Gates 1-3)]; triage-only: []; unread: []
+**Findings**: 3 — the Gate 3 row and Against-Contract rows 7 and 8; Ledger and Structural Causes
+rows are not findings
+**Verdict**: FAIL at Gate 3 + CONTRACT-VIOLATED
+**Not executed**: static review only — runtime evidence was considered separately, not as gate proof
+
+### Gate Index
+
+| Gate | Focus | Status |
+|---:|---|---|
+| 1 | Formatting & Syntax Hygiene | pass |
+| 2 | Naming & Readability | pass |
+| 3 | Error Handling & Observability | fail |
+| 4 | Control Flow & Structural Clarity | blocked |
+| 5 | Responsibility & Boundaries | blocked |
+| 6 | Business Logic Integrity | blocked |
+| 7 | Deduplication & Composition | blocked |
+| 8 | Security & Parameter Integrity | blocked |
+
+### Against-Contract
+
+| # | Clause | Falsifier attempted | Result | Evidence |
+|---:|---|---|---|---|
+| 1 | Builder mechanics are independent and Fornax retains collection policy | Search the adapter and profile for a Fornax dependency flowing into builder | holds | `scripts/check_agent_skills.py`, `profiles/fornax.yaml`, `PROJECT.md` |
+| 2 | Standard validation is mandatory in the workspace gate | Remove or bypass the baseline step | holds in implementation; its missing guard is finding GATE-PRESENCE-UNGUARDED | `scripts/check_workspace.py` |
+| 3 | Profiles strengthen rather than replace the standard | Find a profile switch that disables a standard finding | unprovable statically in this range; the behavior belongs to the pinned builder | `agent-skill-builder.yaml`, `requirements-maintenance.txt` |
+| 4 | Fornax remains the reference template through declarative slots | Render the template without changing its existing placeholders | holds | `templates/skill/.agent-skill-template.yaml`, `scripts/tests/test_check_agent_skills.py` |
+| 5 | Existing Fornax-specific validation remains intact during dual validation | Find a removed existing validation step or rule | holds | `scripts/check_workspace.py` |
+| 6 | CI and local validation use the same public gate | Find a separate CI-only builder command | holds | `.github/workflows/validate.yml`, `scripts/check_workspace.py` |
+| 7 | New validation behavior has a negative control that fails when the rule is removed | Remove each Fornax profile constraint; current tests still pass | VIOLATED — PROFILE-CONSTRAINTS-UNGUARDED | `profiles/fornax.yaml`, `scripts/tests/test_check_agent_skills.py` |
+| 8 | The new gate cannot disappear while its dynamic inventory tests remain green | Remove the `Agent Skills baseline` step; the current workspace tests derive the reduced inventory and still pass | VIOLATED — GATE-PRESENCE-UNGUARDED | `scripts/check_workspace.py`, `scripts/tests/test_check_workspace.py` |
+| 9 | The authoring command is runnable after following the documented environment setup | Create `.venv` without activating it, then invoke bare `agent-skill` | VIOLATED — BUILDER-COMMAND-NOT-ON-PATH | `README.md` |
+
+### Structural Causes
+
+| # | Finding | Cause (the thing to change) | Cause location | Gate that would carry it |
+|---:|---|---|---|---|
+| 1 | BUILDER-COMMAND-NOT-ON-PATH | The command example assumes activation that the setup block never performs | `README.md` authoring command | Gate 3 (fail) |
+| 2 | PROFILE-CONSTRAINTS-UNGUARDED | The adapter tests construct substitute profiles instead of falsifying the repository-owned profile | `test_check_agent_skills.AdapterTests` | Gate 6 (blocked) |
+| 3 | GATE-PRESENCE-UNGUARDED | Workspace tests derive their expected step set from `STEPS`, so deleting a required step changes both subject and expectation | `test_check_workspace.WorkspaceChecks` | Gate 6 (blocked) |
+
+### Responsibility & Dependency Ledger
+
+Gate 5 was blocked for every unit; these rows preserve the Phase 3 extraction and are not findings.
+
+| # | Unit | Its job (one clause) | Handed in | Reached directly |
+|---:|---|---|---|---|
+| 1 | `AGENTS.md` builder-tooling policy | govern the builder boundary | none | repository policy |
+| 2 | `PROJECT.md` build-mechanics decision | record the settled ownership seam | none | project decisions |
+| 3 | `README.md` authoring instructions | teach the supported workflow | none | CLI names and local paths |
+| 4 | `agent-skill-builder.yaml` | select the Fornax skill root and profile | none | relative workspace paths |
+| 5 | `profiles/fornax.yaml` | declare Fornax strengthening rules | none | profile schema |
+| 6 | `requirements-maintenance.txt` | pin the builder release | none | GitHub VCS URL |
+| 7 | `check_agent_skills.main` | delegate one workspace check | root (parameter) | builder CLI, module-derived root |
+| 8 | `check_workspace.STEPS` | order deterministic workspace checks | none | script paths |
+| 9 | `runtime_contract` VCS-ref prose | state the runtime check boundary | none | repository release policy |
+| 10 | `test_check_agent_skills.AdapterTests` | verify adapter and template behavior | temporary roots | filesystem, builder API |
+| 11 | `templates/skill/.agent-skill-template.yaml` | map legacy template literals to builder slots | none | template schema |
+
+### Gate 3: Error Handling & Observability
+
+| # | Location | Violation | Correction |
+|---:|---|---|---|
+| 1 | `README.md` authoring command | Gate 3: the documented setup does not put `agent-skill` on `PATH`, so the new primary command fails as not found | Invoke `.venv/bin/agent-skill`, matching the rest of the README's non-activated environment commands |
+
+### Structural Appendix
+
+The adapter is one-shot and delegates directly to the pinned builder. The two configuration files
+contain data only. Existing Fornax validation remains a later step, so the migration is additive.
+
