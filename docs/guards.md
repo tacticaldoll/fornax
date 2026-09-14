@@ -618,7 +618,7 @@ in this file, and a count in a commit message, and are prospective.
 | EVERY-MODULE-CLAIM-NOW-FALSE, COLLISION-ROW-NAMES-THE-WRONG-REPAIR, HEADINGS-DENY-THEIR-OWN-ROWS, CITATION-COST-OFF-BY-ITS-OWN-SENTENCE, DISCLOSURE-NAMES-THE-WRONG-ROUND, DISCLOSURE-TOOK-THE-CLOSING-SENTENCES, OLD-TYPE-NAME-IN-TWO-DOCSTRINGS, CLASS-COUNT-IN-A-MESSAGE, CASE-COUNT-IN-A-CONTRACT | — | none by test. Every unit is a sentence, a heading, or a row in this file, and no gate opens over what one claims. Four of them are this file's own rows and headings, which is worth saying again: the ledger that records what must break has no way to hold itself | not measured |
 | KEYWORD-ONLY-NOT-WHAT-WAS-RECORDED | for 8b, the keyword call from the helper into the check | none by test — a keyword call and a positional one reach the same function, so nothing reddens. The reading is that the seam reads the same from both sides, which a reader checks and a suite cannot | not measured |
 | TWO-CAUSES-ONE-COMMIT | — | none, and none is possible. The unit is a commit message, which is history; the row exists so the next round finds it settled rather than re-reporting it | not measured, and not measurable |
-## Measured 2026-09-14, at the repair commits for the `8dc34ca..64980b6` round
+## Measured 2026-09-14, at the repair commits for the `8d92ff7..1e37d86` round
 
 The round accepted three findings. Two share one test-boundary cause and now have executable guards;
 the documentation finding has no executable guard.
