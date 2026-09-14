@@ -618,11 +618,20 @@ in this file, and a count in a commit message, and are prospective.
 | EVERY-MODULE-CLAIM-NOW-FALSE, COLLISION-ROW-NAMES-THE-WRONG-REPAIR, HEADINGS-DENY-THEIR-OWN-ROWS, CITATION-COST-OFF-BY-ITS-OWN-SENTENCE, DISCLOSURE-NAMES-THE-WRONG-ROUND, DISCLOSURE-TOOK-THE-CLOSING-SENTENCES, OLD-TYPE-NAME-IN-TWO-DOCSTRINGS, CLASS-COUNT-IN-A-MESSAGE, CASE-COUNT-IN-A-CONTRACT | — | none by test. Every unit is a sentence, a heading, or a row in this file, and no gate opens over what one claims. Four of them are this file's own rows and headings, which is worth saying again: the ledger that records what must break has no way to hold itself | not measured |
 | KEYWORD-ONLY-NOT-WHAT-WAS-RECORDED | for 8b, the keyword call from the helper into the check | none by test — a keyword call and a positional one reach the same function, so nothing reddens. The reading is that the seam reads the same from both sides, which a reader checks and a suite cannot | not measured |
 | TWO-CAUSES-ONE-COMMIT | — | none, and none is possible. The unit is a commit message, which is history; the row exists so the next round finds it settled rather than re-reporting it | not measured, and not measurable |
+## Measured 2026-09-14, at the repair commits for the `8dc34ca..64980b6` round
 
+The round accepted three findings. Two share one test-boundary cause and now have executable guards;
+the documentation finding has no executable guard.
+
+| Finding | Revert this | Guard | Red on revert |
+|---|---|---|---|
+| PROFILE-CONSTRAINTS-UNGUARDED | each of the three constraint fields in `profiles/fornax.yaml` | `test_check_agent_skills.AdapterTests.test_repository_profile_rejects_each_declared_constraint` | 1 subtest failure for each field removed |
+| GATE-PRESENCE-UNGUARDED | the `Agent Skills baseline` entry in `check_workspace.STEPS` | `test_check_workspace.WorkspaceChecks.test_agent_skills_baseline_is_a_required_step` | 1 |
 ## Repairs with no guard, and why
 
 | Finding | Why nothing goes red |
 |---|---|
+| BUILDER-COMMAND-NOT-ON-PATH | none — the unit is a shell command in prose and no gate executes README examples. The re-runnable reading is to follow the documented setup without activation and resolve the command; only `.venv/bin/agent-skill` exists |
 | WIDTH-EXEMPT-SINGLE-TOKEN | none, and the absence is the finding. Reverting the line split leaves `ruff` green, because `E501` does not report a line whose content after the indentation holds no whitespace — which is what let the line stand. The re-runnable reading is to measure every line under `scripts/` and `tools/` and test whether the content after its indentation holds whitespace; it reports none. `2b` would have made this a guard and was weighed and not taken, with the reasoning in `docs/dispositions/v0.4.1..6ff702e.md` and the limit registered as `e501-exempts-a-whitespace-free-line` |
 | CITATIONS-READS-AND-JUDGES | none, by construction — an equivalence refactor, like `INPUT-PATTERN-SPLIT` above. One body became `check_citations.prose` plus `check_citations._line_citations` and `check_citations._symbol_citations`, and the whole suite passed unchanged with no test edited, which is what a behaviour-preserving split means. What settles it is that `check_citations.citations` now hands its lines to policies rather than holding them, and that the two ledger rows naming branches which moved were re-pointed in the same change |
 | FOUND-REBOUND-IN-COMPREHENSION | none — the unit is a local variable's name. No test holds one, and `ruff` holds neither shadowing of this kind nor a comprehension's choice of binding |
