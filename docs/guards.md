@@ -510,6 +510,26 @@ about ownership, and nothing reads a docstring — which is the shape that round
 | MAIN-SEAM-HAS-NO-READER | — | none by test. Reverting 3b restores a parameter nothing calls; a parameter with no reader cannot redden a suite, which is the finding restated | not measured |
 | TWO-SPELLINGS-IN-THE-SUITE | — | none by test. The unit is how the suite spells a question it already asks, and reverting a test's own spelling leaves it asserting the same thing against the same object | not measured |
 
+## Written 2026-09-14, prospective — the 1a84428 round, nothing measured
+
+The round settled in `docs/dispositions/ba81ab1..1a84428.md` accepted fifteen findings and repaired
+none. Two can carry a guard once their repair lands. The rest are prose about a state that changed —
+a docstring, a heading, a record's own disclosure — and no gate opens over a sentence's account of
+what owns a value.
+
+The heading above says prospective and means it. The section this file already carries for the
+previous round says the same and no longer means it, which is one of the findings settled here; that
+row is not corrected from this section, because a section states what was true when it was written.
+
+| Finding | Revert this, once its repair lands | Guard | Red on revert |
+|---|---|---|---|
+| PACKAGE-EDGE-OUT-AND-BACK | for 1d, the assertion that no package module imports outside the package | that assertion itself, which is the only mechanism the boundary has ever had. Whichever of 1a, 1b or 1c lands, reverting it turns the assertion red; without 1d, reverting any of them turns nothing red, which is how the edge reached two commit messages as a verified claim | not measured — no repair has landed |
+| MAPPING-NOT-PROXIED-BY-TYPE | for 2a, the wrap in `FormatSchema.__post_init__` | a case building a schema through `dataclasses.replace` with a plain mapping and asserting the result refuses a write. The existing mapping case cannot carry it: it reads the one value that is already proxied, which is why the residue survived the repair that closed the finding above it | not measured |
+| SCHEMA-DOCSTRING-DESCRIBES-A-VALUE, ONLY-DEFAULT-CLAIM-FALSE, SEAMTESTS-CONTRACT-OVERREACHES, SKILL-INTERFACE-USAGE-STALE, GUARDS-HEADING-CONTRADICTS-ITS-ROWS, DISCLOSURE-ATE-ITS-SUBJECT, REACH-NOTE-UNVERSIONED, SELF-CHECK-CONTRADICTS-THE-NOTE, TREE-MEASUREMENT-IN-A-DOCSTRING | — | none by test. Every unit is a sentence — a module docstring, a class contract, a section heading, a record's disclosure — and no gate opens over what a sentence claims about which name owns a value. `SKILL-INTERFACE-USAGE-STALE` is the closest to guardable and still is not: nothing executes a Usage block, which is why it survived the move that invalidated it | not measured |
+| TRAILING-WHITESPACE-IN-GUARDS | — | none, and the absence is the finding. `ruff` holds a Python line's end and reads no Markdown; `check_text._hygiene` asks for a NUL and a final newline and neither is this. The re-runnable reading is `git ls-files -z '*.md' \| xargs -0 grep -lnE '[ \t]+$'`, which is what found it | not measured |
+| MODULE-MAP-ANSWERED-A-THIRD-TIME, SWEEP-MISSED-THE-OTHER-GLOB | for 10a or 10b, the collision field carried into the test-side module maps | a case putting two files with one stem into a fixture tree and asserting the map reports the collision rather than silently keeping one. Neither current map can fail today — no stem is shared — so the case has to build the tree it judges | not measured |
+| GUARD-COUNT-IS-POLLUTION | for 12a, the cleanup restoring the filling | the `FROZEN-CLAIM-OVER-A-MUTABLE-DICT` row's own count: with the cleanup, removing the proxy turns 1 red rather than 2, and that row's number becomes the guard's own rather than the guard's plus the case that ran after it | not measured. Landing 12a changes a number this file already records, which is a correction to a reading and is why it is named here rather than made quietly |
+
 ## Repairs with no guard, and why
 
 | Finding | Why nothing goes red |
