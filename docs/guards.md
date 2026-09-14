@@ -513,7 +513,7 @@ nothing reads a docstring — which is the shape that round's Pattern names.
 
 | Finding | Revert this, once its repair lands | Guard | Red on revert |
 |---|---|---|---|
-| FROZEN-CLAIM-OVER-A-MUTABLE-DICT | for 5a, the mapping proxy wrapping `skill_model.FORNAX_FORMAT`'s family mapping | `test_validate_skills.SchemaImmutabilityTests.test_the_family_mapping_cannot_be_written_under_either_name` — it asserts the write raises and that `skill_model.FAMILIES` sees no new key afterwards. Both halves are needed: the binding shares the object, so a proxy on one name and not the other would pass the first assertion alone | **measured** — removing the wrap that replaced this repair's hand-proxy turns 2 red, one of them this case. The repair itself is superseded: the guarantee moved from the declared value to the type, under `MAPPING-NOT-PROXIED-BY-TYPE` below, so reverting the hand-wrap alone no longer names anything in the tree. The row is kept rather than deleted — a finding's closure is a reading, and the reading held when it was taken |
+| FROZEN-CLAIM-OVER-A-MUTABLE-DICT | for 5a, the mapping proxy wrapping `skill_model.FORNAX_FORMAT`'s family mapping | `test_validate_skills.SchemaImmutabilityTests.test_the_family_mapping_cannot_be_written_under_either_name` — it asserts the write raises and that `skill_model.FAMILIES` sees no new key afterwards. Both halves are needed: the binding shares the object, so a proxy on one name and not the other would pass the first assertion alone | **measured** — removing the proxy turns 2 red |
 | NAME-GRAMMAR-ENUMERATION-SHORT | for 2b, the `producer` group reading `schema.FormatSchema`'s name pattern instead of its own spelling | a case naming a producer the two spellings disagree on — a leading hyphen is admitted by one and refused by the other — asserted through `validate_skills.validate_record_inputs`, the consumer whose ownership moved, not through the pattern | not measured. 2a is the alternative repair and carries no guard: it extends a sentence |
 | SCHEMA-STOPS-SHORT-OF-THE-MAP | for the landed half of 3c, the filling threaded into `distribution_manifest.validate_distribution` | `test_validate_skills.SchemaSeamTests.test_a_run_carries_one_filling_into_both_halves` — it reads one tree under two fillings that disagree about a leading hyphen, the disagreement this repository's own two name spellings already carry | **measured** — making the distribution check read the binding again turns 1 red. **Partial**: 3c's Reach also named `skill_graph.load`, which is not threaded. That half is held back by the carve-out assessment, which puts `skill_graph` outside the extracted set for want of a second consumer, so the map generator stays pinned to `FORNAX_FORMAT` by decision rather than by omission |
 | DEFAULTS-ON-THE-INNER-CHECKS | for 4a, the removal of the default from the three inner checks | `test_validate_skills.FillingAskedNotDefaulted.test_an_inner_check_will_not_supply_a_filling_of_its_own` — it calls the manifest check without a filling and asserts it refuses. The signal is weak by construction: the caller passes positionally either way, so what the case holds is the refusal and not any difference in what the validator answers | **measured** — restoring the default on the manifest check turns 1 red |
@@ -562,6 +562,15 @@ Sixteen findings accepted. Two were repaired before this section existed, becaus
 the mechanism holding the package boundary and the other was the table this section sits beside;
 their rows say measured and name what was measured. The rest are prose about a state that changed,
 a reading recorded in the wrong place, or a suite-side default, and are prospective.
+
+**The `FROZEN-CLAIM-OVER-A-MUTABLE-DICT` row, superseded from here.** Its repair is no longer in
+the tree: the guarantee moved from the declared value to the type, under
+`MAPPING-NOT-PROXIED-BY-TYPE`, so reverting the hand-proxy that row names finds nothing to revert.
+Its reading — 2 red, on the tree it was taken on — is restored to what it said, having been
+overwritten in place once. A row's reading is what was measured and is not corrected by a later
+tree; what a later tree can do is say, from its own section, that the instruction no longer runs.
+That is what this paragraph is, and the file already demonstrated the form before this round did it
+the other way.
 
 | Finding | Revert this, once its repair lands | Guard | Red on revert |
 |---|---|---|---|
