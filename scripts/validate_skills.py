@@ -41,15 +41,19 @@ import re
 import sys
 from pathlib import Path, PurePosixPath
 
-from diagnostic_text import printable
+from agent_skill_format.diagnostic_text import printable
 from distribution_manifest import validate_distribution
 
-from host_paths import has_parent_segment_anywhere, is_absolute_anywhere
-from markdown_links import iter_markdown_links, local_target
-from path_boundary import Boundary, Verdict, resolve_within
-from skill_interface import INTERFACE_FILE, InterfaceError, load as load_interface
+from agent_skill_format.host_paths import has_parent_segment_anywhere, is_absolute_anywhere
+from agent_skill_format.markdown_links import iter_markdown_links, local_target
+from agent_skill_format.path_boundary import Boundary, Verdict, resolve_within
+from agent_skill_format.skill_interface import (
+    INTERFACE_FILE,
+    InterfaceError,
+    load as load_interface,
+)
 from skill_model import FORNAX_FORMAT, FormatSchema, listed
-from skill_yaml import (
+from agent_skill_format.skill_yaml import (
     Shape,
     declares_key,
     declares_value,

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-import markdown_links
+from agent_skill_format import markdown_links
 
 
 class MarkdownLinksTests(unittest.TestCase):

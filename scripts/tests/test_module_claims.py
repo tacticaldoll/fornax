@@ -19,22 +19,45 @@ import sys
 import unittest
 from pathlib import Path
 
-import workspace_files
+from agent_skill_format import workspace_files
 
 CLAIM = "Standard library only"
 SCRIPTS = Path(__file__).resolve().parent.parent
-LOCAL = {path.stem for path in SCRIPTS.glob("*.py")}
+PACKAGE = "agent_skill_format"
+#: Every module a claim can be made about, by the name another module imports it under.
+#: The package is walked with the top directory because a module that moved into it did
+#: not stop making the claim, and a glob of the top alone would have stopped checking it
+#: while the sentence stayed in the file — the exact staleness this suite exists for.
+MODULES = {
+    path.stem: path
+    for path in sorted([*SCRIPTS.glob("*.py"), *(SCRIPTS / PACKAGE).glob("*.py")])
+    if path.stem != "__init__"
+}
+LOCAL = set(MODULES)
 STDLIB = set(sys.stdlib_module_names)
 
 
 def imports(module: str) -> set[str]:
-    tree = ast.parse((SCRIPTS / f"{module}.py").read_text(encoding="utf-8"))
+    """The names one module imports, with a package import read as the module it names.
+
+    `from agent_skill_format.read_whole import whole` reaches a sibling, not a third
+    party, and taking the first dotted segment would have called the whole package one
+    installed dependency — every claim in the tree false in the same breath, which is
+    louder than the silence this suite was written against but no more correct.
+    """
+    tree = ast.parse(MODULES[module].read_text(encoding="utf-8"))
     found: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             found |= {alias.name.split(".")[0] for alias in node.names}
         elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
-            found.add(node.module.split(".")[0])
+            head, _, rest = node.module.partition(".")
+            if head != PACKAGE:
+                found.add(head)
+            elif rest:
+                found.add(rest.split(".")[0])
+            else:
+                found |= {alias.name for alias in node.names}
     return found - {"__future__"}
 
 
@@ -117,8 +140,8 @@ def entry_point_out_of_place(source: str) -> bool:
 class ModuleClaimTests(unittest.TestCase):
     def test_every_standard_library_only_claim_is_true(self) -> None:
         claiming = sorted(
-            path.stem
-            for path in SCRIPTS.glob("*.py")
+            stem
+            for stem, path in MODULES.items()
             if CLAIM in path.read_text(encoding="utf-8")
         )
 

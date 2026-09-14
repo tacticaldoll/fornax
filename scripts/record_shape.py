@@ -57,17 +57,17 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
-from outcome import paired
+from agent_skill_format.outcome import paired
 
-from diagnostic_text import printable
+from agent_skill_format.diagnostic_text import printable
 import contract_revision
-from markdown_links import (
+from agent_skill_format.markdown_links import (
     heading_section,
     heading_texts,
     marked_code_blocks,
     table_rows,
 )
-from read_whole import Unread, whole
+from agent_skill_format.read_whole import Unread, whole
 
 ROOT = Path(__file__).resolve().parent.parent
 

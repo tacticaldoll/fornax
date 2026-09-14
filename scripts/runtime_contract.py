@@ -36,9 +36,9 @@ from typing import Callable
 import yaml
 from packaging.requirements import InvalidRequirement, Requirement
 
-from diagnostic_text import printable
+from agent_skill_format.diagnostic_text import printable
 import shell_script
-from read_whole import COMMENT, Unread, shell_words
+from agent_skill_format.read_whole import COMMENT, Unread, shell_words
 
 
 ROOT = Path(__file__).resolve().parent.parent

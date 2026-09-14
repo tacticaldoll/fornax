@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from path_boundary import Boundary, Verdict, resolve_within
+from agent_skill_format.path_boundary import Boundary, Verdict, resolve_within
 
 
 class PathBoundaryTests(unittest.TestCase):

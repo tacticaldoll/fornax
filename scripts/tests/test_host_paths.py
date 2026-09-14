@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from host_paths import has_parent_segment_anywhere, is_absolute_anywhere
+from agent_skill_format.host_paths import has_parent_segment_anywhere, is_absolute_anywhere
 
 
 class HostPathTests(unittest.TestCase):

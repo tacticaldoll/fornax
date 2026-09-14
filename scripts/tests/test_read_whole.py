@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import unittest
 
-import read_whole
+from agent_skill_format import read_whole
 import shell_script
 
 PIN = re.compile(r"([A-Za-z0-9][A-Za-z0-9._-]*)==([0-9][0-9A-Za-z.!+*_-]*)")

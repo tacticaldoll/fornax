@@ -24,8 +24,8 @@ from pathlib import Path
 
 import yaml
 
-from diagnostic_text import printable
-from workspace_files import listed
+from agent_skill_format.diagnostic_text import printable
+from agent_skill_format.workspace_files import listed
 
 
 ROOT = Path(__file__).resolve().parent.parent

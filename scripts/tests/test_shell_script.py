@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import unittest
 
-import read_whole
+from agent_skill_format import read_whole
 import shell_script
 
 

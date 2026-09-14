@@ -37,7 +37,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from outcome import paired
+from agent_skill_format.outcome import paired
 
 WORKING_TREE = "the working tree"
 

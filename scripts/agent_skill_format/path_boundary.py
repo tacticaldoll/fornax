@@ -20,7 +20,7 @@ import enum
 from dataclasses import dataclass
 from pathlib import Path
 
-from outcome import paired
+from agent_skill_format.outcome import paired
 
 
 class Verdict(enum.Enum):

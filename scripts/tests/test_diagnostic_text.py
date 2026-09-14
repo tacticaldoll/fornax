@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from diagnostic_text import printable
+from agent_skill_format.diagnostic_text import printable
 
 ESC = chr(0x1B)
 CR = chr(0x0D)

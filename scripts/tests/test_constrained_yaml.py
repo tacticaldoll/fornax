@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import unittest
 
-import constrained_yaml
+from agent_skill_format import constrained_yaml
 
 
 class FixtureError(ValueError):

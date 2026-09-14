@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-import workspace_files
+from agent_skill_format import workspace_files
 
 
 class ListerTests(unittest.TestCase):

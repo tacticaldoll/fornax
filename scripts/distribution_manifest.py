@@ -21,10 +21,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from uuid import UUID
 
-from diagnostic_text import printable
-from read_whole import Unread, whole
+from agent_skill_format.diagnostic_text import printable
+from agent_skill_format.read_whole import Unread, whole
 from skill_model import FormatSchema
-from workspace_files import listed
+from agent_skill_format.workspace_files import listed
 
 
 def fail(message: str) -> None:

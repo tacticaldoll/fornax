@@ -36,7 +36,7 @@ from pathlib import Path
 import generated_block
 from generated_block import BlockError, Markers, Rendered
 from skill_model import FAMILIES, HANDOFF, listed
-from skill_yaml import get_top_level_yaml_value, parse
+from agent_skill_format.skill_yaml import get_top_level_yaml_value, parse
 
 ROOT = Path(__file__).resolve().parent.parent
 MARKERS = Markers("SKILL-MAPS", "scripts/skill_graph.py")

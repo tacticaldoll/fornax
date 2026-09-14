@@ -26,7 +26,7 @@ from urllib.parse import unquote
 from markdown_it import MarkdownIt
 from markdown_it.token import Token
 
-from host_paths import is_absolute_anywhere
+from agent_skill_format.host_paths import is_absolute_anywhere
 
 
 EXTERNAL_SCHEME = re.compile(r"^[a-z][a-z0-9+.-]*:", re.IGNORECASE)

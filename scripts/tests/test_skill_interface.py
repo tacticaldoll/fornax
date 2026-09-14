@@ -7,7 +7,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import fixtures
-import skill_interface
+from agent_skill_format import skill_interface
 
 PUBLISHER = fixtures.PUBLISHER_ID
 RECORD = f"{PUBLISHER}/review-record@1 text/markdown"

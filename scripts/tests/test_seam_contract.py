@@ -11,7 +11,7 @@ from unittest.mock import patch
 import fixtures
 import generated_block
 import seam_contract
-import skill_interface
+from agent_skill_format import skill_interface
 
 PUBLISHER = fixtures.PUBLISHER_ID
 RECORD = f"{PUBLISHER}/review-record@1 text/markdown"

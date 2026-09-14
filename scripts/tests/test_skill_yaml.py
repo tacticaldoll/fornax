@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from skill_yaml import (
+from agent_skill_format.skill_yaml import (
     Document,
     Shape,
     Unreadable,

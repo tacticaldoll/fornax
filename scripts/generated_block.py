@@ -27,7 +27,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from diagnostic_text import printable
+from agent_skill_format.diagnostic_text import printable
 
 
 class BlockError(Exception):

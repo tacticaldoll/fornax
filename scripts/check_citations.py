@@ -47,10 +47,10 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from outcome import paired
+from agent_skill_format.outcome import paired
 
-from diagnostic_text import printable
-from markdown_links import prose_lines
+from agent_skill_format.diagnostic_text import printable
+from agent_skill_format.markdown_links import prose_lines
 
 ROOT = Path(__file__).resolve().parent.parent
 

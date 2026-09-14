@@ -12,7 +12,7 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 import fixtures
-import path_boundary
+from agent_skill_format import path_boundary
 import skill_model
 import distribution_manifest
 import validate_skills

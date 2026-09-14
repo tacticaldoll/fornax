@@ -48,7 +48,7 @@ from dataclasses import dataclass
 
 import yaml
 
-from outcome import paired
+from agent_skill_format.outcome import paired
 
 
 class Shape(enum.Enum):

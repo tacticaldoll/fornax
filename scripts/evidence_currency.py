@@ -36,12 +36,12 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from constrained_yaml import raw_scalar
-from diagnostic_text import printable
-from host_paths import has_parent_segment_anywhere, is_absolute_anywhere
-from markdown_links import heading_section
-from outcome import paired
-from path_boundary import Boundary, Verdict, resolve_within
+from agent_skill_format.constrained_yaml import raw_scalar
+from agent_skill_format.diagnostic_text import printable
+from agent_skill_format.host_paths import has_parent_segment_anywhere, is_absolute_anywhere
+from agent_skill_format.markdown_links import heading_section
+from agent_skill_format.outcome import paired
+from agent_skill_format.path_boundary import Boundary, Verdict, resolve_within
 
 
 ROOT = Path(__file__).resolve().parent.parent

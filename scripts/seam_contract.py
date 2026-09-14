@@ -34,9 +34,9 @@ from pathlib import Path
 
 import generated_block
 from generated_block import BlockError, Markers, Rendered
-from markdown_links import heading_texts, marked_code_blocks
-from read_whole import Unread, whole
-from skill_interface import (
+from agent_skill_format.markdown_links import heading_texts, marked_code_blocks
+from agent_skill_format.read_whole import Unread, whole
+from agent_skill_format.skill_interface import (
     INTERFACE_FILE,
     InterfaceError,
     RecordIdentity,

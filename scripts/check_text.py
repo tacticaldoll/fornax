@@ -7,11 +7,11 @@ import enum
 from dataclasses import dataclass
 from pathlib import Path
 
-from diagnostic_text import printable
-from host_paths import is_absolute_anywhere
-from markdown_links import iter_markdown_links, local_target
-from path_boundary import Boundary, Verdict, resolve_within
-from workspace_files import listed
+from agent_skill_format.diagnostic_text import printable
+from agent_skill_format.host_paths import is_absolute_anywhere
+from agent_skill_format.markdown_links import iter_markdown_links, local_target
+from agent_skill_format.path_boundary import Boundary, Verdict, resolve_within
+from agent_skill_format.workspace_files import listed
 
 
 ROOT = Path(__file__).resolve().parent.parent

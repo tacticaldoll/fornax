@@ -9,7 +9,7 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 import record_shape
-from markdown_links import heading_section, marked_code_blocks, table_rows
+from agent_skill_format.markdown_links import heading_section, marked_code_blocks, table_rows
 
 TEMPLATE = """# Triage
 

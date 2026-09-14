@@ -23,8 +23,8 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from constrained_yaml import raw_scalar
-from diagnostic_text import printable
+from agent_skill_format.constrained_yaml import raw_scalar
+from agent_skill_format.diagnostic_text import printable
 
 
 ROOT = Path(__file__).resolve().parent.parent

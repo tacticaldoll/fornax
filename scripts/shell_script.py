@@ -46,7 +46,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from read_whole import Unread
+from agent_skill_format.read_whole import Unread
 
 HEREDOC = "<<"
 QUOTES = ("'", '"')
