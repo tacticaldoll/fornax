@@ -35,15 +35,28 @@ PACKAGE = "agent_skill_format"
 _MODULES = check_citations.modules(SCRIPTS.parent)
 MODULES = dict(_MODULES.by_stem)
 LOCAL = set(MODULES)
-#: The modules on the package side of the boundary the carve-out is for, split from the
-#: owner's map by path rather than found by a glob of the package's top directory. The
-#: glob was the first form and it did not hold: a module one level down imported across
-#: the boundary and the suite stayed green, because the set the assertion below subtracts
-#: from never contained it. Splitting the owner's `rglob` makes the two sides complements
-#: of each other, so a module cannot be absent from both.
 PACKAGE_ROOT = SCRIPTS / PACKAGE
-PACKAGE_MODULES = {
-    stem for stem, path in MODULES.items() if path.is_relative_to(PACKAGE_ROOT)
+#: Every source file, and the two sides of the boundary as complements of it.
+#:
+#: Not taken from the map above, and the reason is the whole of this finding's history.
+#: That map answers "which stems can a citation name", which excludes a package marker
+#: because nobody writes `__init__.x`. The boundary asks a different question — which
+#: *files* sit on the package side — and a marker is a file that can import anything.
+#: Routing the second question through an owner built for the first dropped every
+#: `__init__.py` out of both sides at once, and a marker importing across the boundary
+#: left the suite green.
+#:
+#: One walk, two complements, is the property the assertion needs and the one the first
+#: form of this also lacked. Whether the owner's map and this walk agree about the
+#: non-marker files is not asserted: they are built from the same directory by the same
+#: recursion, and an assertion that they match would test `rglob` against itself.
+SOURCES = frozenset(SCRIPTS.rglob("*.py"))
+PACKAGE_SOURCES = frozenset(path for path in SOURCES if path.is_relative_to(PACKAGE_ROOT))
+#: The names a package module could import from outside it. A marker has no such name —
+#: `__init__` is not importable bare — so it is a subject of the assertion and never a
+#: target of it.
+OUTSIDE_NAMES = {
+    path.stem for path in SOURCES - PACKAGE_SOURCES if path.stem != "__init__"
 }
 STDLIB = set(sys.stdlib_module_names)
 
@@ -56,7 +69,12 @@ def imports(module: str) -> set[str]:
     installed dependency — every claim in the tree false in the same breath, which is
     louder than the silence this suite was written against but no more correct.
     """
-    tree = ast.parse(MODULES[module].read_text(encoding="utf-8"))
+    return imports_at(MODULES[module])
+
+
+def imports_at(path: Path) -> set[str]:
+    """The same question asked of a file, for the readers that have one and no stem."""
+    tree = ast.parse(path.read_text(encoding="utf-8"))
     found: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -196,18 +214,21 @@ class ModuleClaimTests(unittest.TestCase):
         the package is being extracted, and a signature naming a type that will not
         travel with it is an API defect at the moment of the split, not a comment.
 
-        The first form of this assertion had the defect it was written against. It
-        found the package side with a glob of one directory while the other side came
-        from the owner's whole-tree walk, so a module one level down belonged to
-        neither set and crossed the boundary with the suite green. Both sides come from
-        the one map now and are complements, which is the property a subtraction needs
-        and a pair of independent searches cannot promise.
-        """
-        outside = LOCAL - PACKAGE_MODULES
+        Two forms of this assertion have had the defect it was written against, and
+        both were the same mistake about what makes a subtraction safe. The first found
+        the package side with a glob of one directory against an other side from a
+        whole-tree walk, so a module one level down belonged to neither. The second took
+        both sides from the citation map, which drops package markers because no
+        citation can name one — and a marker is a file that imports like any other, so
+        every `__init__.py` left both sides at once and could cross in silence.
 
-        for module in sorted(PACKAGE_MODULES):
-            with self.subTest(module=module):
-                self.assertEqual(imports(module) & outside, set())
+        Both sides come from one walk of the files now. The subject is a path rather
+        than a module name, because a marker has a path and no name a citation would
+        use, and it was the name that kept losing it.
+        """
+        for path in sorted(PACKAGE_SOURCES):
+            with self.subTest(module=path.relative_to(SCRIPTS).as_posix()):
+                self.assertEqual(imports_at(path) & OUTSIDE_NAMES, set())
 
     def test_the_check_sees_a_package_reached_through_a_sibling(self) -> None:
         # The failure that motivated this was transitive, so a direct-import check
