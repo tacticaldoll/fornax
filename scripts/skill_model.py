@@ -25,11 +25,19 @@ suite, so it is not here — a name kept for nobody is worse than its absence.
 
 `NAME_PATTERN` is the shape a skill folder and the collection both take. Note that
 the repository spells this rule in more than one place — `^[a-z0-9-]+$` here,
-`^[a-z0-9]+(?:-[a-z0-9]+)*$` in development_knowns.py, and the same inline in
-skill_interface.py's record pattern — and the first admits a leading, trailing or
-doubled hyphen that the others reject. Unifying them changes what validates, so it is
-a decision, not a cleanup. Gathering the values into a schema does not make that
-decision: the other spellings stay where they are, outside this owner, deliberately.
+`^[a-z0-9]+(?:-[a-z0-9]+)*$` in development_knowns.py, the same inline in
+skill_interface.py's record pattern and in seam_contract.py's template marker, the
+same again in the producer group of validate_skills.py's record-input pattern, and
+`[a-z0-9-]+` once more in the capture group of `handoff` below — and the first admits a
+leading, trailing or doubled hyphen that the others reject. Unifying them changes what
+validates, so it is a decision, not a cleanup. Gathering the values into a schema does
+not make that decision: the other spellings stay where they are, outside this owner,
+deliberately.
+
+The enumeration is the part that has to grow when this owner does, and it did not: the
+schema took the pattern and the sentence still named the two spellings it named before,
+while a third sat inside the same file the schema was extracted from and a fourth beside
+the field itself.
 
 `HANDOFF` binds `FORNAX_FORMAT.handoff`, so the validator and the map generator
 agree on what counts as a handoff. Cross-skill record
