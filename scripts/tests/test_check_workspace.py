@@ -10,6 +10,12 @@ import check_workspace
 
 
 class WorkspaceChecks(unittest.TestCase):
+    def test_agent_skills_baseline_is_a_required_step(self) -> None:
+        matching = [step for step in check_workspace.STEPS if step.label == "Agent Skills baseline"]
+
+        self.assertEqual(len(matching), 1)
+        self.assertEqual(matching[0].argv, ("scripts/check_agent_skills.py",))
+
     @patch("check_workspace.subprocess.run")
     def test_all_steps_are_dispatched_and_success_is_reported(self, run: Mock) -> None:
         run.return_value.returncode = 0

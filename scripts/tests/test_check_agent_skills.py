@@ -9,6 +9,44 @@ from agent_skill_builder.validation import validate_skill
 
 
 class AdapterTests(TestCase):
+    def test_repository_profile_rejects_each_declared_constraint(self) -> None:
+        profile = load_profile(check_agent_skills.ROOT / "profiles" / "fornax.yaml")
+        cases = (
+            (
+                "missing-manifest",
+                "Use when an agent needs to test a missing manifest.",
+                "**Input**: A request — ask when ambiguous.\n",
+                False,
+                "profile-required-file-missing",
+            ),
+            (
+                "wrong-description",
+                "Test a description without the Fornax opening.",
+                "**Input**: A request — ask when ambiguous.\n",
+                True,
+                "profile-description-prefix",
+            ),
+            (
+                "missing-input",
+                "Use when an agent needs to test a missing input contract.",
+                "No input contract here.\n",
+                True,
+                "profile-markdown-label-missing",
+            ),
+        )
+        for name, description, body, manifest, expected in cases:
+            with self.subTest(expected=expected), TemporaryDirectory() as temporary:
+                skill = Path(temporary) / name
+                skill.mkdir()
+                (skill / "SKILL.md").write_text(
+                    f"---\nname: {name}\ndescription: {description}\n---\n\n{body}",
+                    encoding="utf-8",
+                )
+                if manifest:
+                    (skill / "skill.yaml").write_text(f"name: {name}\n", encoding="utf-8")
+                result = validate_skill(skill, profile)
+                self.assertIn(expected, {finding.code for finding in result.findings})
+
     def test_collection_template_renders_through_declared_slots(self) -> None:
         with TemporaryDirectory() as temporary:
             target = create_skill(
