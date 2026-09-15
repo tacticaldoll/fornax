@@ -275,3 +275,15 @@ knowns:
       - Group consumers under one record block solely to deduplicate identical producer element tables.
     reconsider-when: Repetition materially impairs review or the inventory changes from seam-oriented to record-oriented.
     updated: 2026-08-18
+  - id: commits-that-no-round-reviewed
+    statement: A stretch of commits sits inside no round's range, so a feat and several fixes reached main without ever passing a review.
+    kind: debt
+    treatment: accept
+    rationale: Round ranges do not tile, and the gap between one round's end and the next round's base belonged to neither. A retrospective review is possible for code that still stands, but its record would be a reconstruction rather than a record of what a round decided, which is the reason AGENTS.md gives for recording an unsettleable round once instead of settling it late.
+    evidence:
+      - Computed on 2026-09-15 over v0.4.1..main by expanding every docs/dispositions and docs/reviews range against git rev-list; these commits appear in no range of either set - 8a45707, ebf16c7, f7603ae, 616040c, 0028a14, 223fe6b, 9b78060, 9d8085a, 93d3d97, f06a1df, 8dc34ca, d54813e, 8a3bfcd, 6b681d8, d12997d, f7641af, 8d92ff7, 939e637.
+      - The substantive ones are 9b78060 (feat), 9d8085a, 8dc34ca, 8a3bfcd and f7641af (fix); the rest are settle commits and documentation.
+      - The same measurement found no gap that a later round silently absorbed, so the stretch is bounded and does not grow on its own.
+    verification: scripts/round_chain.py reads the Prior round field and so keeps the chain from skipping a round, which is what let the gap open; it does not compute coverage, because a commit outside every range is not by itself a hole once ranges are allowed to overlap.
+    reconsider-when: A reviewer wants one of the named fix or feat commits read, or a rule is proposed that would require ranges to tile after all.
+    updated: 2026-09-15
