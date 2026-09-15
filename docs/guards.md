@@ -663,6 +663,16 @@ that round's decision and this is the turn that repairs.
 |---|---|---|---|
 | REVISION-READ-AS-AN-OPTION | — | none, and none possible: a control that distinguishes the repaired call from the unrepaired one does not exist, because git answers both the same. The re-runnable reading is the measurement above — run `git rev-parse --verify --quiet` over a hyphen-leading revision with and without the separator and compare exit and output | **measured** — no difference in either |
 
+## Written 2026-09-15, prospective — the `v0.4.1..f90f17f` round, no repair landed yet
+
+One finding accepted, from a review that opened no gate and reached it through the contract track.
+Its repair has not landed, so the row is prospective; the two declines that round recorded need no
+row, one being excluded by the guide and the other already measured above.
+
+| Finding | Revert this, once its repair lands | Guard | Red on revert |
+|---|---|---|---|
+| COMMANDS-JOIN-AN-INLINE-COMMENT | whichever answer lands in `shell_script.commands` — the refusal of a multi-line script carrying an unquoted hash, or the stop on joining a line whose trailing backslash follows one | a `test_shell_script` case built from the falsifier that found it: a line ending in an inline comment and a backslash, followed by a command, asserting the reader does not return them joined. The oracle is bash, which runs the two separately | not measured |
+
 ## Repairs with no guard, and why
 
 | Finding | Why nothing goes red |
