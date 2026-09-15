@@ -194,15 +194,18 @@ def neighbours(records: list[Record], history: History) -> list[tuple[Record, Re
     """Pair each round with the round before it, second readings left out of the chain.
 
     A second reading settles the range it re-reads, in the same turn, so it is part of
-    that round rather than a round of its own — and the chain runs between rounds. The
-    records say so themselves: every round following a second reading names the first
-    reading, not the second, and one second reading has no first reading kept beside it
-    at all. Sorting them into the chain instead produced a failure against each of those
-    rounds, which is the ordering being wrong rather than the records.
+    that round rather than a round of its own — and the chain runs between rounds.
+    Sorting them into the chain produced a failure against every round that follows one,
+    which is the ordering being wrong rather than the records.
 
-    So their own field is not read either. The two kept here disagree about what a second
-    reading points at — one names the round before the range, one names the reading it
-    re-reads — and nothing downstream consumes either, so this reports neither.
+    Which record of a twice-read round a later round may name is `names_for`'s, and is
+    not restated here. This docstring did restate it, as a claim that such rounds all
+    name the reading rather than the second reading, and a record in the tree refutes
+    that — the two statements came apart because there were two.
+
+    Their own field is not read. The records kept here disagree about what a second
+    reading points at — one names the round before the range, another names the reading
+    it re-reads — and nothing downstream consumes either, so this reports neither.
     """
     placed = {
         record.name: history.place(record.head)
