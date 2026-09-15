@@ -22,6 +22,7 @@ rather than shortened into one it can.
 
 from __future__ import annotations
 
+import argparse
 import re
 import subprocess
 import sys
@@ -29,7 +30,9 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
+import generated_block
 from agent_skill_format.read_whole import Unread, Whole, whole
+from generated_block import Markers, Rendered
 from markdown_it import MarkdownIt
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -49,6 +52,36 @@ RECORD_NAME = re.compile(
 )
 
 PARSER = MarkdownIt("commonmark")
+
+GUIDE = "AGENTS.md"
+MARKERS = Markers("ROUND-CHAIN-RULE", "scripts/round_chain.py")
+LABEL = "round chain rule"
+
+#: What this check enforces, written from the constants that shape it rather than beside
+#: them. The clauses were prose in the guide, prose in a docstring and prose in a settled
+#: record, with the code as one more version, and the versions disagreed on the day they
+#: landed — the shape `AGENTS.md` names for written counts and for the gate step list,
+#: grown back in the module built to remove it. A rename of the suffix, the field or the
+#: branch now rewrites the guide on the next `--write` and fails `--check` until it does.
+RULE = (
+    f"A round record is named for the range it settled, and `{FIELD}` names the record "
+    "whose reviewed head immediately precedes this one's.",
+    f"A second reading — the `{SECOND_READING}` suffix — settles the range it re-reads in "
+    "the same turn, so it sits outside the chain and its own field is not read.",
+    "Either record of a twice-read round identifies that round, so a later round may "
+    "name either of them, and which records settle one round is decided by resolving "
+    "their halves rather than by comparing what was written.",
+    f"A record name is read whole: an undeclared suffix is reported rather than parsed, "
+    f"and a head `{BRANCH}` does not hold is reported apart from one nothing resolves.",
+)
+
+
+def render() -> Rendered:
+    """The rule the check enforces, as the guide carries it."""
+    lines = [MARKERS.start, ""]
+    lines.extend(f"- {clause}" for clause in RULE)
+    lines.extend(["", MARKERS.end])
+    return Rendered("\n".join(lines))
 
 
 @dataclass(frozen=True)
@@ -286,5 +319,25 @@ def check(root: Path = ROOT) -> int:
     return report(failures)
 
 
+def main(argv: list[str] | None = None) -> int:
+    """Check the chain and the rule statement together, or rewrite the statement."""
+    parser = argparse.ArgumentParser(
+        description="Check the round chain, and the rule statement derived from it."
+    )
+    parser.add_argument(
+        "--write", action="store_true", help=f"splice the {LABEL} into {GUIDE}"
+    )
+    args = parser.parse_args(argv)
+    block = generated_block.Block(ROOT, Path(GUIDE), MARKERS, LABEL)
+    try:
+        spliced = block.sync(
+            argparse.Namespace(write=args.write, check=not args.write), render()
+        )
+    except generated_block.BlockError as error:
+        print(f"FAIL {error}", file=sys.stderr)
+        return 1
+    return spliced if args.write else max(spliced, check())
+
+
 if __name__ == "__main__":
-    raise SystemExit(check())
+    raise SystemExit(main())
