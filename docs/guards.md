@@ -643,6 +643,26 @@ doing is not, and the causes that drifted were all of the second kind.
 | PROSE-DOES-NOT-DESCRIBE-THE-CHECK | — | none by test while the rule is prose. Should 1b land, the generated block's own `--check` becomes the guard, and the revert is the generation | not measured |
 | CORRECTION-NOTE-OVERSTATES-THE-CHECK | — | none, and none possible while it stands. The unit is a paragraph in a settled record; what closes it is the paragraph saying what the check accepts. The re-runnable reading is to take its sentence about what the check fails on and run the check against a round named by the other spelling of a twice-read round | not measured, and not measurable by test |
 
+## Measured 2026-09-15, at the repair commits for the `014887b` round
+
+One accepted finding does not hold, and the measurement is here rather than in a silent decision not
+to repair it.
+
+`REVISION-READ-AS-AN-OPTION` claimed that a record name opening with a hyphen reaches git as an
+option rather than as a revision. Measured against the git this repository runs, with `-x`,
+`--upload-pack=...` and `-abbrev-ref` as the revision: `git rev-parse --verify --quiet` answers exit
+1 with no output for every one of them, and answers identically with `--end-of-options` added. The
+repair would change nothing a caller can observe, and its guard would be a test that passes before
+the repair as well as after — the suite that proves nothing, which this file exists to refuse.
+
+So the repair is declined on evidence the round did not have. The finding itself is left for the
+next round to close against this measurement rather than closed here, because closing a finding is
+that round's decision and this is the turn that repairs.
+
+| Finding | Revert this | Guard | Red on revert |
+|---|---|---|---|
+| REVISION-READ-AS-AN-OPTION | — | none, and none possible: a control that distinguishes the repaired call from the unrepaired one does not exist, because git answers both the same. The re-runnable reading is the measurement above — run `git rev-parse --verify --quiet` over a hyphen-leading revision with and without the separator and compare exit and output | **measured** — no difference in either |
+
 ## Repairs with no guard, and why
 
 | Finding | Why nothing goes red |
