@@ -502,6 +502,23 @@ Prefer lightweight tests that match the risk of the change.
   enforces this: it would need a git call no script here makes, for a failure that has happened in a
   producer's coverage line and not yet in a record.
 
+  Round ranges do not tile, and are not meant to. A range is a base and the head it
+  reviewed, where the base is whatever that round started from — the release tag through
+  one stretch of this history, the previous settle commit through another — so consecutive
+  ranges overlap, and a commit lying outside all of them is not by itself a hole in the
+  ledger. What carries the chain is the `Prior round` field: it names the record whose
+  reviewed head immediately precedes this one's. A second reading, settled in the same
+  turn as the record it re-reads, is the one declared exception and names that record
+  rather than its neighbour.
+
+  Stated because the field drifted and nothing caught it. One round's `Prior round` named
+  a record other than its neighbour, and every id the rounds it skipped had left open lost
+  its lifecycle home: no later record mentions them, and the round that skipped them
+  declared an older record's open set out of scope in their place. Measured over every
+  record kept here, no other field drifts except through the second-reading exception —
+  which is what makes this a rule the corpus already keeps, rather than a shape imposed on
+  it afterwards.
+
   Persist the Review Record too, under `docs/reviews/<range>.md`, and name it from the Disposition
   Record's `Source`. A disposition reconciles a producer's claims — its verdict, its finding count,
   its coverage — and can only do that against the text it was actually handed. When that text
