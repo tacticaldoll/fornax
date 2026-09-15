@@ -212,6 +212,16 @@ def names_for(round_record: Record, records: list[Record]) -> set[str]:
     }
 
 
+def report(failures: list[str]) -> int:
+    """The one exit: every failure found, whatever stopped the run from finding more."""
+    for failure in failures:
+        print(failure, file=sys.stderr)
+    if failures:
+        return 1
+    print("OK   round chain")
+    return 0
+
+
 def check(root: Path = ROOT) -> int:
     """Report every record whose `Prior round` is not the round before it."""
     directory = root / RECORDS
@@ -225,8 +235,12 @@ def check(root: Path = ROOT) -> int:
         records.append(read)
     history = read_history(root, records)
     if isinstance(history, str):
-        print(f"FAIL round chain - {history}", file=sys.stderr)
-        return 1
+        # Reported through the one exit below rather than returned from here. The
+        # records this already failed to read were collected above, and returning at
+        # this point dropped every one of them: the run that could say least about the
+        # tree was also the run that said least about what it had already found.
+        failures.append(f"FAIL round chain - {history}")
+        return report(failures)
     for record in records:
         placed = history.place(record.head)
         if not isinstance(placed, int):
@@ -238,12 +252,7 @@ def check(root: Path = ROOT) -> int:
                 f"FAIL {RECORDS}/{later.name} names {later.prior} as the round before "
                 f"it; the round before it is {earlier.name}"
             )
-    for failure in failures:
-        print(failure, file=sys.stderr)
-    if failures:
-        return 1
-    print("OK   round chain")
-    return 0
+    return report(failures)
 
 
 if __name__ == "__main__":

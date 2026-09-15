@@ -6,6 +6,10 @@ a valid alternate spelling of the same range. The revision halves are git's to r
 and the field is the markdown parser's to read, so neither is controlled here.
 """
 
+from contextlib import redirect_stderr
+from io import StringIO
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest import TestCase
 
 import round_chain
@@ -124,3 +128,19 @@ class AbsenceTests(TestCase):
 
     def test_a_revision_the_branch_holds_places_it(self) -> None:
         self.assertEqual(history("b", "a").place("a"), 1)
+
+
+class ExitTests(TestCase):
+    def test_an_unreadable_branch_still_reports_what_was_already_found(self) -> None:
+        # The run that can say least about the tree used to say least about its own
+        # findings too: it returned before printing the names it had failed to read.
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / round_chain.RECORDS).mkdir(parents=True)
+            (root / round_chain.RECORDS / "notes.md").write_text("", encoding="utf-8")
+            stderr = StringIO()
+            with redirect_stderr(stderr):
+                result = round_chain.check(root)
+        reported = stderr.getvalue()
+        self.assertEqual(result, 1)
+        self.assertIn("notes.md", reported)
