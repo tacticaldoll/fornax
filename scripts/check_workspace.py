@@ -95,6 +95,11 @@ STEPS = (
         "each Disposition Record's tables against the shape its contract declares",
         ("scripts/record_shape.py",),
     ),
+    Step(
+        "round chain",
+        "that each round record names the round before it",
+        ("scripts/round_chain.py",),
+    ),
     Step("python style", "Python style, at the pinned Ruff", ("-m", "ruff", "check", ".")),
     Step(
         "non-Python sources",

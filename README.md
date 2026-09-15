@@ -292,9 +292,10 @@ It runs these checks, in this order:
 10. tracked text hygiene and repository-local Markdown links
 11. that durable reasoning cites a symbol rather than a line number
 12. each Disposition Record's tables against the shape its contract declares
-13. Python style, at the pinned Ruff
-14. every non-Python source the repository ships, through its own parser
-15. the validation test suite
+13. that each round record names the round before it
+14. Python style, at the pinned Ruff
+15. every non-Python source the repository ships, through its own parser
+16. the validation test suite
 
 <!-- GATE-STEPS:END -->
 
