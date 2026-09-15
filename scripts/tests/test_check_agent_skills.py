@@ -1,6 +1,10 @@
+import builtins
+from contextlib import redirect_stderr
+from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import TestCase
+from unittest.mock import patch
 
 import check_agent_skills
 from agent_skill_builder.authoring import create_skill
@@ -113,3 +117,23 @@ class AdapterTests(TestCase):
             )
             result = check_agent_skills.main(root)
         self.assertEqual(result, 1)
+
+    def test_a_missing_baseline_names_the_command_that_installs_it(self) -> None:
+        # The near-miss the traceback gave instead: the module's own name. A reader who
+        # sees only that goes looking for the package, not for the environment the pin
+        # already names, which is the trip this message removes.
+        real_import = builtins.__import__
+
+        def refuse_the_builder(name, *args, **keywords):
+            if name == "agent_skill_builder.cli":
+                raise ImportError("No module named 'agent_skill_builder'")
+            return real_import(name, *args, **keywords)
+
+        stderr = StringIO()
+        with patch.object(builtins, "__import__", refuse_the_builder):
+            with redirect_stderr(stderr):
+                result = check_agent_skills.main()
+        reported = stderr.getvalue()
+        self.assertEqual(result, 1)
+        self.assertIn("uv pip sync", reported)
+        self.assertIn("requirements-maintenance.txt", reported)
