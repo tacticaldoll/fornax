@@ -9,6 +9,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The gate reads history, so a shallow clone makes it check something else.
+          # contract_revision asks git which contract a record was written against and
+          # falls back to the working tree's when it cannot, so every older record was
+          # judged against today's template; round_chain resolves each record's range and
+          # found no commit at all. Both were red here while the same gate ran green on a
+          # full clone, which is the one difference this workflow must not have.
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version-file: ".python-version"
