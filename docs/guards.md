@@ -627,6 +627,22 @@ the documentation finding has no executable guard.
 |---|---|---|---|
 | PROFILE-CONSTRAINTS-UNGUARDED | each of the three constraint fields in `profiles/fornax.yaml` | `test_check_agent_skills.AdapterTests.test_repository_profile_rejects_each_declared_constraint` | 1 subtest failure for each field removed |
 | GATE-PRESENCE-UNGUARDED | the `Agent Skills baseline` entry in `check_workspace.STEPS` | `test_check_workspace.WorkspaceChecks.test_agent_skills_baseline_is_a_required_step` | 1 |
+## Written 2026-09-15, prospective — the 014887b round, no repair landed yet
+
+Every finding this round accepted is listed. None of their repairs has landed, so every row is
+prospective. The split is sharp: what the check does is testable, what the check is described as
+doing is not, and the causes that drifted were all of the second kind.
+
+| Finding | Revert this, once its repair lands | Guard | Red on revert |
+|---|---|---|---|
+| FAILURES-DISCARDED-ON-AN-EARLIER-RETURN | the report of accumulated failures ahead of the early return in `round_chain.check` | a `test_round_chain` case giving a record an unreadable name while the branch cannot be listed, and asserting the name is still reported | not measured |
+| PLACE-COLLAPSES-TWO-ABSENCES | the distinct absence variants, back to one value in `round_chain.History` | a `test_round_chain` case giving one record a revision nothing resolves and another a revision off the branch, and asserting the two are reported differently | not measured |
+| BASE-RESOLVED-BUT-NEVER-READ, PRIOR-FIELD-COMPARES-ONLY-A-BASENAME | the resolved-identity comparison in `round_chain.names_for`, and the whole-path comparison in `round_chain.prior_field` | `test_round_chain.ChainTests` with a twice-read round spelled once in full and once abbreviated, and a field naming the same last segment under another directory | not measured |
+| REVISION-READ-AS-AN-OPTION | the end-of-options separator in `round_chain.read_history` | a `test_round_chain.RecordNameTests` case for a record whose base opens with a hyphen, asserting git reads it as a revision rather than an option | not measured |
+| DOCSTRING-REFUTED-BY-ITS-OWN-SIBLING, TOTAL-SPELLED-AS-A-WORD-IN-A-DOCSTRING | — | none by test. Both units are sentences in the `round_chain.neighbours` docstring, and no gate opens over what a docstring claims. The re-runnable reading for the first is to take the docstring's statement about rounds following a second reading and check it against the records; one of them refutes it. For the second it is to read the docstring for a total that describes the tree | not measured |
+| PROSE-DOES-NOT-DESCRIBE-THE-CHECK | — | none by test while the rule is prose. Should 1b land, the generated block's own `--check` becomes the guard, and the revert is the generation | not measured |
+| CORRECTION-NOTE-OVERSTATES-THE-CHECK | — | none, and none possible while it stands. The unit is a paragraph in a settled record; what closes it is the paragraph saying what the check accepts. The re-runnable reading is to take its sentence about what the check fails on and run the check against a round named by the other spelling of a twice-read round | not measured, and not measurable by test |
+
 ## Repairs with no guard, and why
 
 | Finding | Why nothing goes red |
