@@ -63,19 +63,53 @@ class Record:
 
 
 @dataclass(frozen=True)
+class Unresolved:
+    """A revision this repository resolves to no commit at all."""
+
+    revision: str
+
+    def __str__(self) -> str:
+        return f"{self.revision}, which this repository resolves to no commit"
+
+
+@dataclass(frozen=True)
+class OffBranch:
+    """A revision that resolves, to a commit the reviewed branch does not hold."""
+
+    revision: str
+    name: str
+
+    def __str__(self) -> str:
+        return f"{self.revision}, which {BRANCH} does not hold"
+
+
+#: A place on the branch, or the reason there is none. The two absences are separate
+#: types because they call for different repairs and the caller has to say which it
+#: met: a name nothing resolves is a record naming a revision that was never written,
+#: and one the branch does not hold is a record naming a revision written elsewhere.
+#: Collapsing them reported the first as the second, which sent a reader looking on the
+#: branch for something no branch has.
+Placed = int | Unresolved | OffBranch
+
+
+@dataclass(frozen=True)
 class History:
     """Where each written revision sits on the branch the rounds reviewed."""
 
     #: Full object name of every commit on the branch, mapped to its distance from
-    #: that branch's head. A revision off the branch has no place here at all, which
-    #: is a different answer from a revision the branch holds at position zero.
+    #: that branch's head.
     order: Mapping[str, int]
     #: What each written revision resolves to, absent when nothing resolves it.
     resolved: Mapping[str, str]
 
-    def place(self, revision: str) -> int | None:
+    def place(self, revision: str) -> Placed:
         name = self.resolved.get(revision)
-        return None if name is None else self.order.get(name)
+        if name is None:
+            return Unresolved(revision)
+        position = self.order.get(name)
+        if position is None:
+            return OffBranch(revision, name)
+        return position
 
 
 def _git(root: Path, *arguments: str) -> str | None:
@@ -150,12 +184,13 @@ def neighbours(records: list[Record], history: History) -> list[tuple[Record, Re
     reading points at — one names the round before the range, one names the reading it
     re-reads — and nothing downstream consumes either, so this reports neither.
     """
-    rounds = [
-        record
+    placed = {
+        record.name: history.place(record.head)
         for record in records
-        if not record.second_reading and history.place(record.head) is not None
-    ]
-    ordered = sorted(rounds, key=lambda record: -history.place(record.head))
+        if not record.second_reading
+    }
+    rounds = [record for record in records if isinstance(placed.get(record.name), int)]
+    ordered = sorted(rounds, key=lambda record: -placed[record.name])
     return list(zip(ordered, ordered[1:]))
 
 
@@ -193,11 +228,9 @@ def check(root: Path = ROOT) -> int:
         print(f"FAIL round chain - {history}", file=sys.stderr)
         return 1
     for record in records:
-        if history.place(record.head) is None:
-            failures.append(
-                f"FAIL {RECORDS}/{record.name} reviewed {record.head}, which {BRANCH} "
-                "does not hold"
-            )
+        placed = history.place(record.head)
+        if not isinstance(placed, int):
+            failures.append(f"FAIL {RECORDS}/{record.name} reviewed {placed}")
     for earlier, later in neighbours(records, history):
         accepted = names_for(earlier, records)
         if later.prior not in accepted:

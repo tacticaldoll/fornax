@@ -15,11 +15,15 @@ RANGE = "8d92ff7..1e37d86"
 FIELD = "**Prior round**: `docs/dispositions/d12997d..7c88454.md`\n"
 
 
-def history(*heads: str) -> round_chain.History:
-    """Place *heads* on a branch, newest first, as `git rev-list` reports them."""
+def history(*heads: str, off_branch: tuple[str, ...] = ()) -> round_chain.History:
+    """Place *heads* on a branch, newest first, as `git rev-list` reports them.
+
+    A revision in *off_branch* resolves to a commit the branch does not carry, which
+    is the absence that reads alike as one nothing resolves at all until asked apart.
+    """
     return round_chain.History(
         order={f"full-{head}": position for position, head in enumerate(heads)},
-        resolved={head: f"full-{head}" for head in heads},
+        resolved={head: f"full-{head}" for head in (*heads, *off_branch)},
     )
 
 
@@ -102,3 +106,21 @@ class ChainTests(TestCase):
     def test_a_head_the_branch_does_not_hold_leaves_the_chain(self) -> None:
         records = [record("a..b.md"), record("b..c.md")]
         self.assertEqual(round_chain.neighbours(records, history("b")), [])
+
+
+class AbsenceTests(TestCase):
+    def test_a_revision_nothing_resolves_says_so(self) -> None:
+        absent = history("b").place("c")
+        self.assertIsInstance(absent, round_chain.Unresolved)
+        self.assertIn("resolves to no commit", str(absent))
+
+    def test_a_revision_the_branch_does_not_hold_says_so_differently(self) -> None:
+        # Same shape as the case above and a different repair: this revision exists
+        # and was written somewhere else, so a reader sent to look on the branch for
+        # it finds nothing and learns nothing.
+        elsewhere = history("b", off_branch=("c",)).place("c")
+        self.assertIsInstance(elsewhere, round_chain.OffBranch)
+        self.assertIn("does not hold", str(elsewhere))
+
+    def test_a_revision_the_branch_holds_places_it(self) -> None:
+        self.assertEqual(history("b", "a").place("a"), 1)
