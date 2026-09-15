@@ -27,7 +27,7 @@ import subprocess
 import sys
 from collections.abc import Mapping
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from agent_skill_format.read_whole import Unread, Whole, whole
 from markdown_it import MarkdownIt
@@ -102,6 +102,21 @@ class History:
     #: What each written revision resolves to, absent when nothing resolves it.
     resolved: Mapping[str, str]
 
+    def name_of(self, revision: str) -> str:
+        """The commit a written revision resolves to, or a tag that resolves to nothing.
+
+        An unresolved revision is tagged rather than returned as itself, so it can
+        equal another record that wrote it the same way and can never equal a commit.
+        Falling back to the written text would put the textual comparison back one
+        level down, where nothing would name it.
+        """
+        resolved = self.resolved.get(revision)
+        return resolved if resolved is not None else f"unresolved:{revision}"
+
+    def identity(self, record: "Record") -> tuple[str, str]:
+        """The pair of commits a record settles, resolved rather than as written."""
+        return (self.name_of(record.base), self.name_of(record.head))
+
     def place(self, revision: str) -> Placed:
         name = self.resolved.get(revision)
         if name is None:
@@ -136,7 +151,12 @@ def read_record(name: str, text: str) -> Record | Unread:
 
 
 def prior_field(text: str) -> str | None:
-    """The record `Prior round` names, taken from the parser that owns the markup."""
+    """The record `Prior round` names, taken from the parser that owns the markup.
+
+    The whole path is kept. Reducing it to the last segment made a field naming a
+    record under another directory compare equal to one naming a disposition, so the
+    chain would have accepted a pointer into a directory it does not run through.
+    """
     for token in PARSER.parse(text):
         if token.type != "inline" or not token.children:
             continue
@@ -149,7 +169,7 @@ def prior_field(text: str) -> str | None:
                 continue
             for follower in children[index + 2 :]:
                 if follower.type == "code_inline":
-                    return Path(follower.content).name
+                    return PurePosixPath(follower.content).as_posix()
     return None
 
 
@@ -194,8 +214,10 @@ def neighbours(records: list[Record], history: History) -> list[tuple[Record, Re
     return list(zip(ordered, ordered[1:]))
 
 
-def names_for(round_record: Record, records: list[Record]) -> set[str]:
-    """Every record name that identifies *round_record*, its second readings included.
+def names_for(
+    round_record: Record, records: list[Record], history: History
+) -> set[str]:
+    """Every path a later round may write to name *round_record*, second readings included.
 
     A range read twice is settled by more than one record, and the records disagree
     about which of them a later round should name: some name the reading, one names
@@ -203,12 +225,18 @@ def names_for(round_record: Record, records: list[Record]) -> set[str]:
     disagreement is a spelling this accepts rather than a drift to report. Choosing
     one spelling instead would have failed rounds whose field was never wrong —
     a rule manufacturing findings against records that kept the convention they had.
+
+    Which records settle one round is asked of `History.identity` rather than of the
+    text: git already resolved every half of every name for the placement above, and
+    comparing the written halves beside that resolver made one range spelled two ways
+    two rounds.
     """
-    return {round_record.name} | {
-        other.name
-        for other in records
-        if other.second_reading
-        and (other.base, other.head) == (round_record.base, round_record.head)
+    settled = history.identity(round_record)
+    return {
+        PurePosixPath(RECORDS / other.name).as_posix()
+        for other in (round_record, *records)
+        if other.name == round_record.name
+        or (other.second_reading and history.identity(other) == settled)
     }
 
 
@@ -246,7 +274,7 @@ def check(root: Path = ROOT) -> int:
         if not isinstance(placed, int):
             failures.append(f"FAIL {RECORDS}/{record.name} reviewed {placed}")
     for earlier, later in neighbours(records, history):
-        accepted = names_for(earlier, records)
+        accepted = names_for(earlier, records, history)
         if later.prior not in accepted:
             failures.append(
                 f"FAIL {RECORDS}/{later.name} names {later.prior} as the round before "

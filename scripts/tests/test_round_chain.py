@@ -19,15 +19,22 @@ RANGE = "8d92ff7..1e37d86"
 FIELD = "**Prior round**: `docs/dispositions/d12997d..7c88454.md`\n"
 
 
-def history(*heads: str, off_branch: tuple[str, ...] = ()) -> round_chain.History:
+def history(
+    *heads: str,
+    off_branch: tuple[str, ...] = (),
+    aliases: dict[str, str] | None = None,
+) -> round_chain.History:
     """Place *heads* on a branch, newest first, as `git rev-list` reports them.
 
     A revision in *off_branch* resolves to a commit the branch does not carry, which
     is the absence that reads alike as one nothing resolves at all until asked apart.
     """
+    resolved = {head: f"full-{head}" for head in (*heads, *off_branch)}
+    for spelling, meant in (aliases or {}).items():
+        resolved[spelling] = f"full-{meant}"
     return round_chain.History(
         order={f"full-{head}": position for position, head in enumerate(heads)},
-        resolved={head: f"full-{head}" for head in (*heads, *off_branch)},
+        resolved=resolved,
     )
 
 
@@ -69,7 +76,9 @@ class RecordNameTests(TestCase):
 
 class PriorFieldTests(TestCase):
     def test_the_field_is_read_through_its_markup(self) -> None:
-        self.assertEqual(round_chain.prior_field(FIELD), "d12997d..7c88454.md")
+        self.assertEqual(
+            round_chain.prior_field(FIELD), "docs/dispositions/d12997d..7c88454.md"
+        )
 
     def test_a_record_carrying_no_field_reports_none(self) -> None:
         self.assertIsNone(round_chain.prior_field("## Disposition Record\n"))
@@ -103,9 +112,34 @@ class ChainTests(TestCase):
         reading = record("a..b.md")
         second = record(f"a..b.{round_chain.SECOND_READING}.md")
         self.assertEqual(
-            round_chain.names_for(reading, [reading, second]),
-            {"a..b.md", f"a..b.{round_chain.SECOND_READING}.md"},
+            round_chain.names_for(reading, [reading, second], history("b", "a")),
+            {
+                "docs/dispositions/a..b.md",
+                f"docs/dispositions/a..b.{round_chain.SECOND_READING}.md",
+            },
         )
+
+    def test_one_range_spelled_two_ways_is_one_round(self) -> None:
+        # The halves resolve to the same commits and are written differently, which is
+        # what a full object name beside an abbreviation looks like. Comparing the text
+        # made this two rounds and failed the round after it.
+        reading = record("a..b.md")
+        second = record(f"aaaa..bbbb.{round_chain.SECOND_READING}.md")
+        settled = history("b", "a", aliases={"aaaa": "a", "bbbb": "b"})
+        self.assertEqual(
+            round_chain.names_for(reading, [reading, second], settled),
+            {
+                "docs/dispositions/a..b.md",
+                f"docs/dispositions/aaaa..bbbb.{round_chain.SECOND_READING}.md",
+            },
+        )
+
+    def test_a_field_naming_another_directory_is_not_accepted(self) -> None:
+        # The same last segment under a directory the chain does not run through. Read
+        # as a bare name it was indistinguishable from a disposition.
+        reading = record("a..b.md")
+        accepted = round_chain.names_for(reading, [reading], history("b"))
+        self.assertNotIn("docs/reviews/a..b.md", accepted)
 
     def test_a_head_the_branch_does_not_hold_leaves_the_chain(self) -> None:
         records = [record("a..b.md"), record("b..c.md")]
