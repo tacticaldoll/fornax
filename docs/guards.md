@@ -673,6 +673,28 @@ row, one being excluded by the guide and the other already measured above.
 |---|---|---|---|
 | COMMANDS-JOIN-AN-INLINE-COMMENT | whichever answer lands in `shell_script.commands` — the refusal of a multi-line script carrying an unquoted hash, or the stop on joining a line whose trailing backslash follows one | a `test_shell_script` case built from the falsifier that found it: a line ending in an inline comment and a backslash, followed by a command, asserting the reader does not return them joined. The oracle is bash, which runs the two separately | not measured |
 
+## Measured 2026-09-15, after pushing — a declined finding that holds after all
+
+`LOCAL-CI-EQUIVALENCE-UNGUARDED` was declined in the `939e637..014887b` round, on the reasoning that
+the guide's claim is about what is checked rather than about environment completeness, and that a
+local gate failing loudly is not a local gate passing quietly. Pushing refuted it.
+
+CI was red on a tree whose full gate ran green locally, and neither failure was about the change
+being pushed. The checkout fetched one commit, `contract_revision` could not ask git which contract
+each record was written against and fell back to the working tree's, so records were judged against
+a template they predate; `round_chain` resolved none of the ranges. Both steps read history, and CI
+was reading a different repository. The same redness was already on the commit this session started
+from, so it had been standing unexamined.
+
+So a green local run and a green CI run did not mean the same thing, in the direction that matters:
+green locally, red there, for reasons belonging to neither the change nor the checks. The decline's
+reasoning was about the wrong axis. `fetch-depth: 0` closes this instance; what stays open is that
+nothing compares the two environments, which is what the declined finding was about.
+
+| Finding | Revert this | Guard | Red on revert |
+|---|---|---|---|
+| LOCAL-CI-EQUIVALENCE-UNGUARDED | the `fetch-depth` setting on the checkout step | none by test in this repository — the difference appears only on a runner. The re-runnable reading is to clone this repository at depth 1 and run the workspace gate: the record shape and round chain steps fail on a tree whose full clone passes | **measured** — observed on the runner before and after the setting, red then green |
+
 ## Repairs with no guard, and why
 
 | Finding | Why nothing goes red |
