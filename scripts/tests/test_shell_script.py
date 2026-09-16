@@ -128,7 +128,7 @@ class Declined(unittest.TestCase):
 
 
 class LineHoldsNoNewline(unittest.TestCase):
-    """The invariant a reader of a `Command` is allowed to rely on."""
+    """The invariant a reader of a `read_whole.Line` is allowed to rely on."""
 
     def test_a_line_carrying_a_newline_cannot_be_built(self) -> None:
         with self.assertRaises(ValueError):
