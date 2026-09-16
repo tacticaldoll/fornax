@@ -287,3 +287,16 @@ knowns:
     verification: scripts/round_chain.py reads the Prior round field and so keeps the chain from skipping a round, which is what let the gap open; it does not compute coverage, because a commit outside every range is not by itself a hole once ranges are allowed to overlap.
     reconsider-when: A reviewer wants one of the named fix or feat commits read, or a rule is proposed that would require ranges to tile after all.
     updated: 2026-09-15
+  - id: a-guard-row-cannot-say-a-repair-never-happened
+    statement: A guard row reading "none by test" looks the same whether the repair landed and nothing reddens or the repair was never made, so an accepted finding can sit unrepaired with the ledger reporting nothing.
+    kind: defect
+    treatment: accept
+    rationale: The ledger records what a revert should turn red, which presumes something was done to revert. Where a finding's unit is a sentence, a name, or a row, no test can hold it and the row says so honestly - and that same honest answer is what a finding nobody touched also produces. The two states are indistinguishable on the page and nothing else in the tree compares an accepted repair against the code.
+    evidence:
+      - Measured on 2026-09-16 by opening gates over the units two accepted findings name. HELPER-NAMED-AS-A-TEST-CASE, accepted in the ebf16c7..48ce457 round, asked that a module-level helper lose the test prefix it was named with; test_module_claims still defines it under that name.
+      - OLD-TYPE-NAME-IN-TWO-DOCSTRINGS, accepted in the d12997d..7c88454 round, asked that a renamed type stop appearing under its old name; test_read_whole.words and test_shell_script.LineHoldsNoNewline still name it, and the first of those constructs the current type on the line below the sentence that misnames it.
+      - Both rows in docs/guards.md read as no test being possible, which is true of their units and says nothing about whether anything was done. Neither round's repair reached a commit, so not even a commit message records the gap.
+      - Two other findings from the same rounds were verified landed in the same pass, so the ledger is not wrong about everything - which is what makes the indistinguishable case hard to notice.
+    verification: None in the tree. What found these was a review that opened gates over the units an accepted finding names and asked whether the recorded cause still holds; nothing does that on a schedule, and the round that accepts a finding is not the round that would catch its repair never arriving.
+    reconsider-when: A round proposes comparing accepted findings against the code that should carry their repairs, or a guard row gains a state that distinguishes an unrepairable unit from an unrepaired one.
+    updated: 2026-09-16
