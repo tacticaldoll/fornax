@@ -671,7 +671,7 @@ row, one being excluded by the guide and the other already measured above.
 
 | Finding | Revert this, once its repair lands | Guard | Red on revert |
 |---|---|---|---|
-| COMMANDS-JOIN-AN-INLINE-COMMENT | whichever answer lands in `shell_script.commands` — the refusal of a multi-line script carrying an unquoted hash, or the stop on joining a line whose trailing backslash follows one | a `test_shell_script` case built from the falsifier that found it: a line ending in an inline comment and a backslash, followed by a command, asserting the reader does not return them joined. The oracle is bash, which runs the two separately | not measured |
+| COMMANDS-JOIN-AN-INLINE-COMMENT | the cut of the comment ahead of the backslash run in `shell_script.commands`, back to counting the run on the whole line | `test_shell_script.CommentDoesNotContinue.test_an_inline_comment_ending_in_a_backslash_continues_nothing`, built from the falsifier that found it. The oracle is bash, checked with `bash -x`, which runs the two separately | **measured** — 1 red on revert. The conservative answer, refusing any multi-line script carrying an unquoted hash, was declined: it would refuse the whole-line comments that already read correctly, which is a wide loss for a gap whose failing direction was already safe |
 
 ## Measured 2026-09-15, after pushing — a declined finding that holds after all
 

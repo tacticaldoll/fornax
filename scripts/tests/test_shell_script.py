@@ -42,6 +42,18 @@ class CommentDoesNotContinue(unittest.TestCase):
 
         self.assertEqual([c.text for c in found], ["pip install ruff==9.9.9"])
 
+    def test_an_inline_comment_ending_in_a_backslash_continues_nothing(self) -> None:
+        # The falsifier a review found this with, and the case the corpus did not hold:
+        # the comment opens partway along the line rather than at its start, so the
+        # whole-line branch never sees it and the trailing backslash joined the command
+        # below into a line bash never runs. Bash runs two here — measured with `bash -x`
+        # — and the install on the second line is what was being hidden.
+        found = shell_script.commands("echo ok # note \\\npip install ruff==9.9.9")
+
+        self.assertEqual(
+            [c.text for c in found], ["echo ok # note \\", "pip install ruff==9.9.9"]
+        )
+
     def test_an_indented_comment_is_a_comment(self) -> None:
         # The accepted-side control. The rule reads the stripped line, so narrowing it to
         # the line as written leaves this the only case that reddens.
