@@ -108,7 +108,7 @@ def third_party(module: str, seen: set[str] | None = None) -> set[str]:
 ROOT = SCRIPTS.parent
 
 
-def test_modules(root: Path) -> list[Path]:
+def workspace_test_modules(root: Path) -> list[Path]:
     """Every test module this workspace carries, as git sees it.
 
     Not a glob on one directory. The check read `scripts/tests` alone and said so
@@ -255,7 +255,7 @@ class EntryPointPlacement(unittest.TestCase):
     def test_every_test_module_places_its_entry_point_last(self) -> None:
         misplaced = [
             path.name
-            for path in test_modules(ROOT)
+            for path in workspace_test_modules(ROOT)
             if entry_point_out_of_place(path.read_text(encoding="utf-8"))
         ]
 
@@ -263,11 +263,11 @@ class EntryPointPlacement(unittest.TestCase):
 
     def test_the_set_reaches_every_tests_directory_the_workspace_holds(self) -> None:
         # The bound the glob left unstated: the CLI suite is a test module too.
-        found = {path.parent.name for path in test_modules(ROOT)}
+        found = {path.parent.name for path in workspace_test_modules(ROOT)}
 
         self.assertIn("tests", found)
         outside_scripts = {
-            path.relative_to(ROOT).parts[0] for path in test_modules(ROOT)
+            path.relative_to(ROOT).parts[0] for path in workspace_test_modules(ROOT)
         } - {"scripts"}
 
         self.assertEqual(outside_scripts, {"tools"})

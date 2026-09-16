@@ -394,7 +394,7 @@ hide a pin and fail loudly at `packaging` instead.
 | Finding | Revert this | Guard | Red on revert |
 |---|---|---|---|
 | ENTRY-POINT-CHECK-READS-ONE-SPELLING | the structural match in `test_module_claims.main_guard`, restoring the comparison of unparsed text against one literal | `test_module_claims.EntryPointPlacement.test_the_check_sees_the_guard_written_the_other_way_round` | 1 |
-| ENTRY-POINT-CHECK-BOUND-UNDECLARED | the workspace-wide set in `test_module_claims.test_modules`, restoring a glob on one directory | `test_module_claims.EntryPointPlacement.test_the_set_reaches_every_tests_directory_the_workspace_holds` | 1 |
+| ENTRY-POINT-CHECK-BOUND-UNDECLARED | the workspace-wide set in `test_module_claims.workspace_test_modules`, restoring a glob on one directory | `test_module_claims.EntryPointPlacement.test_the_set_reaches_every_tests_directory_the_workspace_holds` | 1 |
 
 The set comes from `workspace_files` now rather than from a glob, so the bound is git's and not a
 directory named here; the suite it used to miss is the CLI one, which is the suite `AGENTS.md`
