@@ -1,0 +1,72 @@
+schema: 1
+evidence:
+  - id: static-review-gate5-ledger
+    state: current
+    tests: skills/static-review/references/gates.md
+    section: "Gate 5: Responsibility & Boundaries"
+    fingerprint: 7f15415a7348fc5c
+    recorded: 2026-08-25
+    record: scripts/tests/scenarios/static-review/gate5-ledger/README.md
+  - id: static-review-gate5-ledger-spec
+    state: current
+    tests: skills/static-review/SKILL.md
+    section: "Phase 5: Report"
+    fingerprint: 6ec410fd0184aa64
+    recorded: 2026-08-25
+    record: scripts/tests/scenarios/static-review/gate5-ledger/README.md
+  - id: static-review-contract-inventory-phase3
+    state: current
+    tests: skills/static-review/SKILL.md
+    section: "Phase 3: Structural Extraction"
+    fingerprint: da68baf255e74c06
+    recorded: 2026-08-25
+    record: scripts/tests/scenarios/static-review/contract-inventory/README.md
+  - id: static-review-contract-inventory-phase4b
+    state: current
+    tests: skills/static-review/SKILL.md
+    section: "Phase 4b: Against-Contract Review (dual-track)"
+    fingerprint: 4648d01dd0bf16d1
+    recorded: 2026-08-25
+    record: scripts/tests/scenarios/static-review/contract-inventory/README.md
+  - id: triage-findings-fresh-context
+    state: superseded
+    tests: skills/triage-findings/SKILL.md
+    section: whole-file
+    recorded: 2026-08-17
+    record: scripts/tests/scenarios/triage-findings/README.md
+    superseded-reason: the whole-file fingerprint cannot be re-earned without a re-run, though no recorded signal measures behaviour the later wording changed; what postdates the runs is two branches the fixture cannot reach
+  - id: write-learning-report-form-precedence
+    state: superseded
+    tests: skills/write-learning-report/SKILL.md
+    section: "Structured expression"
+    recorded: 2026-09-16
+    record: scripts/tests/scenarios/write-learning-report/form-precedence/README.md
+    superseded-reason: the measured paragraph was rewritten the same day, when a review found it stated a tally of the rules it scopes rather than the property; the arms ran against the tally wording and cannot be re-earned for the replacement without a re-run
+  - id: write-learning-report-form-precedence-round2
+    state: superseded
+    tests: skills/write-learning-report/SKILL.md
+    section: "Structured expression"
+    recorded: 2026-09-16
+    record: scripts/tests/scenarios/write-learning-report/form-precedence/README.md
+    superseded-reason: the section's opening sentence was rewritten from a planning instruction to an output obligation, which is not the precedence paragraph these arms measured; the fingerprint is section-granular and cannot say that, so the claim goes superseded rather than being carried across text it did not read. The sibling entries for Rules and the Phase 5 gate stay current, which is how the registry locates what moved
+  - id: write-learning-report-form-precedence-round2-rules
+    state: superseded
+    tests: skills/write-learning-report/SKILL.md
+    section: "Rules"
+    recorded: 2026-09-16
+    record: scripts/tests/scenarios/write-learning-report/form-precedence/README.md
+    superseded-reason: claim-to-form selection replaces the unconditional four-form obligation and removes its precedence pointers; the earlier arms measured the previous Rules and do not establish behavior of the conditional selection
+  - id: write-learning-report-form-precedence-round2-gate
+    state: superseded
+    tests: skills/write-learning-report/SKILL.md
+    section: "Phase 5: Quality Gate"
+    recorded: 2026-09-16
+    record: scripts/tests/scenarios/write-learning-report/form-precedence/README.md
+    superseded-reason: the ratio row's pointer back to Phase 4 was reworded to match the two the Rules list carries, repairing a finding that one policy is asserted in independently worded sentences. The meaning is unchanged and the fingerprint cannot say so.
+  - id: write-learning-report-form-precedence-round3
+    state: superseded
+    tests: skills/write-learning-report/SKILL.md
+    section: "Structured expression"
+    recorded: 2026-09-17
+    record: scripts/tests/scenarios/write-learning-report/form-precedence/README.md
+    superseded-reason: the section gained a sentence declaring the wording each named rule carries back to it, which is the repair for the same finding. The arms measured the section without that sentence, and section-granular fingerprints cannot carry a result across text it did not read — the fourth time a prose repair has done this, which is the condition registered as evidence-fingerprint-is-section-granular.

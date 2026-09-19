@@ -1,0 +1,20 @@
+name: triage-findings
+family: implementation
+status: draft
+description: Use when an agent needs to decide what to do with a static review's findings before any fix is planned; groups findings into shared causes, lists the repairs each cause admits and enumerates what each one touches, and records a per-finding disposition that carries into the next review round, rather than sequencing the fixes, editing code, or re-reviewing it.
+triggers:
+  - a static review produced findings and the agent is about to start fixing them
+  - review findings keep reopening round after round instead of closing
+  - several findings look like symptoms of one underlying cause
+  - each round produces another minimal patch that never reaches the root cause
+  - user asks which findings to accept, decline, or defer, and what each repair would touch
+entrypoint: SKILL.md
+compatibility:
+  - openai-codex
+  - claude
+  - cursor
+  - generic-llm-agent
+  - antigravity
+  - github-copilot
+  - cline
+  - opencode

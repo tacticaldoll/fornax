@@ -1,0 +1,5 @@
+schema: agent-skill-builder/template/v1
+replacements:
+  name: replace-me
+  title: Replace Me
+  description-yaml: Use when an agent needs to perform a specific workflow. Replace this with clear trigger contexts and the capability this skill provides.

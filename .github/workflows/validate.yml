@@ -1,0 +1,24 @@
+name: validate
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+      - name: Install maintenance dependencies
+        run: pip install -r requirements-maintenance.txt
+      - name: Check workspace
+        run: python3 scripts/check_workspace.py
+      - name: Check the OpenCode plugin parses
+        run: node --input-type=module --check < .opencode/plugins/fornax.js
+      - name: Install deployment CLI and engine
+        run: pip install ./tools/fornax-cli
+      - name: Test deployment CLI
+        run: PYTHONPATH=tools/fornax-cli python3 -m unittest discover -s tools/fornax-cli/tests -v

@@ -1,0 +1,326 @@
+# Fornax
+
+**Skills that plan before they touch your code** — portable, single-purpose skills that orient,
+understand, design, plan, restructure, and review, but never edit behind your back.
+
+Fornax is a portable, multi-agent **skills registry**. Each skill is a small
+operation you apply to a codebase or a conversation to get one well-defined result — a plan, a map,
+a review, a decision, or a clarified intent. Skills **read / plan / report** rather than edit, so an
+agent can reason with them safely *before* it changes anything.
+
+Works across Claude Code, Codex, Cursor, Antigravity, and generic LLM agents. Installed as a Claude
+Code plugin, skills are namespaced under the brand: `/fornax:<skill>`.
+
+Each skill refines the **context** an agent holds — it separates and reorganizes what is there and
+never fabricates what is not, which is why it reports rather than edits. See
+[docs/identity.md](docs/identity.md) for the full thesis and naming rationale;
+[PROJECT.md](PROJECT.md) for standing decisions and non-goals; and [AGENTS.md](AGENTS.md) for
+authoring, versioning, and review rules.
+
+## The pipeline
+
+The codebase skills form one continuous arc — each stage hands off to the next:
+
+```text
+explore-intent → orient-repo → map-codebase → design-boundaries → plan-implementation → plan-split / plan-repo-extract → static-review
+   explore          orient       understand         design               plan                    restructure               review
+  (what/why)     (governance)   (how it works)    (boundaries)         (the work)               (split/extract)          (quality)
+```
+
+`static-review`'s findings return to the arc through [`triage-findings`](skills/triage-findings/),
+which groups them into causes, lists the repairs each cause admits with what each one touches, and
+routes the accepted work back into the arc — the arc's one feedback edge.
+
+The slugs are task-descriptive and say what each skill does.
+
+## Skills
+
+Grouped by `family` (see [docs/identity.md](docs/identity.md) and the skill maps below).
+
+**Implementation** — codebase work; produce a plan or report, do not edit code
+
+- [`explore-intent`](skills/explore-intent/) — explore intent and options through dialogue before building (a stance).
+- [`orient-repo`](skills/orient-repo/) — orient in an unfamiliar repo before acting, as a working brief.
+- [`map-codebase`](skills/map-codebase/) — map how an unfamiliar codebase or subsystem works.
+- [`design-boundaries`](skills/design-boundaries/) — design component boundaries before the code exists.
+- [`diagnose-issue`](skills/diagnose-issue/) — statically trace control and data flow to infer the root cause.
+- [`plan-implementation`](skills/plan-implementation/) — turn a goal into an ordered, verifiable implementation plan.
+- [`plan-testing`](skills/plan-testing/) — design a comprehensive test strategy for a feature or refactor.
+- [`plan-migration`](skills/plan-migration/) — plan a safe data migration or database schema change.
+- [`plan-split`](skills/plan-split/) — plan splitting a large or tangled code unit in place.
+- [`plan-repo-extract`](skills/plan-repo-extract/) — assess extracting a component into its own repository.
+- [`static-review`](skills/static-review/) — local, gate-based static code review.
+- [`triage-findings`](skills/triage-findings/) — decide which review findings to accept, and what each cause's repair would touch.
+- [`handle-feedback`](skills/handle-feedback/) — handle code-review feedback with rigor, not performative agreement (a stance).
+
+**Knowledge** — capture and shape conversation knowledge
+
+- [`assess-knowledge`](skills/assess-knowledge/) — assess a conversation for knowledge worth extracting.
+- [`write-learning-report`](skills/write-learning-report/) — turn mature conversation content into a learning report.
+- [`save-knowledge`](skills/save-knowledge/) — persist conversation knowledge into durable project, agent, or team sources.
+
+**Decisions & governance** — project-level judgment calls
+
+- [`assess-dependency`](skills/assess-dependency/) — decide whether to adopt a structural dependency.
+- [`assess-threats`](skills/assess-threats/) — identify trust boundaries and potential security vulnerabilities.
+- [`audit-governance`](skills/audit-governance/) — test governance prose against what the project actually enforces.
+- [`resolve-deadlock`](skills/resolve-deadlock/) — resolve conflicting requirements or a governance deadlock.
+
+**Meta** — skills about the toolkit itself
+
+- [`scope-new-skill`](skills/scope-new-skill/) — explore whether a workflow should become a skill.
+- [`harden-skill`](skills/harden-skill/) — harden a skill's instructions so the wording reliably changes behavior.
+
+## Skill maps
+
+Per-domain handoff graphs, generated from each skill's `family` and its `SKILL.md` handoffs by
+[scripts/skill_graph.py](scripts/skill_graph.py) — regenerate with `--write` after changing handoffs,
+and CI fails on a stale block. An edge that crosses into another domain is a hand-off to that
+domain's skills.
+
+<!-- SKILL-MAPS:START (generated by scripts/skill_graph.py — do not edit by hand) -->
+
+### Implementation
+
+```mermaid
+flowchart LR
+    design-boundaries
+    diagnose-issue
+    explore-intent
+    handle-feedback
+    map-codebase
+    orient-repo
+    plan-implementation
+    plan-migration
+    plan-repo-extract
+    plan-split
+    plan-testing
+    static-review
+    triage-findings
+    design-boundaries --> assess-dependency
+    design-boundaries --> plan-implementation
+    design-boundaries --> plan-repo-extract
+    design-boundaries --> plan-split
+    diagnose-issue --> map-codebase
+    explore-intent --> design-boundaries
+    explore-intent --> map-codebase
+    explore-intent --> plan-implementation
+    explore-intent --> scope-new-skill
+    handle-feedback --> design-boundaries
+    handle-feedback --> map-codebase
+    handle-feedback --> plan-implementation
+    handle-feedback --> triage-findings
+    map-codebase --> design-boundaries
+    map-codebase --> diagnose-issue
+    map-codebase --> orient-repo
+    map-codebase --> plan-split
+    map-codebase --> static-review
+    orient-repo --> audit-governance
+    orient-repo --> map-codebase
+    orient-repo --> plan-split
+    orient-repo --> save-knowledge
+    plan-implementation --> design-boundaries
+    plan-implementation --> map-codebase
+    plan-implementation --> plan-split
+    plan-implementation --> static-review
+    plan-repo-extract --> design-boundaries
+    plan-repo-extract --> plan-split
+    plan-split --> design-boundaries
+    plan-split --> plan-repo-extract
+    plan-split --> static-review
+    static-review --> assess-threats
+    static-review --> diagnose-issue
+    static-review --> plan-testing
+    static-review --> triage-findings
+    triage-findings --> design-boundaries
+    triage-findings --> diagnose-issue
+    triage-findings --> plan-implementation
+    triage-findings --> plan-split
+    triage-findings --> plan-testing
+    triage-findings --> static-review
+```
+
+### Knowledge
+
+```mermaid
+flowchart LR
+    assess-knowledge
+    save-knowledge
+    write-learning-report
+    save-knowledge --> write-learning-report
+```
+
+### Decisions & governance
+
+```mermaid
+flowchart LR
+    assess-dependency
+    assess-threats
+    audit-governance
+    resolve-deadlock
+    audit-governance --> assess-knowledge
+    audit-governance --> plan-split
+    audit-governance --> resolve-deadlock
+    audit-governance --> save-knowledge
+    resolve-deadlock --> audit-governance
+    resolve-deadlock --> plan-split
+    resolve-deadlock --> save-knowledge
+```
+
+### Meta (skills about the toolkit)
+
+```mermaid
+flowchart LR
+    harden-skill
+    scope-new-skill
+    harden-skill --> audit-governance
+    harden-skill --> scope-new-skill
+    scope-new-skill --> harden-skill
+```
+
+<!-- SKILL-MAPS:END -->
+
+## Design principles
+
+- **Portable first.** Stable workflow in `SKILL.md`, vendor-neutral manifest in `skill.yaml`. Skills
+  are host-neutral; host-specific discovery and install live at the packaging layer (root plugin
+  manifests), not per skill. Copy or vendor a skill folder without rewriting paths.
+- **Read / plan / report.** Skills produce plans, maps, and reviews and hand off execution — they do
+  not edit code or change state behind the user's back.
+- **Task-descriptive names.** Slugs say what the skill does; triggering rides the `description`, and
+  the `/fornax:` prefix adds a second layer of collision safety against built-ins.
+
+## Layout
+
+```text
+distribution.json       # canonical distribution identity and release version
+skills/<skill-name>/
+  skill.yaml            # portable discovery manifest
+  SKILL.md              # portable workflow (entrypoint)
+  skill-interface.yaml  # optional record handoff declaration
+  references/           # detail loaded on demand
+.claude-plugin/         # Claude Code plugin manifest (drives the /fornax: prefix)
+templates/skill/        # starting point for a new skill
+scripts/check_workspace.py
+```
+
+## Install
+
+Every `SKILL.md` follows the open [Agent Skills](https://agentskills.io) standard, so the skills run
+across many hosts. Treat each `skills/<skill-name>/` folder as the portable package boundary; see
+[docs/host-packaging.md](docs/host-packaging.md) for per-host details.
+
+To deploy the tagged release through one provenance-aware workflow without installing a permanent
+CLI command:
+
+```sh
+pipx run \
+  --spec "git+https://github.com/tacticaldoll/fornax.git@v0.6.0#subdirectory=tools/fornax-cli" \
+  fornax deploy --all
+```
+
+From a clone, build the command from the workspace instead and let the release number come from
+`distribution.json`, so no version is typed at all:
+
+```sh
+uvx --from ./tools/fornax-cli fornax deploy --all
+```
+
+Persistent `pipx` installation and the equivalent `uvx` commands are documented in
+[`tools/fornax-cli`](tools/fornax-cli/). Every entry point executes the same formal release
+pipeline and deploys the canonical remote tag; none of them deploys a local source checkout.
+
+- **Claude Code** — install as a plugin (`.claude-plugin/`); skills appear as `/fornax:<skill>`.
+- **Codex / Cursor** — install as a plugin (`.codex-plugin/`, `.cursor-plugin/`).
+- **OpenCode** — add `fornax@git+https://github.com/tacticaldoll/fornax.git` to `opencode.json`
+  (see [.opencode/INSTALL.md](.opencode/INSTALL.md)).
+- **Gemini CLI / Antigravity** — install as an extension (`gemini-extension.json`) from the Git
+  repository URL (both use `~/.gemini/extensions/`).
+- **GitHub Copilot CLI / Cline** — open-standard discovery: place skill folders in `.github/skills`,
+  `.agents/skills`, `.cline/skills`, `~/.copilot/skills`, or `~/.cline/skills` as appropriate.
+- **Git-based installers** — `gh skill`, `npx skills`, or `shskills` against this repo.
+
+## Add a skill
+
+Use the pinned `agent-skill-builder` to render the collection template, then replace any remaining
+Fornax policy placeholders:
+
+```sh
+.venv/bin/agent-skill init <skill-name> \
+  --parent skills \
+  --description "Use when an agent needs to ..." \
+  --template templates/skill
+```
+
+Write `skill.yaml` first (discovery metadata), then `SKILL.md` (the portable workflow). Use
+[docs/skill-types.md](docs/skill-types.md) to pick the dominant type,
+[docs/skill-yaml-schema.md](docs/skill-yaml-schema.md) for the manifest, and
+[docs/host-packaging.md](docs/host-packaging.md) for how host-specifics are packaged.
+Add the optional [portable interface sidecar](docs/skill-interface.md) only when another skill
+actually consumes or produces the declared record.
+
+## Validate
+
+Create the pinned Python 3.10 maintenance environment once per clone:
+
+```sh
+maintenance_python="$(cat .python-version)"
+uv python install "$maintenance_python"
+uv venv --python "$maintenance_python"
+uv pip sync --python .venv/bin/python requirements-maintenance.txt
+```
+
+One public command then runs all fast deterministic checks in CI and in the pre-commit hook once
+enabled with `git config core.hooksPath .githooks`:
+
+```sh
+.venv/bin/python scripts/check_workspace.py
+```
+
+It runs these checks, in this order:
+
+<!-- GATE-STEPS:START (generated by scripts/gate_steps.py — do not edit by hand) -->
+
+1. the maintenance runtime contract — `.python-version`, Ruff's target, and the running interpreter
+2. the standard Agent Skills contract plus Fornax's declarative profile
+3. production skill structure, including any optional interface sidecar
+4. the same structure for `templates/skill`
+5. the generated README skill maps
+6. the generated record-seam inventory
+7. the `development-knowns.yaml` registry
+8. recorded behavioural evidence against the prose it measured
+9. this list, derived from the gate rather than transcribed
+10. tracked text hygiene and repository-local Markdown links
+11. that durable reasoning cites a symbol rather than a line number
+12. Python style, at the pinned Ruff
+13. every non-Python source the repository ships, through its own parser
+14. the validation test suite
+
+<!-- GATE-STEPS:END -->
+
+Run it before installing, publishing, or copying skills. A stale generated block is fixed with its
+matching `--write` command.
+
+What stays CI-only needs what the pinned maintenance environment does not declare — Node for the
+OpenCode plugin, and the deployment engine for the CLI suite:
+
+```sh
+node --input-type=module --check < .opencode/plugins/fornax.js   # the OpenCode plugin parses
+# In the disposable CI-only CLI environment:
+pip install ./tools/fornax-cli                                  # the CLI declares the engine pin
+PYTHONPATH=tools/fornax-cli python3 -m unittest discover -s tools/fornax-cli/tests
+```
+
+The execution boundary is deliberate: the workspace gate, including the `agent-skill-builder`
+baseline, runs in CI and in the optional pre-commit hook; the deployment engine is installed only
+for the CI-only CLI tests and is not part of the maintenance environment or pre-commit hook. Run
+the CLI commands in a separate disposable environment when reproducing that CI-only step locally.
+
+| Check | CI | pre-commit |
+| --- | --- | --- |
+| Workspace gate and builder baseline | required | runs when the hook is enabled |
+| Deployment CLI and engine tests | required | not run |
+
+## License
+
+MIT — see [LICENSE](LICENSE).

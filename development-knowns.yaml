@@ -1,0 +1,253 @@
+schema: 1
+knowns:
+  - id: markdown-install-pins-unguarded
+    statement: Releases shipped install commands pinned to an earlier tag because nothing compared the documented pins to distribution.json.
+    kind: defect
+    treatment: resolved
+    rationale: The host manifests were checked for agreement while the commands a reader copies were not, so a release could bump every manifest, miss a pin, and stay green.
+    evidence:
+      - Earlier releases shipped README.md, .opencode/INSTALL.md and tools/fornax-cli/README.md still pinned to an older tag, so the documented install command resolved to an earlier release for eleven days.
+      - A later release corrected the pins by hand, and nothing prevented the same drift across every release after it.
+      - A pin rolled back to an earlier tag left every workspace check passing before the check existed.
+    verification: scripts/distribution_manifest.py reads every tracked Markdown file for a versioned install ref and requires it to match distribution.json; the rollback that used to pass now fails, as does a pin in a file that was never registered.
+    updated: 2026-08-25
+  - id: gate-wording-micro-test-unevidenced
+    statement: Review gate wording shipped with no measurement that it changed agent behaviour.
+    kind: risk
+    treatment: resolved
+    rationale: "The arms settle it — the prior wording answered no unit per unit, the corrected wording did so with the table and equally without it, so the wording carries the obligation and the table carries the shape."
+    evidence:
+      - scripts/tests/scenarios/static-review/gate5-ledger/README.md records the arms, their fresh-context reps and the rubric; every sample was read by hand.
+      - The no-table arm answered per unit 5 of 5 and volunteered completeness statements no spec had asked it for.
+      - A gate definition cannot be withheld and still leave a gate to review at, so the prior wording is the no-guidance condition for a behavior added to an existing document.
+    declined-changes:
+      - Read a passing workspace gate as evidence that a wording change binds agent behaviour.
+      - Run an arm with no gates.md at all, which would measure an invented gate rather than this one.
+    verification: scripts/evidence_currency.py --check ties this result to the exact Gate 5 text it measured and fails when that text moves.
+    updated: 2026-08-25
+  - id: shell-command-structure-read-by-hand
+    statement: A requirements line's comment rule is read without the parser that owns it, and the shell readings this entry was opened for were removed rather than owned.
+    kind: debt
+    treatment: accept
+    rationale: The parser is refused on licensing, not on value. bashlex parses bash to a syntax tree and answers every question runtime_contract asks of a command, but it is GPLv3+ and this repository is MIT, and its last release was January 2023. So shlex tokenizes and the command structure above it — where one command ends, whether pip sits in command position — stays hand-written.
+    evidence:
+      - GitHub Actions YAML is owned by PyYAML, PEP 440 and PEP 508 by packaging, CommonMark by markdown-it-py. All three are installed and used, and every reading of CommonMark goes through markdown_links, which holds the parser.
+      - "The shell's words are shlex's and its comment rule is declined rather than answered. Commenting is turned off because shlex ends a word at any hash where bash does not, and where the shell's comment begins has no owner installable here — shlex does not answer it and bashlex is refused on licensing — so every answer had to be hand-written. This repository permits that where the grammar and its absent owner are registered, which this entry is, so declining is chosen on evidence and not compelled: three rounds wrote a reading and each was wrong one character further out — a regex before the lexer, a token-begins test, an operator test over a scan whose tokens are not the shell's words. Two answers survive because neither needs a grammar, a hash at the first non-blank character being a comment whole and a hash inside a word never being one; everything between leaves the command unread. The caller wanted safety and not fidelity, workflow_pins needing only never to be told a pin bash would not install."
+      - "distribution_manifest.install_refs bounds a documented ref without shlex, because its input is Markdown where a line may hold prose, an apostrophe or JSON and a shell lexer reads those as unterminated quotes. What ends a ref there comes from git and pip instead, one rule per form: a quoted ref ends at its own closing quote and nowhere else, an unquoted one at whitespace git forbids inside a ref name, and either at the hash beginning pip's URL fragment. Whether the word is closed is a separate question from where the ref ends, asked of the text: a fragment inside an unterminated quote ends the ref and closes nothing."
+      - "read_whole.COMMENT now has one caller, runtime_contract.pins, where it ends a requirements line at a hash beginning the line or following whitespace. The operator form it carried for the shell is retired: nothing here exercised it, and its owner is not installed to settle whether pip would cut there, so an unexercised rule whose correctness cannot be checked was removed rather than kept. A line it therefore leaves whole reaches packaging, which refuses it rather than letting a truncation compare clean. That file format is pip's and has no installed owner — packaging reads a PEP 508 requirement string, not a requirements file's line — so it joins command structure as a grammar read without its parser. Such a line carries no shell quoting for the matcher to misread, which is why the same pattern is sound there and was not in shell_words."
+      - "shell_script.commands owns where one command ends, which had two homes and no owner before it: runtime_contract joined continued lines and read_whole.shell_words answered for whatever that produced with a rule true only of one line. They disagreed, and a comment line ending in a backslash swallowed the install below it. The statement grammar is hand-written for the same reason the rest of the shell's is not owned here, and it stays honest by declining: a script of one line has no boundary question, a script of more than one holding a quote or a heredoc operator is refused whole, and otherwise a comment does not continue and an odd run of trailing backslashes does. The parity count is exact only because the quote refusal removed what would make it a guess. Measured against bash over a corpus covering each construct and runs of one through four, nothing is read as fewer commands than bash runs."
+      - Command structure has no owner here. runtime_contract splits the word stream at control operators and requires pip in command position after any leading assignments; bashlex would answer both, and does, and cannot be taken.
+      - "CommonMark leaves one thing no parser can settle: a fence closes at the first line of at least as many backticks, so a template fenced with three backticks around a three-backtick example ends at the example, and the shape read from it is short rather than unreadable. An outer fence longer than anything inside it is the authoring rule; what a check could observe is a stray unclosed fence left after the truncation, which nothing reads today."
+      - TOML is owned by tomllib, which arrives in Python 3.11 while .python-version declares 3.10. The readings that stay hand-written for it all stop at a quoted string's closing quote rather than at a guess.
+      - A URL's fragment is split by hand in markdown_links.local_target because urlsplit answers a different question, returning the path without the scheme that the Windows-drive and external-scheme tests below it read.
+    declined-changes:
+      - "The statement was briefly generalised, to where this repository validates a grammar it cannot install a parser for. That turned the list after its dash into the rule's extension, and the extension has to be complete to be true, which this entry's own evidence already overruns — distribution_manifest.install_refs bounds a ref by rules taken from git and pip, and markdown_links.local_target splits a fragment by hand. Neither stops at a construct's own closing delimiter, so neither is covered by the exemption below. Scoped back to its own subject instead, so the list is this entry's inventory and cannot be overrun by a reading the entry documents elsewhere."
+      - Add bashlex, which would take a GPLv3+ dependency into an MIT repository for a development tool, and one whose last release predates this entry by three and a half years.
+      - "Derive this evidence list from the tree by enumerating every re.compile site and requiring each to be delimiter-bounded, owner-backed or registered here. Declined under the weighing rule in AGENTS.md: delimiter-bounded is a property of what a pattern reads rather than of its text, so no check decides it, and every site would carry a hand-written classification whose set is the inventory it was meant to replace. Adopted instead is the enumeration in the verification below, run rather than trusted."
+      - "Register the readings that stop at their construct's own closing delimiter. A quoted TOML string ending at its quote, a frontmatter block ending at its closing fence, a line-anchored field ending at its line: each is bounded by the document rather than by a guess about what may follow, and listing them here would bury the readings that are not."
+      - Add tomli so ruff.toml and a pyproject dependency string are parsed rather than matched, for readings that have never been wrong and that a move to Python 3.11 makes free.
+    reconsider-when: bashlex relicenses or an equivalently complete bash parser ships under a permissive license, or Python 3.11 becomes the declared floor, or a matcher's boundedness becomes machine-decidable.
+    verification: "There is no command that enumerates this subject, and the field said otherwise twice. The subject is every place here that decides where a token of a borrowed grammar ends; what a search can offer is a starting set of spellings. This one is `grep -nE 're\\.compile|\\.startswith\\(|\\.endswith\\(|\\.find\\(|\\.index\\(|\\.split\\(' scripts/*.py`, and the forms it cannot reach are named so a reader knows what to look for by hand — a membership test inside a character loop, a slice on a scanned position, a comparison on a token a lexer handed back. distribution_manifest.install_refs is the instance that proves the gap: it bounds a ref with `for char in ...` and `if char in ends`, and it appears in the search's output only because an unrelated compiled pattern sits in the same function. Which hits bound a borrowed grammar rather than merely reading a string is a reader's judgement and nothing checks it. Each grammar states the channel it has. The parsed ones are total by their libraries — Requirement consumes the string or raises, safe_load parses the document or raises, and runtime_contract reports what raised rather than reading fewer commands. The token grammars reach their value through read_whole.whole, whose Whole rejects any match not spanning its subject; test_read_whole.py fails when that check is removed. The shell's comment rule has no channel because it is no longer answered: shell_words declines a command it cannot read rather than reading it short, and test_read_whole.py holds both the declining and the two cases that need no grammar. Command structure is covered by cases rather than by a guarantee, because a structure this reads wrongly is silent: echoed text, another program whose name starts with pip, the wrong verb, an install after a control operator, after assignments, through the module, and by path are each a case in test_runtime_contract.py. RUFF_TARGET needs no channel: check requires exactly one match in ruff.toml, so a misread changes the count and fails."
+    updated: 2026-09-16
+  - id: external-symbol-citations-unchecked
+    statement: A citation naming a module outside this tree is checked to the module and no further, so a symbol that module does not define reads as verified.
+    kind: debt
+    treatment: accept
+    rationale: Reading an external symbol means reading source this repository does not hold. The standard library's would come through an interpreter path and a package's through whatever a local environment installed, and the second is the environment dependence the checker was repaired to remove; a check that answers differently on two machines is worse than one that states its boundary.
+    evidence:
+      - scripts/check_citations.py resolves a citation's module against scripts/, the standard library set the pinned interpreter carries, and the modules some file under scripts/ imports. The first of those is parsed for symbols and members; the other two are not.
+      - No external symbol has been miscited in this repository. The falsifier that opened this gap was constructed by a review, and every citation defect that actually occurred named a module or a symbol inside this tree.
+      - What the module check does buy is the case that has occurred — a mistyped internal module, which matches no name in any of the three sets and is refused.
+    declined-changes:
+      - Parse the standard library's source from the interpreter's stdlib path, which reads the citations naming a standard-library module and leaves the ones naming a package unchecked, so the boundary still needs stating.
+      - Import each cited module and read its attributes, which runs third-party code inside a maintenance check.
+    reconsider-when: An external symbol citation is found wrong, or the packaged names this repository cites come to be readable without asking a local environment.
+    verification: None for the symbol; the module half is covered by test_check_citations.SymbolCitations, whose cases include a stdlib name, an imported third-party name, one nothing here imports, and misspellings of an internal module.
+    updated: 2026-08-27
+  - id: shipped-skill-prose-not-citation-checked
+    statement: A symbol citation inside a shipped skill is checked by nobody, so a skill could name a module this repository does not have.
+    kind: debt
+    treatment: accept
+    rationale: "The check cannot tell an illustration from a claim, and a shipped skill is mostly illustration. Adding skills/ to the subject set was measured rather than assumed and reports two findings, both false: a teaching example in map-codebase deliberately shows what a line citation looks like, and orient-repo names a git config key whose shape is indistinguishable from a module and an attribute. Buying the check would cost the two exemptions AGENTS.md refuses, to guard a class that has occurred once and was repaired by deleting the citation rather than by resolving it."
+    evidence:
+      - Running scripts/check_citations.py over skills/ reports skills/map-codebase/references/tracing.md for a line citation that is the subject being taught, and skills/orient-repo/references/discovery-surfaces.md for a git config key read as a module and an attribute.
+      - The one real instance was a Reach example naming a private function in scripts/, which an installed user cannot resolve. It was removed rather than made to resolve, because a shipped skill should name nothing here at all.
+      - Every other backticked dotted name in skills/ is a filename, which check_citations already tells apart by its suffix.
+    declined-changes:
+      - Add skills/ to check_citations.SUBJECTS, which needs a per-file exemption for a taught example and a narrowing of the grammar for a config key, and reintroduces the maintained list of places a check does not apply.
+      - Forbid any dotted name in a shipped skill, which would reach the filenames and the config key the skill legitimately names.
+    reconsider-when: A shipped skill is found citing a module this repository does not have, or the citation grammar comes to tell a config key from a module without a list.
+    verification: None. What a later round can re-run is the grep in the evidence above, and the reading that skills/ names nothing resolving into scripts/.
+    updated: 2026-09-07
+  - id: import-grouping-unchecked
+    statement: Whether a module's imports are grouped as the files claim is checked by nobody, and a third-party import landed in the middle of a standard-library group with every gate green.
+    kind: debt
+    treatment: accept
+    rationale: Ruff owns this rule and adopting it edits files across the tree, among them the pinned CLI adapter this repository ships and a review-scenario fixture whose content is the input a recorded micro-test measured. The defect it would catch is cosmetic, and those two are not.
+    evidence:
+      - runtime_contract.py gained yaml and packaging between its standard-library imports in a commit that passed ruff, the full suite and the whole workspace gate.
+      - "`ruff check --select I` reports findings under scripts/, and also in tools/fornax-cli/fornax_cli/cli.py and scripts/tests/scenarios/static-review/gate5-ledger/fixture/billing.py, which are the two that make adopting it costly. Run it for the current set; this entry describes which paths matter, not how many there are."
+      - "Setting src so ruff resolves first-party modules by path rather than by a maintained list of names was measured as removing every finding. That measurement was wrong: the key had been appended under the lint table, where ruff rejects it, and the run failed to load its configuration while the reading took a blank line for a clean answer."
+      - ruff.toml already records import sorting as an opinion this repository has not adopted; what is new here is a measured cost rather than a stated one.
+    declined-changes:
+      - Select I and run --fix, which edits the shipped CLI adapter and a fixture whose bytes a recorded result measured, to catch a defect that changes no behaviour.
+      - Exclude those paths and select I for the rest, which trades one unchecked claim for a maintained list of exemptions.
+    verification: None. This is the one condition in this file with no check behind it, which is what makes it debt rather than a resolved defect; the grouping in runtime_contract.py was repaired by hand.
+    updated: 2026-08-26
+  - id: evidence-entry-model-splits-by-hand
+    statement: A result measured against more than one document is registered as a separate evidence entry per document only because a maintainer remembers to split it.
+    kind: debt
+    treatment: accept
+    rationale: The entry model carries a single tests and section pair, and what a record measured is stated in its prose; requiring the split would mean parsing that prose, which is more fragile than the omission it would catch.
+    evidence:
+      - scripts/evidence_currency.py declares a single tests field and a single section field per entry.
+      - The gate5-ledger record measured gates.md and the Ledger spec together and was registered against only the first.
+    declined-changes:
+      - Parse a record's What was measured prose to derive the documents it should be registered against.
+    reconsider-when: Another record is registered against fewer documents than its own prose names.
+    updated: 2026-08-25
+  - id: triage-findings-fixture-misses-new-branches
+    statement: The triage-findings scenario cannot exercise branches added after its recorded runs, because its fixtures contain neither.
+    kind: debt
+    treatment: accept
+    rationale: This is a coverage gap rather than staleness, and the two are repaired differently — no recorded signal measures behaviour the later wording changed, so a re-run would re-earn a fingerprint without testing anything new.
+    evidence:
+      - Closure by a partially-gate-reviewed unit listing the relevant gate was added 2026-08-18; the fixture only exercises a Coverage that never enumerates.
+      - The Non-finding sections integrity check was added 2026-08-24; neither record carries a row-bearing non-finding section, so the check can only answer not claimed — review-record.md has a prose Structural Causes section and no table.
+    declined-changes:
+      - Re-run the recorded scenario to clear its superseded state, which would refresh a fingerprint without covering either branch.
+    reconsider-when: A review reports either branch answered wrongly, or the fixtures gain a partial-coverage record and a non-finding section.
+    updated: 2026-08-25
+  - id: gate5-ledger-omits-interface-usage
+    statement: Gate 5 names call sites as its interface evidence while the ledger records no interface usage.
+    kind: debt
+    treatment: accept
+    rationale: The interface-segregation finding that asked for a ledger column carried no evidence separable from the responsibility and dependency mechanism.
+    evidence:
+      - skills/static-review/references/gates.md judges minimal interfaces against the call sites the scope contains.
+      - skills/static-review/SKILL.md renders the ledger with job and dependency-origin columns only.
+    declined-changes:
+      - Add an interface-usage column on evidence that could not be separated from the responsibility and dependency mechanism.
+    reconsider-when: An interface-segregation finding recurs after the ledger is in use.
+    updated: 2026-08-24
+  - id: commit-partition-held-by-author-discipline
+    statement: Nothing in this repository observes how a change is partitioned across commits, so one reason per commit is held by author discipline alone.
+    kind: debt
+    treatment: accept
+    rationale: Every check reads tree state; the only git call in scripts is ls-files, and with no pull-request workflow there is no checkpoint before history exists. Commit partition is invisible to that class of mechanism by construction.
+    evidence:
+      - Round after round each landed one commit, and each round's repairs produced the next round's defects, which is the cost this debt carries.
+      - "A path-partition gate would have passed the commit that motivated it: d8ed52f touches AGENTS.md, development-knowns.yaml and scripts only, so every split-when rule is vacuously satisfied while unrelated reasons sit inside one region."
+      - The same gate would refuse e514bbd, which spans templates and skills and is a shape the section explicitly blesses.
+      - "The trigger below has fired and was examined rather than left standing: subjects in this range carry a second clause after a comma — recording that nothing reads a repaired grouping, saying what a check decides, settling a coupling — and each of those is a cause the rule would have had in its own commit."
+      - "What the examination found is the same thing the evidence above records: the gate that would notice a second cause is a path partition, and it passes the commit that motivated it. A cause is a reason, and a reason leaves no trace in a path. So the trigger has fired, the treatment is unchanged, and the reason is here rather than in a reviewer's next round."
+    declined-changes:
+      - Encode the granularity rules as a path-partition check, which passes the motivating commit, refuses a blessed shape, and moves the enforcement floor PROJECT.md keeps at structure.
+      - Rewrite published history to split the commit, which no enforced claim requires.
+    reconsider-when: A gate becomes available that reads why a change was made rather than where it landed, or a partition defect reaches a release.
+    updated: 2026-08-26
+  - id: malformed-noqa-suppresses-silently
+    statement: A noqa directive with non-code text after its code list suppresses every rule on that line, and the ruff warning it produces does not fail the run.
+    kind: defect
+    treatment: accept
+    rationale: The pinned ruff has no setting that turns its invalid-directive warning into a failure, and the rules about the suppression mechanism all miss this form — measured, not assumed.
+    evidence:
+      - A 103-character line carrying such a directive passed while a 116-character probe confirmed E501 was live.
+      - PGH004 catches only a bare noqa with no codes; RUF100 catches only a directive suppressing nothing; the malformed-suffix form passes both.
+      - "The 103-character probe above does not isolate this mechanism, which a later round found by meeting the same silence with no directive present. That line held no whitespace after its indentation, which e501-exempts-a-whitespace-free-line covers, so the two causes were measured together and read as one. The directive form is still real and still passes both rules; what it does not do is account on its own for an unreported long line."
+    declined-changes:
+      - Claim PGH004 closes the case, which a probe of the exact form disproves.
+    reconsider-when: A ruff release fails the run on an invalid directive, or a noqa is added to the tree.
+    updated: 2026-08-25
+  - id: e501-exempts-a-whitespace-free-line
+    statement: Ruff's E501 does not report a line whose content after the indentation holds no whitespace, so the declared width does not hold for an unbreakable token.
+    kind: defect
+    treatment: accept
+    rationale: The exemption belongs to the rule rather than to this repository's configuration, and there is no setting that turns it off. A width check of this repository's own would hold the claim, needs no exemption list, and is its own change rather than one made while repairing the line it found.
+    evidence:
+      - "Measured with a matched pair under this repository's ruff.toml at 106 characters. The line carrying one interior space is reported as line-too-long; the line carrying none is not reported at all."
+      - A 103-character assertion in scripts/tests/test_evidence_currency.py stood in the tree with the workspace gate green, and was found by measuring the width directly rather than by the gate.
+      - "The class was swept across scripts/ and tools/ by measuring every line and testing whether its content after the indentation holds whitespace. That assertion was the only member, so the exemption is structural and its population is not."
+      - "malformed-noqa-suppresses-silently recorded an earlier 103-character line that E501 did not report and attributed it to the directive alone. Both mechanisms produce the same silence, and reading the first as the whole reason is what left the second unrecorded."
+    declined-changes:
+      - "Add a width check over scripts/ that exempts nothing. Weighed as admissible rather than refused: unlike the candidate checks this repository has declined, it needs no list of places it does not apply. What it lacks is a failure that left the workspace, and adding a gate step while repairing the defect it would have caught is a check bought instead of a repair verified."
+      - Raise the configured line-length so the reported width matches what the rule actually enforces, which changes what is checked in order to make a claim true.
+      - "The same configuration claims one width for the Python and the markdown, and only the Python half is enforced at all. Ruff reads no Markdown, and no check in this repository measures a Markdown line, so the claim covering the larger of the two corpora rests on authoring alone. Two prose lines were added at 101 characters inside the range that registered this entry, in records whose own convention is the stated width."
+    reconsider-when: A second over-width line reaches origin/main under this exemption, or a ruff release reports a whitespace-free line.
+    verification: "None by check, which is what makes this debt rather than a resolved defect. The re-runnable reading is to measure every line under scripts/ and tools/ and test whether the content after its indentation holds whitespace; the exemption is stated in ruff.toml beside the width and in AGENTS.md beside the claim."
+    updated: 2026-09-07
+  - id: host-manifest-list-unguarded-additions
+    statement: Nothing guards a host manifest the HOST_VERSION_MANIFESTS tuple does not name, so adding a host means editing that tuple.
+    kind: debt
+    treatment: accept
+    rationale: Which JSON file is a host manifest has no reliable signal to derive from — the marketplace manifest is one and carries no version at all — so the list is the primary mechanism here, unlike the install pins where a versioned ref identifies itself.
+    evidence:
+      - scripts/distribution_manifest.py compares only the paths the tuple names against distribution.json.
+      - Removing a path from the tuple and letting that file drift to another version passes every check.
+    declined-changes:
+      - Derive host manifests by scanning JSON for a version field, which would claim package manifests and miss the marketplace file.
+    reconsider-when: A fifth host is added, or a manifest drifts without the tuple naming it.
+    updated: 2026-08-25
+  - id: independently-runnable-link-checks
+    statement: Component checks retain overlapping absolute Markdown link validation.
+    kind: constraint
+    treatment: accept
+    rationale: validate_skills.py and check_text.py are independently runnable checks with different scopes and diagnostics.
+    evidence:
+      - scripts/validate_skills.py validates links inside each production skill.
+      - scripts/check_text.py validates Markdown links across the workspace.
+    declined-changes:
+      - Remove either component's absolute-link check solely to eliminate overlap in check_workspace.py.
+    reconsider-when: The component checks stop being public independently runnable entry points.
+    updated: 2026-08-18
+  - id: partial-review-requires-relevant-gate
+    statement: Silence closes a carried review item only when the current review opened the gate relevant to that item.
+    kind: constraint
+    treatment: accept
+    rationale: Enumerating coverage labels alone cannot distinguish a relevant partial review from an unrelated one.
+    evidence:
+      - skills/triage-findings/SKILL.md requires the relevant gate for partially-gate-reviewed units.
+      - scripts/tests/test_review_contract.py asserts the relevant-gate relationship directly.
+    declined-changes:
+      - Replace the semantic relationship assertion with a check that only enumerates coverage labels.
+    reconsider-when: Review coverage gains a structural representation that encodes item-to-gate relevance.
+    updated: 2026-08-18
+  - id: seam-inventory-repeats-shape-per-consumer
+    statement: Record seam inventory intentionally repeats a producer's record shape for each consumer seam.
+    kind: constraint
+    treatment: accept
+    rationale: The inventory unit is an exact producer-to-consumer seam, and each block remains mechanically derived from its declarations.
+    evidence:
+      - scripts/seam_contract.py renders each discovered producer and consumer pair as one block.
+      - docs/record-contracts.md describes the generated output as a seam list.
+    declined-changes:
+      - Group consumers under one record block solely to deduplicate identical producer element tables.
+    reconsider-when: Repetition materially impairs review or the inventory changes from seam-oriented to record-oriented.
+    updated: 2026-08-18
+  - id: evidence-fingerprint-is-section-granular
+    statement: A measurement is pinned to a whole section, so editing any sentence in that section supersedes a result about a different sentence in it.
+    kind: constraint
+    treatment: accept
+    rationale: evidence_currency hashes a heading's section, and a finer anchor would have to be a quotation or a coordinate, both of which move with an unrelated edit — the failure the line-citation rule already refuses. The coarse anchor is the price of one that does not go stale on its own.
+    evidence:
+      - Repairing the precedence paragraph superseded an entry whose arms had measured that paragraph, which is the intended behaviour.
+      - Repairing the same section's opening sentence superseded the entry again, although the arms had measured the precedence paragraph rather than that sentence.
+      - "Splitting the treatment into an entry per section located what moved: the entries for the Rules list and the Phase 5 gate stayed current while the one for Structured expression did not."
+    declined-changes:
+      - Anchor an entry to a quoted phrase, which gives the registry the coordinate problem the citation gate refuses.
+    reconsider-when: A section a measurement pins is edited for unrelated reasons often enough that re-running costs more than a finer anchor would.
+    updated: 2026-09-17
+  - id: a-repair-leaves-the-adjacent-claim-stale
+    statement: A repair here has repeatedly satisfied the cell a finding named and left the cell beside it describing the state before the repair.
+    kind: defect
+    treatment: accept
+    rationale: A Reach enumerates the locations a repair touches, and the location that goes wrong is one the repair did not touch but whose claim the repair falsified. No Reach can list it, because it is identified by what the change makes untrue rather than by what the change edits.
+    evidence:
+      - Totals over seams were removed from one section and authored again in a section added to the same file two commits later.
+      - A reader was added to a table row while the action cell beside it went on describing only the reader that was already there.
+      - A scoring document was written and the raw scores it names as its only input were not extended to carry what two of its measures read.
+      - description-prefix states the rule at one strength in profiles/fornax.yaml and another in skill_model.FORNAX_FORMAT; the stricter one governs, so nothing is wrong and the pair can still drift apart.
+    declined-changes:
+      - State it as a Reach rule. A Reach lists what a repair touches, and these locations are ones it did not.
+    reconsider-when: A round closes with no instance, or a mechanism makes a falsified adjacent claim visible without a person reading for it.
+    updated: 2026-09-17

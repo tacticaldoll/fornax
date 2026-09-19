@@ -1,0 +1,455 @@
+#!/usr/bin/env python3
+"""What the citation check must refuse, and what it must leave alone."""
+
+from __future__ import annotations
+
+import unittest
+from io import StringIO
+from contextlib import redirect_stderr, redirect_stdout
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+import check_citations
+
+
+def workspace(tmp: str, **files: str) -> Path:
+    """A root holding a `scripts/` module and whatever documents a case needs."""
+    root = Path(tmp)
+    (root / "scripts").mkdir()
+    (root / "scripts" / "sample_module.py").write_text(
+        "import yaml\n\n\nCONSTANT = 1\n\n\n"
+        "def reads_whole() -> None:\n    pass\n\n\n"
+        "class Reader:\n    depth: int\n\n    def read(self) -> None:\n        pass\n",
+        encoding="utf-8",
+    )
+    # Every named subject exists by default, because an absent one is now a diagnostic in
+    # its own right: `SUBJECTS` is maintained by hand and a stale filename there used to
+    # shrink the corpus silently. A case that cares about one document overrides it below.
+    for name in check_citations.SUBJECTS:
+        blank = root / name
+        blank.parent.mkdir(parents=True, exist_ok=True)
+        blank.write_text("Nothing here cites anything.\n", encoding="utf-8")
+    for name, content in files.items():
+        path = root / name.replace("__", "/")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+    return root
+
+
+def messages(root: Path) -> list[str]:
+    return [problem.message for problem in check_citations.check(root)]
+
+
+class LineCitations(unittest.TestCase):
+    def test_a_line_citation_is_refused_in_every_subject(self) -> None:
+        for name in check_citations.SUBJECTS:
+            with self.subTest(name=name), TemporaryDirectory() as tmp:
+                root = workspace(tmp, **{name: "See `scripts/sample_module.py:4` for it.\n"})
+
+                found = messages(root)
+
+                self.assertEqual(len(found), 1, found)
+                self.assertIn("cites a line", found[0])
+
+    def test_a_line_range_is_refused_too(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp, **{"AGENTS.md": "See `PROJECT.md:5-8`.\n"})
+
+            self.assertIn("cites a line", messages(root)[0])
+
+    def test_a_line_citation_is_refused_without_backticks_and_by_any_suffix(self) -> None:
+        """The first form asked for backticks and a suffix from a short list.
+
+        So a path-and-line written as plain prose passed, and so did a `.js` path, under
+        a message saying the form is refused. Capped at six letters it then passed
+        `.markdown`, so the extension has no length rule, only an alphabetic one.
+        """
+        for text in (
+            "bare scripts/foo.py:12 in prose\n",
+            "`.opencode/plugins/fornax.js:12`\n",
+            "see docs/record-contracts.md:44\n",
+        ):
+            with self.subTest(text=text), TemporaryDirectory() as tmp:
+                root = workspace(tmp, **{"AGENTS.md": text})
+
+                found = messages(root)
+
+                self.assertEqual(len(found), 1, found)
+                self.assertIn("cites a line", found[0])
+
+    def test_a_long_extension_is_still_a_line_citation(self) -> None:
+        for text in ("See docs/spec.markdown:12 for it.\n", "And schema.proto3:12 too.\n"):
+            with self.subTest(text=text), TemporaryDirectory() as tmp:
+                root = workspace(tmp, **{"AGENTS.md": text})
+
+                self.assertIn("cites a line", messages(root)[0])
+
+    def test_a_url_authority_is_not_a_line_citation(self) -> None:
+        """A host and a port read as a path and a line to the pattern alone.
+
+        `https://example.com:443/path` yields `//example.com:443`, so refusing it would
+        make the check reject ordinary prose — worse than the miss it was closing.
+        """
+        for text in (
+            "Served at https://example.com:443/path today.\n",
+            "Or http://x.invalid:8080/a for it.\n",
+            # A network-path reference carries an authority and no scheme, and
+            # markdown_links.local_target already reads this form as not ours.
+            "Or //example.com:443/path for it.\n",
+        ):
+            with self.subTest(text=text), TemporaryDirectory() as tmp:
+                root = workspace(tmp, **{"AGENTS.md": text})
+
+                self.assertEqual(messages(root), [])
+
+    def test_a_citation_inside_a_url_path_is_still_one(self) -> None:
+        # Exempting the whole whitespace-bounded word let this escape with the port. A
+        # path inside a URL's path is as much a path as anywhere.
+        for text in (
+            "At https://host.example/docs/file.py:12 today.\n",
+            "At //host.example/docs/file.py:12 today.\n",
+        ):
+            with self.subTest(text=text), TemporaryDirectory() as tmp:
+                root = workspace(tmp, **{"AGENTS.md": text})
+
+                self.assertIn("cites a line", messages(root)[0])
+
+    def test_a_version_is_not_a_line_citation(self) -> None:
+        # The widened pattern requires an alphabetic extension. Without that, "Python
+        # 3.10:1" reads as a path with extension "10" and a line number.
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp, **{"AGENTS.md": "Pinned at Python 3.10:1 of the matrix.\n"})
+
+            self.assertEqual(messages(root), [])
+
+    def test_a_citation_inside_a_fence_is_a_quotation(self) -> None:
+        """An archived producer record may quote source text inside a fenced example."""
+        with TemporaryDirectory() as tmp:
+            root = workspace(
+                tmp,
+                **{
+                    "AGENTS.md": (
+                        "The input said:\n\n"
+                        "````text\n"
+                        "Evidence: scripts/sample_module.py:4\n"
+                        "`scripts/sample_module.py:4`\n"
+                        "````\n\n"
+                        "and this record does not repeat it.\n"
+                    )
+                },
+            )
+
+            self.assertEqual(messages(root), [])
+
+    def test_a_yaml_subject_has_no_fences_and_is_read_whole(self) -> None:
+        # The fence rule is CommonMark's, so it applies to Markdown. A registry holding
+        # a line citation inside a quoted scalar is still a line citation.
+        with TemporaryDirectory() as tmp:
+            root = workspace(
+                tmp,
+                **{"development-knowns.yaml": '    evidence: "see `PROJECT.md:5`"\n'},
+            )
+
+            self.assertIn("cites a line", messages(root)[0])
+
+
+class SymbolCitations(unittest.TestCase):
+    def test_a_symbol_the_module_defines_passes(self) -> None:
+        for symbol in ("reads_whole", "Reader", "CONSTANT"):
+            with self.subTest(symbol=symbol), TemporaryDirectory() as tmp:
+                root = workspace(tmp, **{"AGENTS.md": f"Asked through `sample_module.{symbol}`.\n"})
+
+                self.assertEqual(messages(root), [])
+
+    def test_a_symbol_the_module_does_not_define_is_reported(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp, **{"AGENTS.md": "Asked through `sample_module.section`.\n"})
+
+            found = messages(root)
+
+            self.assertEqual(len(found), 1, found)
+            self.assertIn("names no top-level symbol", found[0])
+
+    def test_a_filename_is_not_a_symbol_citation(self) -> None:
+        # `evidence_currency.py` reads as module.symbol to any pattern that does not
+        # know the suffixes, and every record cites files that way.
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp, **{"AGENTS.md": "In `sample_module.py` and `PROJECT.md`.\n"})
+
+            self.assertEqual(messages(root), [])
+
+    def test_a_module_the_standard_library_or_this_tree_accounts_for_passes(self) -> None:
+        """`shlex` comes with the interpreter; `yaml` is imported by the sample module.
+
+        Both are derived rather than asked of the environment: the stdlib set is static
+        for the pinned interpreter, and the third-party names come from the import
+        statements under `scripts/`. Asking the environment made the answer depend on
+        what a local interpreter happened to have installed.
+        """
+        with TemporaryDirectory() as tmp:
+            root = workspace(
+                tmp,
+                **{"AGENTS.md": "Owned by `shlex.shlex`, read by `yaml.safe_load`.\n"},
+            )
+
+            self.assertEqual(messages(root), [])
+
+    def test_a_third_party_module_nothing_here_imports_is_reported(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp, **{"AGENTS.md": "Fetched with `requests.get`.\n"})
+
+            found = messages(root)
+
+            self.assertEqual(len(found), 1, found)
+            self.assertIn("not imported anywhere here", found[0])
+
+    def test_a_member_the_class_defines_passes(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp, **{"AGENTS.md": "Reached by `sample_module.Reader.read`.\n"})
+
+            self.assertEqual(messages(root), [])
+
+    def test_a_member_the_class_does_not_define_is_reported(self) -> None:
+        # The shape of the defect that prompted the rule was a wrong function name in a
+        # cell asserting a closure had been verified. A three-part citation went
+        # unmatched by the first pattern, so this whole class was unchecked.
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp, **{"AGENTS.md": "Reached by `sample_module.Reader.require`.\n"})
+
+            found = messages(root)
+
+            self.assertEqual(len(found), 1, found)
+            self.assertIn("names no member of Reader", found[0])
+
+    def test_a_module_name_that_resolves_nowhere_is_reported(self) -> None:
+        """An unknown module was read as an external one, so a misspelling passed.
+
+        A similarity threshold stood here first and caught a near-miss while passing
+        every misspelling unlike enough to a real name — the same silence in a smaller
+        range. Importability answers it with no threshold and no list: a real external
+        module resolves, a mistyped internal one resolves nowhere.
+        """
+        for name in ("sampl_module", "smpl_mdl", "totally_unlike_anything_here"):
+            with self.subTest(name=name), TemporaryDirectory() as tmp:
+                root = workspace(tmp, **{"AGENTS.md": f"Asked through `{name}.reads_whole`.\n"})
+
+                found = messages(root)
+
+                self.assertEqual(len(found), 1, found)
+                self.assertIn("not in the standard library", found[0])
+
+    def test_a_test_module_is_a_module_here(self) -> None:
+        # Reading only scripts/ made every citation into a test module unknown, and the
+        # near-miss rule then reported it against its production sibling.
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp)
+            (root / "scripts" / "tests").mkdir()
+            (root / "scripts" / "tests" / "test_sample_module.py").write_text(
+                "class Cases:\n    def test_one(self) -> None:\n        pass\n",
+                encoding="utf-8",
+            )
+            (root / "AGENTS.md").write_text(
+                "Covered by `test_sample_module.Cases.test_one`.\n", encoding="utf-8"
+            )
+
+            self.assertEqual(messages(root), [])
+
+
+class ModuleIdentity(unittest.TestCase):
+    def test_a_stem_naming_more_than_one_module_is_reported_once(self) -> None:
+        """A dict keyed by stem lost one file and checked citations against the other."""
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp)
+            (root / "scripts" / "tests").mkdir()
+            (root / "scripts" / "tests" / "sample_module.py").write_text(
+                "x = 1\n", encoding="utf-8"
+            )
+            (root / "AGENTS.md").write_text("Nothing cites anything.\n", encoding="utf-8")
+
+            found = messages(root)
+
+            self.assertEqual(len(found), 1, found)
+            self.assertIn("names more than one module", found[0])
+
+    def test_a_module_that_cannot_be_parsed_is_reported_as_that(self) -> None:
+        """Three states shared one None, so an unreadable module read as a missing one."""
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp)
+            (root / "scripts" / "broken_module.py").write_text("def f(:\n", encoding="utf-8")
+            (root / "AGENTS.md").write_text("Asked through `broken_module.f`.\n", encoding="utf-8")
+
+            found = messages(root)
+
+            self.assertEqual(len(found), 1, found)
+            self.assertIn("could not be parsed", found[0])
+            self.assertNotIn("names no", found[0])
+
+    def test_a_module_that_cannot_be_decoded_is_reported_as_that(self) -> None:
+        """Decoding was the third way this fails and had no branch, so it ended the run.
+
+        `read_text` raises UnicodeDecodeError, a ValueError, so neither the OSError nor
+        the SyntaxError branch caught it and malformed UTF-8 in any module under
+        `scripts/` produced a traceback instead of a diagnostic naming the file. The
+        reason is checked as its own: a file that will not open and bytes that will not
+        decode are different repairs, and the sibling above asserts the parse state.
+        """
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp)
+            (root / "scripts" / "undecodable_module.py").write_bytes(b'x = "\xff\xfe"\n')
+            (root / "AGENTS.md").write_text(
+                "Asked through `undecodable_module.x`.\n", encoding="utf-8"
+            )
+
+            found = messages(root)
+
+            self.assertEqual(len(found), 1, found)
+            self.assertIn("could not be decoded", found[0])
+            self.assertNotIn("could not be read", found[0])
+            self.assertNotIn("could not be parsed", found[0])
+
+    def test_an_unparseable_module_is_named_where_it_actually_sits(self) -> None:
+        """The diagnostic composed `scripts/<stem>.py`, which is a guess about a path.
+
+        A module under `scripts/tests/` was reported at a path that does not exist, in
+        the diagnostic whose whole job is to say which file could not be read.
+        """
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp)
+            (root / "scripts" / "tests").mkdir()
+            (root / "scripts" / "tests" / "broken_nested.py").write_text(
+                "def f(:\n", encoding="utf-8"
+            )
+            (root / "AGENTS.md").write_text(
+                "Asked through `broken_nested.f`.\n", encoding="utf-8"
+            )
+
+            found = messages(root)
+
+            self.assertEqual(len(found), 1, found)
+            self.assertIn("scripts/tests/broken_nested.py", found[0])
+
+    def test_an_unparseable_module_is_absent_and_reported_by_one_answer(self) -> None:
+        """The two passes read the same files and disagreed about failure.
+
+        `citable` swallowed an unparseable module and `module_symbols` reported it, so
+        one run could call the same file absent from the citable set and defective at
+        every citation naming it. One parse now answers both.
+        """
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp)
+            # `packaging` is imported by the broken module and by nothing else, so its
+            # citation is legitimate only if the broken module's imports count.
+            (root / "scripts" / "broken_import.py").write_text(
+                "import packaging\ndef f(:\n", encoding="utf-8"
+            )
+            (root / "AGENTS.md").write_text(
+                "Reached by `broken_import.f`, and by `packaging.requirements`.\n",
+                encoding="utf-8",
+            )
+
+            found = messages(root)
+
+            self.assertEqual(len(found), 2, found)
+            self.assertTrue(any("could not be parsed" in m for m in found), found)
+            self.assertTrue(any("packaging.requirements" in m for m in found), found)
+
+    def test_symbols_cannot_hold_both_a_mapping_and_a_reason(self) -> None:
+        for names, reason in (({}, "unreadable"), (None, None)):
+            with self.subTest(names=names, reason=reason):
+                with self.assertRaises(ValueError):
+                    check_citations.Symbols(names, reason)
+
+    def test_a_symbols_holding_a_reason_answers_neither_question(self) -> None:
+        """`imports` was a plain field beside an invariant the type enforces.
+
+        An unreadable module answered it with an empty set, which reads as "imports
+        nothing" where the truth is "could not be read" — the same swallow the field's
+        own commit removed from `citable`.
+        """
+        unreadable = check_citations.Symbols(None, "could not be parsed")
+
+        for reach in (lambda: unreadable.names, lambda: unreadable.imports):
+            with self.subTest(reach=reach):
+                with self.assertRaises(ValueError):
+                    reach()
+
+
+class EntryPoint(unittest.TestCase):
+    def run_main(self, root: Path) -> tuple[int, str, str]:
+        out, err = StringIO(), StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            code = check_citations.main(["--root", str(root)])
+        return code, out.getvalue(), err.getvalue()
+
+    def test_a_clean_workspace_passes_and_says_what_it_read(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp, **{"AGENTS.md": "Asked through `sample_module.reads_whole`.\n"})
+
+            code, out, _ = self.run_main(root)
+
+        self.assertEqual(code, 0, out)
+        self.assertIn("citations in", out)
+
+    def test_a_defect_fails_the_entry_point_and_names_the_place(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = workspace(tmp, **{"AGENTS.md": "\n\nSee `PROJECT.md:5`.\n"})
+
+            code, _, err = self.run_main(root)
+
+        self.assertEqual(code, 1)
+        self.assertIn("AGENTS.md:3", err)
+
+    def test_this_repository_passes_its_own_check(self) -> None:
+        self.assertEqual(check_citations.check(check_citations.ROOT), [])
+
+
+class SubjectCorpus(unittest.TestCase):
+    """A named subject that is not there is reported, not filtered away.
+
+    `SUBJECTS` is maintained by hand, and a filename in a maintained list is what goes
+    stale. Renaming one of the standing documents and putting both a line citation and a
+    bogus symbol citation into it must report the missing subject rather than silently
+    shrinking the corpus.
+    """
+
+    def _tree(self, root: Path, subjects: tuple[str, ...]) -> None:
+        (root / "scripts").mkdir(parents=True, exist_ok=True)
+        (root / "scripts" / "thing.py").write_text("def here() -> None:\n    ...\n", "utf-8")
+        for name in subjects:
+            path = root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("clean prose naming `thing.here`\n", encoding="utf-8")
+
+    def test_a_renamed_subject_is_reported_rather_than_skipped(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._tree(root, tuple(n for n in check_citations.SUBJECTS if n != "AGENTS.md"))
+
+            problems = check_citations.check(root)
+
+            self.assertTrue(
+                any("AGENTS.md is named as a citation subject" in p.message
+                    for p in problems), problems,
+            )
+
+    def test_a_corpus_with_nothing_to_open_is_a_failure_not_a_clean_answer(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "scripts").mkdir()
+
+            problems = check_citations.check(root)
+
+            self.assertTrue(
+                any("nothing was read" in p.message for p in problems), problems
+            )
+
+    def test_every_named_subject_present_reports_none_of_them(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._tree(root, check_citations.SUBJECTS)
+
+            self.assertEqual(check_citations.check(root), [])
+
+
+if __name__ == "__main__":
+    unittest.main()

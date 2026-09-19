@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Fornax pre-commit hook — runs deterministic workspace checks on the working tree.
+# Enable once per clone:  git config core.hooksPath .githooks
+# (Bypass a single commit with:  git commit --no-verify)
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+python_bin="$repo_root/.venv/bin/python"
+if [[ ! -x "$python_bin" ]]; then
+  echo "FAIL pre-commit - run the maintenance environment setup from README.md"
+  exit 1
+fi
+
+"$python_bin" scripts/check_workspace.py

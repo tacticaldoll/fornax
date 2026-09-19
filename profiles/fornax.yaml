@@ -1,0 +1,7 @@
+schema: agent-skill-builder/profile/v1
+id: fornax
+description-prefix: "Use when an agent needs to "
+required-files:
+  - skill.yaml
+required-markdown-labels:
+  - Input

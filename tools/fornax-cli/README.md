@@ -1,0 +1,113 @@
+# fornax CLI
+
+The `fornax` command is the thin Fornax policy adapter over
+[`agent-skill-deployer`](https://github.com/tacticaldoll/agent-skill-deployer).
+The engine owns host discovery, inventory, deployment channels, provenance,
+reconciliation, and verification. This package owns only the Fornax command name,
+namespace, provenance identity, validators, release source, and workspace version.
+
+The CLI has no independent version. Build metadata is read from the release's
+vendor-neutral `distribution.json`, and runtime deployment is fixed to the matching
+`v<version>` tag at `https://github.com/tacticaldoll/fornax`.
+
+## Install the command
+
+Install the tagged CLI persistently with `pipx`:
+
+```sh
+pipx install \
+  "git+https://github.com/tacticaldoll/fornax.git@v0.6.0#subdirectory=tools/fornax-cli"
+
+fornax deploy --dry-run
+fornax deploy --all
+```
+
+## Run without installing
+
+Use the exact same CLI and deployment pipeline without leaving a persistent command:
+
+```sh
+pipx run \
+  --spec "git+https://github.com/tacticaldoll/fornax.git@v0.6.0#subdirectory=tools/fornax-cli" \
+  fornax deploy --all
+```
+
+Or with `uv`:
+
+```sh
+uvx \
+  --from "git+https://github.com/tacticaldoll/fornax.git@v0.6.0#subdirectory=tools/fornax-cli" \
+  fornax deploy --all
+```
+
+`pipx run` and `uvx` may cache their temporary environment, but they do not install a
+permanent `fornax` command. They execute the same tagged package as the persistent
+installation; there is no second deployment implementation.
+
+## Deploy from a checkout
+
+Inside a clone, build the command from the workspace instead of naming a version. Run
+this from the repository root:
+
+```sh
+uvx --from ./tools/fornax-cli fornax deploy --all
+```
+
+The version is not omitted here, it is derived: `pyproject.toml` reads it out of
+`distribution.json`, so the command deploys whatever release this workspace declares.
+Prefer it inside a clone — the pinned commands above exist for installing without one,
+and every release has to rewrite them.
+
+This is not a local-source deployment, and the formal release contract below applies to
+it unchanged. The checkout supplies one thing, the release number; the content still
+comes from `refs/tags/v<version>` on the Fornax remote. An uncommitted bump in
+`distribution.json` therefore names a tag that does not resolve, and the run stops
+before a host is touched rather than shipping a working tree.
+
+## Commands
+
+```sh
+fornax hosts
+fornax status
+fornax doctor
+fornax deploy --dry-run
+fornax deploy --all
+```
+
+The Fornax CLI deliberately has no `config` command and accepts no `--source` path.
+Local checkouts are development inputs and cannot become formal deployment sources.
+
+## Formal release contract
+
+Before inventory or deployment, the CLI:
+
+1. Resolves its matching `v<version>` tag from the formal Fornax remote.
+2. Requires the tag to be reachable from the remote default branch, so a tag on an
+   abandoned or side branch cannot ship as a release.
+3. Materializes a detached snapshot under
+   `~/.cache/agent-skill-deployer/releases/fornax/<commit>`.
+4. Requires the snapshot to be clean and its manifest version to equal the CLI version.
+5. Uses that exact snapshot for validation and every directory-discovery host.
+
+If any check fails, deployment stops before mutating a host.
+
+Native plugin hosts and directory-copy hosts cannot silently deploy different revisions,
+because every host installs the tag: Codex and Gemini take `--ref`, Claude's marketplace
+forwards a URL fragment to `git clone --branch`, and the directory channels copy from the
+snapshot. `main` moving ahead of a release therefore does not split the hosts, and does not
+block a deployment — which the earlier tag-equals-HEAD requirement did, on the first commit
+after every release.
+
+Installed skills are managed copies with `.fornax-install.json`; none link to a workspace.
+
+## Development
+
+Development may import the engine and wrapper directly, bypassing the packaged command.
+That is what sits intentionally outside the formal `fornax` command contract — not
+`uvx --from ./tools/fornax-cli` above, which builds the package and runs the same
+pipeline as every other entry point:
+
+```sh
+PYTHONPATH=/path/to/agent-skill-deployer:tools/fornax-cli \
+  python3 -m unittest discover -s tools/fornax-cli/tests -v
+```
